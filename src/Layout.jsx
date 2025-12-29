@@ -19,7 +19,9 @@ import {
   BookOpen,
   Warehouse,
   ChevronDown,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Receipt,
+  Calculator
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -94,6 +96,8 @@ export default function Layout({ children, currentPageName }) {
     { name: "Inventario", page: "Inventory", icon: Warehouse },
     { name: "Proyectos", page: "Projects", icon: BookOpen },
     { name: "Ventas", page: "Sales", icon: ShoppingCart },
+    { name: "Gastos", page: "Expenses", icon: Receipt },
+    { name: "Finanzas", page: "Finance", icon: Calculator },
     { name: "Marketing", page: "Marketing", icon: Megaphone },
     { name: "Análisis", page: "Analytics", icon: BarChart3 },
     ...(isAdmin ? [{ name: "Configuración", page: "Settings", icon: Settings }] : [])

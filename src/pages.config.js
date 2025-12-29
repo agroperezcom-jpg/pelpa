@@ -9,6 +9,8 @@ import Marketing from './pages/Marketing';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import Calendar from './pages/Calendar';
+import Expenses from './pages/Expenses';
+import Finance from './pages/Finance';
 import __Layout from './Layout.jsx';
 
 
@@ -24,6 +26,8 @@ export const PAGES = {
     "Analytics": Analytics,
     "Settings": Settings,
     "Calendar": Calendar,
+    "Expenses": Expenses,
+    "Finance": Finance,
 }
 
 export const pagesConfig = {
