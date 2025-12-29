@@ -8,6 +8,7 @@ import Sales from './pages/Sales';
 import Marketing from './pages/Marketing';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import Calendar from './pages/Calendar';
 import __Layout from './Layout.jsx';
 
 
@@ -22,6 +23,7 @@ export const PAGES = {
     "Marketing": Marketing,
     "Analytics": Analytics,
     "Settings": Settings,
+    "Calendar": Calendar,
 }
 
 export const pagesConfig = {

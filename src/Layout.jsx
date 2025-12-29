@@ -18,7 +18,8 @@ import {
   Bell,
   BookOpen,
   Warehouse,
-  ChevronDown
+  ChevronDown,
+  Calendar as CalendarIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -86,6 +87,7 @@ export default function Layout({ children, currentPageName }) {
 
   const navItems = [
     { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
+    { name: "Calendario", page: "Calendar", icon: CalendarIcon },
     { name: "Clientes", page: "Clients", icon: Users },
     { name: "Productos", page: "Products", icon: Package },
     { name: "Servicios", page: "Services", icon: Briefcase },

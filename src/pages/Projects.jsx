@@ -537,17 +537,17 @@ export default function Projects() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Fecha Inicio</Label>
+                <Label>Fecha y Hora Inicio</Label>
                 <Input
-                  type="date"
+                  type="datetime-local"
                   value={formData.start_date}
                   onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Fecha Límite</Label>
+                <Label>Fecha y Hora Límite</Label>
                 <Input
-                  type="date"
+                  type="datetime-local"
                   value={formData.due_date}
                   onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                 />

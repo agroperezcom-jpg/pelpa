@@ -532,17 +532,17 @@ export default function Marketing() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Fecha Inicio</Label>
+                <Label>Fecha y Hora Inicio</Label>
                 <Input
-                  type="date"
+                  type="datetime-local"
                   value={formData.start_date}
                   onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Fecha Fin</Label>
+                <Label>Fecha y Hora Fin</Label>
                 <Input
-                  type="date"
+                  type="datetime-local"
                   value={formData.end_date}
                   onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                 />
