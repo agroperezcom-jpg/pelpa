@@ -1,0 +1,363 @@
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Settings,
+  Users,
+  Plus,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Clock,
+  Shield,
+  UserPlus,
+  Mail,
+  Calendar
+} from "lucide-react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+
+export default function SettingsPage() {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("user");
+  const [currentUser, setCurrentUser] = useState(null);
+
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser).catch(() => {});
+  }, []);
+
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => base44.entities.User.list()
+  });
+
+  const { data: sessionLogs = [] } = useQuery({
+    queryKey: ['sessionLogs'],
+    queryFn: () => base44.entities.SessionLog.list('-login_time', 100)
+  });
+
+  const inviteUserMutation = useMutation({
+    mutationFn: async ({ email, role }) => {
+      await base44.users.inviteUser(email, role);
+    },
+    onSuccess: () => {
+      setInviteEmail("");
+      setInviteRole("user");
+      setIsDialogOpen(false);
+    }
+  });
+
+  // Check if current user is admin
+  if (currentUser?.role !== 'admin') {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Card className="max-w-md">
+          <CardContent className="p-8 text-center">
+            <Shield className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-slate-800">Acceso Restringido</h2>
+            <p className="text-slate-500 mt-2">
+              Solo los administradores pueden acceder a esta sección.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Group session logs by user
+  const userSessionStats = users.map(user => {
+    const userLogs = sessionLogs.filter(log => log.user_email === user.email);
+    const totalMinutes = userLogs.reduce((acc, log) => acc + (log.duration_minutes || 0), 0);
+    const totalHours = Math.round(totalMinutes / 60 * 10) / 10;
+    const lastSession = userLogs[0];
+    
+    return {
+      ...user,
+      totalHours,
+      sessionsCount: userLogs.length,
+      lastLogin: lastSession?.login_time
+    };
+  });
+
+  // Group logs by date for today
+  const today = new Date().toISOString().split('T')[0];
+  const todayLogs = sessionLogs.filter(log => log.date === today);
+
+  // Group logs by month
+  const thisMonth = format(new Date(), 'yyyy-MM');
+  const monthLogs = sessionLogs.filter(log => log.date?.startsWith(thisMonth));
+
+  const handleInvite = (e) => {
+    e.preventDefault();
+    if (!inviteEmail.trim()) return;
+    inviteUserMutation.mutate({ email: inviteEmail, role: inviteRole });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <Settings className="h-6 w-6 text-slate-600" />
+            Configuración
+          </h1>
+          <p className="text-slate-500 text-sm mt-1">
+            Administración de empleados y sistema
+          </p>
+        </div>
+        <Button onClick={() => setIsDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
+          <UserPlus className="h-4 w-4 mr-2" />
+          Invitar Usuario
+        </Button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-slate-500 uppercase">Total Usuarios</p>
+                <p className="text-2xl font-bold text-slate-800 mt-1">{users.length}</p>
+              </div>
+              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                <Users className="h-5 w-5 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-slate-500 uppercase">Administradores</p>
+                <p className="text-2xl font-bold text-slate-800 mt-1">
+                  {users.filter(u => u.role === 'admin').length}
+                </p>
+              </div>
+              <div className="w-10 h-10 bg-violet-50 rounded-xl flex items-center justify-center">
+                <Shield className="h-5 w-5 text-violet-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-slate-500 uppercase">Sesiones Hoy</p>
+                <p className="text-2xl font-bold text-slate-800 mt-1">{todayLogs.length}</p>
+              </div>
+              <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
+                <Clock className="h-5 w-5 text-emerald-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-slate-500 uppercase">Sesiones Mes</p>
+                <p className="text-2xl font-bold text-slate-800 mt-1">{monthLogs.length}</p>
+              </div>
+              <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
+                <Calendar className="h-5 w-5 text-amber-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs defaultValue="users" className="space-y-4">
+        <TabsList className="bg-white border shadow-sm">
+          <TabsTrigger value="users">Usuarios</TabsTrigger>
+          <TabsTrigger value="sessions">Registro de Sesiones</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users">
+          <Card className="border-0 shadow-sm overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead>Usuario</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Rol</TableHead>
+                  <TableHead className="text-center">Horas Totales</TableHead>
+                  <TableHead className="text-center">Sesiones</TableHead>
+                  <TableHead>Último Acceso</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {userSessionStats.map((user) => (
+                  <TableRow key={user.id} className="hover:bg-slate-50">
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-medium">
+                          {user.full_name?.charAt(0).toUpperCase() || 'U'}
+                        </div>
+                        <span className="font-medium">{user.full_name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-slate-600">{user.email}</TableCell>
+                    <TableCell>
+                      <Badge className={user.role === 'admin' ? 'bg-violet-100 text-violet-700' : 'bg-slate-100 text-slate-600'}>
+                        {user.role === 'admin' ? 'Administrador' : 'Empleado'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center font-medium">
+                      {user.totalHours}h
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {user.sessionsCount}
+                    </TableCell>
+                    <TableCell className="text-slate-500">
+                      {user.lastLogin ? format(new Date(user.lastLogin), "d MMM yyyy HH:mm", { locale: es }) : 'Sin registro'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="sessions">
+          <Card className="border-0 shadow-sm overflow-hidden">
+            <CardHeader>
+              <CardTitle className="text-base">Registro de Sesiones</CardTitle>
+            </CardHeader>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead>Usuario</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Hora Inicio</TableHead>
+                  <TableHead>Hora Fin</TableHead>
+                  <TableHead className="text-right">Duración</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sessionLogs.slice(0, 50).map((log) => (
+                  <TableRow key={log.id} className="hover:bg-slate-50">
+                    <TableCell className="font-medium">{log.user_name}</TableCell>
+                    <TableCell className="text-slate-600">
+                      {log.date ? format(new Date(log.date), "d MMM yyyy", { locale: es }) : '-'}
+                    </TableCell>
+                    <TableCell className="text-slate-600">
+                      {log.login_time ? format(new Date(log.login_time), "HH:mm") : '-'}
+                    </TableCell>
+                    <TableCell className="text-slate-600">
+                      {log.logout_time ? format(new Date(log.logout_time), "HH:mm") : (
+                        <Badge className="bg-emerald-100 text-emerald-700">Activo</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {log.duration_minutes ? `${Math.floor(log.duration_minutes / 60)}h ${log.duration_minutes % 60}m` : '-'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {sessionLogs.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-slate-500">
+                      No hay registros de sesiones
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Invite User Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-blue-600" />
+              Invitar Usuario
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleInvite} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="correo@ejemplo.com"
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Rol</Label>
+              <Select value={inviteRole} onValueChange={setInviteRole}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">Empleado</SelectItem>
+                  <SelectItem value="admin">Administrador</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-slate-500">
+                Los administradores tienen acceso completo al sistema, incluyendo configuración.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={inviteUserMutation.isPending}>
+                {inviteUserMutation.isPending ? 'Enviando...' : 'Enviar Invitación'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
