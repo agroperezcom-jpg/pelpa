@@ -121,6 +121,13 @@ export default function ReportesDialog({ isOpen, onClose, user }) {
       }));
 
       const totalVentas = ventas.reduce((acc, v) => acc + v.total, 0);
+      
+      // Calcular IVA Ventas
+      const ventasConIVA = ventas.filter(v => v.genera_iva);
+      const totalNetoGravado = ventasConIVA.reduce((acc, v) => acc + (v.neto_gravado || 0), 0);
+      const totalIVA21 = ventasConIVA.reduce((acc, v) => acc + (v.iva_21 || 0), 0);
+      const ventasSinIVA = ventas.filter(v => !v.genera_iva);
+      const totalSinIVA = ventasSinIVA.reduce((acc, v) => acc + v.total, 0);
 
       const reporte = await base44.entities.ReportePOS.create({
         tipo,
@@ -130,6 +137,11 @@ export default function ReportesDialog({ isOpen, onClose, user }) {
         usuario_nombre: user.full_name,
         cantidad_ventas: ventas.length,
         total_ventas: totalVentas,
+        cantidad_facturas_b: ventasConIVA.length,
+        total_neto_gravado: totalNetoGravado,
+        total_iva_21: totalIVA21,
+        cantidad_tickets_x: ventasSinIVA.length,
+        total_sin_iva: totalSinIVA,
         detalle_medios_pago: detalleMediosPagoArray,
         ventas_ids: ventas.map(v => v.id)
       });
@@ -361,6 +373,47 @@ export default function ReportesDialog({ isOpen, onClose, user }) {
                   </p>
                 </div>
               </div>
+
+              {/* Detalle IVA */}
+              {(reporteGenerado.cantidad_facturas_b > 0 || reporteGenerado.cantidad_tickets_x > 0) && (
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold mb-3 text-sm">Detalle Fiscal</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    {reporteGenerado.cantidad_facturas_b > 0 && (
+                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-xs text-blue-700 font-medium uppercase">Facturas B (Con IVA)</p>
+                        <p className="text-xl font-bold text-blue-900 mt-1">
+                          {reporteGenerado.cantidad_facturas_b}
+                        </p>
+                        <div className="mt-2 space-y-1 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-blue-700">Neto Gravado:</span>
+                            <span className="font-bold">${reporteGenerado.total_neto_gravado?.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-blue-700">IVA 21%:</span>
+                            <span className="font-bold text-emerald-600">${reporteGenerado.total_iva_21?.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {reporteGenerado.cantidad_tickets_x > 0 && (
+                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                        <p className="text-xs text-slate-600 font-medium uppercase">Tickets X (Sin IVA)</p>
+                        <p className="text-xl font-bold text-slate-800 mt-1">
+                          {reporteGenerado.cantidad_tickets_x}
+                        </p>
+                        <div className="mt-2 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-slate-600">Total:</span>
+                            <span className="font-bold">${reporteGenerado.total_sin_iva?.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <Table>
                 <TableHeader>

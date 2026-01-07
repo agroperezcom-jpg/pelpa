@@ -61,6 +61,11 @@ export default function Dashboard() {
     queryFn: () => base44.entities.Sale.list('-created_date', 100)
   });
 
+  const { data: ivaVentas = [] } = useQuery({
+    queryKey: ['ivaVentas'],
+    queryFn: () => base44.entities.IVAVenta.list('-created_date', 100)
+  });
+
   const { data: unreadMessages = [] } = useQuery({
     queryKey: ['unreadMessages'],
     queryFn: () => base44.entities.ProjectMessage.filter({ is_read: false })
@@ -72,6 +77,12 @@ export default function Dashboard() {
   const pendingTasks = projects.filter(p => p.status === 'pendiente');
   
   const today = new Date();
+  const todayStr = format(today, 'yyyy-MM-dd');
+  const todaySales = sales.filter(s => s.created_date?.startsWith(todayStr) && s.estado === "CONFIRMADA");
+  const totalTodaySales = todaySales.reduce((acc, s) => acc + (s.total || 0), 0);
+  const todayIVA = ivaVentas.filter(iv => iv.fecha === todayStr);
+  const totalIVAHoy = todayIVA.reduce((acc, iv) => acc + (iv.iva_21 || 0), 0);
+  
   const thisMonth = sales.filter(s => {
     const saleDate = new Date(s.created_date);
     return saleDate.getMonth() === today.getMonth() && saleDate.getFullYear() === today.getFullYear();
@@ -96,36 +107,40 @@ export default function Dashboard() {
 
   const stats = [
     {
-      title: "Clientes",
-      value: clients.length,
-      icon: Users,
-      color: "bg-blue-500",
-      lightColor: "bg-blue-50",
-      textColor: "text-blue-600"
-    },
-    {
-      title: "Productos",
-      value: products.length,
-      icon: Package,
+      title: "Ventas Hoy",
+      value: `$${totalTodaySales.toLocaleString()}`,
+      subtitle: `${todaySales.length} ventas`,
+      icon: ShoppingCart,
       color: "bg-emerald-500",
       lightColor: "bg-emerald-50",
       textColor: "text-emerald-600"
     },
     {
+      title: "IVA Hoy",
+      value: `$${totalIVAHoy.toLocaleString()}`,
+      subtitle: `${todayIVA.length} fact. B`,
+      icon: DollarSign,
+      color: "bg-blue-500",
+      lightColor: "bg-blue-50",
+      textColor: "text-blue-600"
+    },
+    {
       title: "Proyectos Activos",
       value: activeProjects.length,
+      subtitle: `${projects.length} totales`,
       icon: Briefcase,
       color: "bg-violet-500",
       lightColor: "bg-violet-50",
       textColor: "text-violet-600"
     },
     {
-      title: "Ventas del Mes",
-      value: `$${totalMonthSales.toLocaleString()}`,
-      icon: DollarSign,
-      color: "bg-amber-500",
-      lightColor: "bg-amber-50",
-      textColor: "text-amber-600"
+      title: "Stock Bajo",
+      value: lowStockProducts.length,
+      subtitle: `${products.length} productos`,
+      icon: AlertTriangle,
+      color: lowStockProducts.length > 0 ? "bg-amber-500" : "bg-green-500",
+      lightColor: lowStockProducts.length > 0 ? "bg-amber-50" : "bg-green-50",
+      textColor: lowStockProducts.length > 0 ? "text-amber-600" : "text-green-600"
     }
   ];
 
@@ -204,6 +219,9 @@ export default function Dashboard() {
                     <p className="text-2xl font-bold text-slate-800 mt-1">
                       {stat.value}
                     </p>
+                    {stat.subtitle && (
+                      <p className="text-xs text-slate-500 mt-1">{stat.subtitle}</p>
+                    )}
                   </div>
                   <div className={`w-10 h-10 ${stat.lightColor} rounded-xl flex items-center justify-center`}>
                     <Icon className={`h-5 w-5 ${stat.textColor}`} />
@@ -214,6 +232,31 @@ export default function Dashboard() {
           );
         })}
       </div>
+
+      {/* IVA del Día */}
+      {todayIVA.length > 0 && (
+        <Card className="border-0 shadow-sm bg-gradient-to-r from-blue-50 to-emerald-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  IVA Débito Fiscal Hoy
+                </p>
+                <div className="flex items-baseline gap-3 mt-2">
+                  <p className="text-3xl font-bold text-emerald-600">${totalIVAHoy.toFixed(2)}</p>
+                  <Badge className="bg-blue-100 text-blue-700">{todayIVA.length} Facturas B</Badge>
+                </div>
+              </div>
+              <Link to={createPageUrl("Finance")}>
+                <Button variant="outline" size="sm">
+                  Ver Libro IVA <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Charts Row */}
       <div className="grid lg:grid-cols-2 gap-6">
