@@ -512,19 +512,83 @@ export default function Analytics() {
             />
           </div>
 
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Margen por Categoría</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={margenCategoriaData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis dataKey="categoria" tick={{ fontSize: 11 }} stroke="#94a3b8" />
+                      <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                      <Tooltip formatter={(value) => [`${value.toFixed(1)}%`, 'Margen']} />
+                      <Bar dataKey="margen" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Ventas por Día de Semana</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={(() => {
+                      const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                      const ventasPorDia = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+                      filteredSales.forEach(s => {
+                        const dia = new Date(s.created_date).getDay();
+                        ventasPorDia[dia] += s.total;
+                      });
+                      return dias.map((d, idx) => ({ dia: d, ventas: ventasPorDia[idx] }));
+                    })()}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis dataKey="dia" tick={{ fontSize: 11 }} stroke="#94a3b8" />
+                      <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                      <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Ventas']} />
+                      <Bar dataKey="ventas" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           <Card className="border-0 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-base">Margen por Categoría</CardTitle>
+              <CardTitle className="text-base">Ventas por Franja Horaria</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={margenCategoriaData}>
+                  <BarChart data={(() => {
+                    const franjas = {
+                      '08-10': 0, '10-12': 0, '12-14': 0, '14-16': 0, 
+                      '16-18': 0, '18-20': 0, '20-22': 0
+                    };
+                    filteredSales.forEach(s => {
+                      const hora = new Date(s.created_date).getHours();
+                      if (hora >= 8 && hora < 10) franjas['08-10'] += s.total;
+                      else if (hora >= 10 && hora < 12) franjas['10-12'] += s.total;
+                      else if (hora >= 12 && hora < 14) franjas['12-14'] += s.total;
+                      else if (hora >= 14 && hora < 16) franjas['14-16'] += s.total;
+                      else if (hora >= 16 && hora < 18) franjas['16-18'] += s.total;
+                      else if (hora >= 18 && hora < 20) franjas['18-20'] += s.total;
+                      else if (hora >= 20 && hora < 22) franjas['20-22'] += s.total;
+                    });
+                    return Object.entries(franjas).map(([franja, ventas]) => ({ franja, ventas }));
+                  })()}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="categoria" tick={{ fontSize: 11 }} stroke="#94a3b8" />
+                    <XAxis dataKey="franja" tick={{ fontSize: 11 }} stroke="#94a3b8" />
                     <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                    <Tooltip formatter={(value) => [`${value.toFixed(1)}%`, 'Margen']} />
-                    <Bar dataKey="margen" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Ventas']} />
+                    <Bar dataKey="ventas" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -766,7 +830,7 @@ export default function Analytics() {
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <Award className="h-5 w-5 text-amber-600" />
-                Top 20 Productos por Margen (Análisis Pareto)
+                Top 20 Productos por Margen (Análisis Pareto 80/20)
               </CardTitle>
             </CardHeader>
             <Table>
@@ -777,29 +841,210 @@ export default function Analytics() {
                   <TableHead className="text-center">Unidades</TableHead>
                   <TableHead className="text-right">Ventas</TableHead>
                   <TableHead className="text-right">Margen</TableHead>
+                  <TableHead className="text-right">% Acum</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {topProductos.map((prod, idx) => (
-                  <TableRow key={prod.id} className={idx < 4 ? 'bg-amber-50' : ''}>
-                    <TableCell>
-                      <Badge className={
-                        idx === 0 ? "bg-amber-100 text-amber-700" :
-                        idx === 1 ? "bg-slate-200 text-slate-700" :
-                        idx === 2 ? "bg-orange-100 text-orange-700" :
-                        "bg-slate-100 text-slate-600"
-                      }>
-                        {idx + 1}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">{prod.nombre}</TableCell>
-                    <TableCell className="text-center">{prod.cantidad}</TableCell>
-                    <TableCell className="text-right">${prod.total.toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-bold text-green-600">
-                      ${prod.margen.toLocaleString()}
-                    </TableCell>
+                {(() => {
+                  const margenTotal = topProductos.reduce((acc, p) => acc + p.margen, 0);
+                  let acumulado = 0;
+                  return topProductos.map((prod, idx) => {
+                    acumulado += prod.margen;
+                    const pctAcum = margenTotal > 0 ? (acumulado / margenTotal) * 100 : 0;
+                    return (
+                      <TableRow key={prod.id} className={pctAcum <= 80 ? 'bg-amber-50' : ''}>
+                        <TableCell>
+                          <Badge className={
+                            idx === 0 ? "bg-amber-100 text-amber-700" :
+                            idx === 1 ? "bg-slate-200 text-slate-700" :
+                            idx === 2 ? "bg-orange-100 text-orange-700" :
+                            "bg-slate-100 text-slate-600"
+                          }>
+                            {idx + 1}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-medium">{prod.nombre}</TableCell>
+                        <TableCell className="text-center">{prod.cantidad}</TableCell>
+                        <TableCell className="text-right">${prod.total.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-bold text-green-600">
+                          ${prod.margen.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Badge className={pctAcum <= 80 ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}>
+                            {pctAcum.toFixed(0)}%
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  });
+                })()}
+              </TableBody>
+            </Table>
+          </Card>
+
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Card className="border-0 shadow-sm overflow-hidden">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <TrendingDown className="h-5 w-5 text-red-600" />
+                  Productos Menos Rentables
+                </CardTitle>
+              </CardHeader>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50">
+                    <TableHead>Producto</TableHead>
+                    <TableHead className="text-right">Margen</TableHead>
+                    <TableHead className="text-right">% Margen</TableHead>
                   </TableRow>
-                ))}
+                </TableHeader>
+                <TableBody>
+                  {Object.entries(productoVentas)
+                    .map(([id, data]) => ({ id, ...data }))
+                    .sort((a, b) => {
+                      const margenA = a.total > 0 ? (a.margen / a.total) * 100 : 0;
+                      const margenB = b.total > 0 ? (b.margen / b.total) * 100 : 0;
+                      return margenA - margenB;
+                    })
+                    .slice(0, 10)
+                    .map((prod) => {
+                      const pctMargen = prod.total > 0 ? (prod.margen / prod.total) * 100 : 0;
+                      return (
+                        <TableRow key={prod.id} className={pctMargen < 15 ? 'bg-red-50' : ''}>
+                          <TableCell className="font-medium">{prod.nombre}</TableCell>
+                          <TableCell className="text-right text-red-600">
+                            ${prod.margen.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Badge className={
+                              pctMargen < 15 ? "bg-red-100 text-red-700" :
+                              pctMargen < 25 ? "bg-amber-100 text-amber-700" :
+                              "bg-green-100 text-green-700"
+                            }>
+                              {pctMargen.toFixed(1)}%
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                </TableBody>
+              </Table>
+            </Card>
+
+            <Card className="border-0 shadow-sm overflow-hidden">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Package className="h-5 w-5 text-blue-600" />
+                  Análisis por Proveedor
+                </CardTitle>
+              </CardHeader>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50">
+                    <TableHead>Proveedor</TableHead>
+                    <TableHead className="text-center">Productos</TableHead>
+                    <TableHead className="text-right">Ventas</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(() => {
+                    const proveedorStats = {};
+                    filteredSales.forEach(sale => {
+                      sale.items?.forEach(item => {
+                        const producto = products.find(p => p.id === item.item_id);
+                        const proveedor = producto?.supplier || 'Sin proveedor';
+                        if (!proveedorStats[proveedor]) {
+                          proveedorStats[proveedor] = { productos: new Set(), ventas: 0 };
+                        }
+                        proveedorStats[proveedor].productos.add(item.item_id);
+                        proveedorStats[proveedor].ventas += item.total;
+                      });
+                    });
+                    return Object.entries(proveedorStats)
+                      .map(([prov, data]) => ({
+                        proveedor: prov,
+                        productos: data.productos.size,
+                        ventas: data.ventas
+                      }))
+                      .sort((a, b) => b.ventas - a.ventas)
+                      .slice(0, 10)
+                      .map((prov, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-medium">{prov.proveedor}</TableCell>
+                          <TableCell className="text-center">{prov.productos}</TableCell>
+                          <TableCell className="text-right font-bold text-emerald-600">
+                            ${prov.ventas.toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      ));
+                  })()}
+                </TableBody>
+              </Table>
+            </Card>
+          </div>
+
+          <Card className="border-0 shadow-sm overflow-hidden">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
+                Categorías con Mayor/Menor Rotación
+              </CardTitle>
+            </CardHeader>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead>Categoría</TableHead>
+                  <TableHead className="text-center">Productos</TableHead>
+                  <TableHead className="text-center">Stock Total</TableHead>
+                  <TableHead className="text-right">Ventas Período</TableHead>
+                  <TableHead className="text-right">Rotación</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(() => {
+                  const categoriaRotacion = {};
+                  products.forEach(p => {
+                    const cat = p.category || 'sin_categoria';
+                    if (!categoriaRotacion[cat]) {
+                      categoriaRotacion[cat] = { productos: 0, stock: 0, ventas: 0 };
+                    }
+                    categoriaRotacion[cat].productos += 1;
+                    categoriaRotacion[cat].stock += p.stock || 0;
+                  });
+                  filteredSales.forEach(sale => {
+                    sale.items?.forEach(item => {
+                      const producto = products.find(p => p.id === item.item_id);
+                      const cat = producto?.category || 'sin_categoria';
+                      if (categoriaRotacion[cat]) {
+                        categoriaRotacion[cat].ventas += item.quantity;
+                      }
+                    });
+                  });
+                  return Object.entries(categoriaRotacion)
+                    .map(([cat, data]) => ({
+                      categoria: cat.charAt(0).toUpperCase() + cat.slice(1).replace('_', ' '),
+                      ...data,
+                      rotacion: data.stock > 0 ? data.ventas / data.stock : 0
+                    }))
+                    .sort((a, b) => b.rotacion - a.rotacion)
+                    .map((cat) => (
+                      <TableRow key={cat.categoria}>
+                        <TableCell className="font-medium">{cat.categoria}</TableCell>
+                        <TableCell className="text-center">{cat.productos}</TableCell>
+                        <TableCell className="text-center">{cat.stock}</TableCell>
+                        <TableCell className="text-right">{cat.ventas}</TableCell>
+                        <TableCell className="text-right">
+                          <Badge className={
+                            cat.rotacion > 0.5 ? "bg-green-100 text-green-700" :
+                            cat.rotacion > 0.2 ? "bg-amber-100 text-amber-700" :
+                            "bg-red-100 text-red-700"
+                          }>
+                            {cat.rotacion.toFixed(2)}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ));
+                })()}
               </TableBody>
             </Table>
           </Card>
