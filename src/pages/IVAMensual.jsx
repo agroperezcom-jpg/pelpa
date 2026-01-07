@@ -79,6 +79,21 @@ export default function IVAMensual() {
     queryFn: () => base44.entities.Compra.list('-fecha', 500)
   });
 
+  const { data: periodosIIBB = [] } = useQuery({
+    queryKey: ['periodosIIBB'],
+    queryFn: () => base44.entities.PeriodoIIBB.list('-anio,-mes', 12)
+  });
+
+  const { data: iibbVentas = [] } = useQuery({
+    queryKey: ['iibbVentas'],
+    queryFn: () => base44.entities.IIBBVenta.list('-fecha', 500)
+  });
+
+  const { data: retencionesIIBB = [] } = useQuery({
+    queryKey: ['retencionesIIBB'],
+    queryFn: () => base44.entities.RetencionIIBB.list('-fecha', 500)
+  });
+
   const crearPeriodoMutation = useMutation({
     mutationFn: async ({ mes, anio }) => {
       const periodo = `${anio}-${String(mes).padStart(2, '0')}`;
@@ -108,7 +123,7 @@ export default function IVAMensual() {
 
       const saldo = totalDebito - totalCredito;
 
-      return await base44.entities.PeriodoIVA.create({
+      const periodoIVA = await base44.entities.PeriodoIVA.create({
         mes,
         anio,
         periodo,
@@ -121,9 +136,40 @@ export default function IVAMensual() {
         cantidad_facturas_emitidas: ventasPeriodo.length,
         cantidad_facturas_recibidas: comprasPeriodo.length
       });
+
+      // 🆕 AUTO-CREAR PERÍODO IIBB
+      const existeIIBB = periodosIIBB.find(p => p.periodo === periodo);
+      if (!existeIIBB) {
+        const ventasIIBBPeriodo = iibbVentas.filter(iv => 
+          iv.fecha >= fechaDesde && iv.fecha <= fechaHasta
+        );
+        const retencionesIIBBPeriodo = retencionesIIBB.filter(r => 
+          r.fecha >= fechaDesde && r.fecha <= fechaHasta
+        );
+
+        const totalIIBBVentas = ventasIIBBPeriodo.reduce((acc, iv) => acc + (iv.importe_iibb || 0), 0);
+        const totalRetenciones = retencionesIIBBPeriodo.reduce((acc, r) => acc + (r.importe_retenido || 0), 0);
+
+        await base44.entities.PeriodoIIBB.create({
+          mes,
+          anio,
+          periodo,
+          fecha_desde: fechaDesde,
+          fecha_hasta: fechaHasta,
+          estado: "ABIERTO",
+          iibb_ventas: totalIIBBVentas,
+          iibb_retenido: totalRetenciones,
+          saldo_iibb: totalIIBBVentas - totalRetenciones,
+          cantidad_ventas: ventasIIBBPeriodo.length,
+          cantidad_retenciones: retencionesIIBBPeriodo.length
+        });
+      }
+
+      return periodoIVA;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['periodosIVA'] });
+      queryClient.invalidateQueries({ queryKey: ['periodosIIBB'] });
       setIsCreateDialogOpen(false);
     },
     onError: (error) => {

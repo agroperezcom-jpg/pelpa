@@ -574,6 +574,28 @@ export default function Presupuestos() {
         });
       }
 
+      // Revertir IIBB si corresponde
+      if (presupuesto.genera_iibb) {
+        const configIIBB = configuracionIIBB[0];
+        if (configIIBB) {
+          const netoGravadoIIBB = presupuesto.genera_iva 
+            ? (presupuesto.neto_gravado || presupuesto.total_presupuesto / 1.21)
+            : presupuesto.total_presupuesto;
+          const importeIIBB = netoGravadoIIBB * configIIBB.alicuota_iibb;
+
+          await base44.entities.IIBBVenta.create({
+            venta_id: presupuesto.venta_id,
+            fecha: format(new Date(), 'yyyy-MM-dd'),
+            periodo: format(new Date(), 'yyyy-MM'),
+            cliente_nombre: presupuesto.cliente_name,
+            neto_gravado: -netoGravadoIIBB,
+            alicuota: configIIBB.alicuota_iibb,
+            importe_iibb: -importeIIBB,
+            numero_comprobante: `NC-${presupuesto.numero_presupuesto}`
+          });
+        }
+      }
+
       // 4) Anular venta
       if (presupuesto.venta_id) {
         await base44.entities.Sale.update(presupuesto.venta_id, {

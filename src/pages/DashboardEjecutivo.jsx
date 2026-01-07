@@ -81,6 +81,16 @@ export default function DashboardEjecutivo() {
     queryFn: () => base44.entities.PeriodoIVA.list('-anio,-mes', 12)
   });
 
+  const { data: periodosIIBB = [] } = useQuery({
+    queryKey: ['periodosIIBB'],
+    queryFn: () => base44.entities.PeriodoIIBB.list('-anio,-mes', 12)
+  });
+
+  const { data: proyeccionesIIBB = [] } = useQuery({
+    queryKey: ['proyeccionesIIBB'],
+    queryFn: () => base44.entities.ProyeccionIIBB.list('-anio,-mes', 12)
+  });
+
   const { data: pagosVenta = [] } = useQuery({
     queryKey: ['pagosVenta'],
     queryFn: () => base44.entities.PagoVenta.list('', 1000)
