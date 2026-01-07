@@ -24,7 +24,8 @@ import {
   Calculator,
   Landmark,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ShoppingBag
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -98,6 +99,7 @@ export default function Layout({ children, currentPageName }) {
     { name: "Productos", page: "Products", icon: Package },
     { name: "Servicios", page: "Services", icon: Briefcase },
     { name: "Inventario", page: "Inventory", icon: Warehouse },
+    { name: "Compras", page: "Purchases", icon: ShoppingBag },
     { name: "Proyectos", page: "Projects", icon: BookOpen },
     { name: "Ventas", page: "Sales", icon: ShoppingCart },
     { name: "Gastos", page: "Expenses", icon: Receipt },

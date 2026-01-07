@@ -14,6 +14,7 @@ import Settings from './pages/Settings';
 import TesoreriaV2 from './pages/TesoreriaV2';
 import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
+import Purchases from './pages/Purchases';
 import __Layout from './Layout.jsx';
 
 
@@ -34,6 +35,7 @@ export const PAGES = {
     "TesoreriaV2": TesoreriaV2,
     "TiposArticulo": TiposArticulo,
     "Treasury": Treasury,
+    "Purchases": Purchases,
 }
 
 export const pagesConfig = {
