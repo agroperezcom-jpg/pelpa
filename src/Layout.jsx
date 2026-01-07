@@ -99,6 +99,7 @@ export default function Layout({ children, currentPageName }) {
     { name: "Dashboard Ejecutivo", page: "DashboardEjecutivo", icon: Target },
     { name: "Calendario", page: "Calendar", icon: CalendarIcon },
     { name: "Clientes", page: "Clients", icon: Users },
+    { name: "Proveedores", page: "Proveedores", icon: Users },
     { name: "Productos", page: "Products", icon: Package },
     { name: "Servicios", page: "Services", icon: Briefcase },
     { name: "Inventario", page: "Inventory", icon: Warehouse },
