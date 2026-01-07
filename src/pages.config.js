@@ -12,6 +12,7 @@ import Sales from './pages/Sales';
 import Services from './pages/Services';
 import Settings from './pages/Settings';
 import TiposArticulo from './pages/TiposArticulo';
+import Treasury from './pages/Treasury';
 import __Layout from './Layout.jsx';
 
 
@@ -30,6 +31,7 @@ export const PAGES = {
     "Services": Services,
     "Settings": Settings,
     "TiposArticulo": TiposArticulo,
+    "Treasury": Treasury,
 }
 
 export const pagesConfig = {
