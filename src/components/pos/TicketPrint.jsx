@@ -74,7 +74,9 @@ export default function TicketPrint({ venta, pagos, isCopia = false }) {
 
           {/* Info Venta */}
           <div style={{ fontSize: '10px', marginBottom: '3mm' }}>
-            <div>TICKET N°: {venta.id?.substring(0, 8)}</div>
+            <div style={{ fontSize: '12px', fontWeight: 'bold' }}>
+              TICKET {venta.tipo_comprobante} N°: {venta.numero_comprobante || 'SIN-NUM'}
+            </div>
             <div>FECHA: {format(new Date(venta.created_date), "dd/MM/yyyy HH:mm", { locale: es })}</div>
             <div>CLIENTE: {venta.client_name || 'CONSUMIDOR FINAL'}</div>
             <div>CAJERO: {venta.employee_name}</div>

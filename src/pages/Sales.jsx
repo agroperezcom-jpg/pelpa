@@ -110,6 +110,11 @@ export default function Sales() {
     queryFn: () => base44.entities.Banco.list()
   });
 
+  const { data: tiposComprobante = [] } = useQuery({
+    queryKey: ['tiposComprobante'],
+    queryFn: () => base44.entities.TipoComprobante.list()
+  });
+
   const calcularPrecioYMargen = (product, quantity) => {
     if (!product.tipo_articulo_id) {
       return {
@@ -189,11 +194,38 @@ export default function Sales() {
         }
       }
 
+      // Generar número de comprobante
+      let tipoComprobante = tiposComprobante.find(tc => tc.codigo === "X");
+      
+      // Si no existe, crear tipo de comprobante X
+      if (!tipoComprobante) {
+        tipoComprobante = await base44.entities.TipoComprobante.create({
+          codigo: "X",
+          descripcion: "Ticket No Fiscal",
+          prefijo: "X",
+          longitud_numero: 4,
+          ultimo_numero: 0,
+          is_active: true
+        });
+      }
+
+      // Incrementar número
+      const nuevoNumero = tipoComprobante.ultimo_numero + 1;
+      const numeroFormateado = String(nuevoNumero).padStart(tipoComprobante.longitud_numero, '0');
+      const numeroComprobante = `${tipoComprobante.prefijo}-${numeroFormateado}`;
+
+      // Actualizar tipo de comprobante
+      await base44.entities.TipoComprobante.update(tipoComprobante.id, {
+        ultimo_numero: nuevoNumero
+      });
+
       // Crear venta con tipo y estado
       const sale = await base44.entities.Sale.create({
         ...saleData,
         tipo_venta: tipoVenta,
-        estado: "CONFIRMADA"
+        estado: "CONFIRMADA",
+        tipo_comprobante: "X",
+        numero_comprobante: numeroComprobante
       });
 
       // Procesar cada pago
@@ -277,6 +309,7 @@ export default function Sales() {
       queryClient.invalidateQueries({ queryKey: ['cajas'] });
       queryClient.invalidateQueries({ queryKey: ['bancos'] });
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['tiposComprobante'] });
       setIsPagosDialogOpen(false);
       setVentaConfirmada(sale);
       setPagosConfirmados(variables.pagos);
