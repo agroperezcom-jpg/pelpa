@@ -37,6 +37,8 @@ export default function CuentaCorrienteView() {
   const [isCobroDialogOpen, setIsCobroDialogOpen] = useState(false);
   const [isPagoDialogOpen, setIsPagoDialogOpen] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState(null);
+  const [fechaDesde, setFechaDesde] = useState("");
+  const [fechaHasta, setFechaHasta] = useState("");
   const [formData, setFormData] = useState({
     monto: "",
     medio_pago_id: "",
@@ -76,8 +78,21 @@ export default function CuentaCorrienteView() {
     queryFn: () => base44.entities.Caja.list()
   });
 
-  const movimientosClientes = movimientosCC.filter(m => m.tipo_entidad === "CLIENTE");
-  const movimientosProveedores = movimientosCC.filter(m => m.tipo_entidad === "PROVEEDOR");
+  const movimientosClientes = movimientosCC.filter(m => {
+    const fechaMov = new Date(m.fecha);
+    const desde = fechaDesde ? new Date(fechaDesde) : null;
+    const hasta = fechaHasta ? new Date(fechaHasta) : null;
+    const cumpleFecha = (!desde || fechaMov >= desde) && (!hasta || fechaMov <= hasta);
+    return m.tipo_entidad === "CLIENTE" && cumpleFecha;
+  });
+
+  const movimientosProveedores = movimientosCC.filter(m => {
+    const fechaMov = new Date(m.fecha);
+    const desde = fechaDesde ? new Date(fechaDesde) : null;
+    const hasta = fechaHasta ? new Date(fechaHasta) : null;
+    const cumpleFecha = (!desde || fechaMov >= desde) && (!hasta || fechaMov <= hasta);
+    return m.tipo_entidad === "PROVEEDOR" && cumpleFecha;
+  });
 
   const totalDeudaClientes = clientes.reduce((acc, c) => acc + (c.saldo_cc || 0), 0);
   const totalDeudaProveedores = proveedores.reduce((acc, p) => acc + (p.saldo_cc || 0), 0);
@@ -316,7 +331,32 @@ export default function CuentaCorrienteView() {
 
           <Card className="border-0 shadow-sm overflow-hidden mt-4">
             <div className="p-4 border-b bg-slate-50">
-              <h4 className="font-semibold">Movimientos de Clientes</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold">Movimientos de Clientes</h4>
+                <div className="flex gap-2">
+                  <Input
+                    type="date"
+                    placeholder="Desde"
+                    value={fechaDesde}
+                    onChange={(e) => setFechaDesde(e.target.value)}
+                    className="w-36 h-8 text-xs"
+                  />
+                  <Input
+                    type="date"
+                    placeholder="Hasta"
+                    value={fechaHasta}
+                    onChange={(e) => setFechaHasta(e.target.value)}
+                    className="w-36 h-8 text-xs"
+                  />
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => { setFechaDesde(""); setFechaHasta(""); }}
+                  >
+                    Limpiar
+                  </Button>
+                </div>
+              </div>
             </div>
             <Table>
               <TableHeader>
@@ -405,7 +445,32 @@ export default function CuentaCorrienteView() {
 
           <Card className="border-0 shadow-sm overflow-hidden mt-4">
             <div className="p-4 border-b bg-slate-50">
-              <h4 className="font-semibold">Movimientos de Proveedores</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold">Movimientos de Proveedores</h4>
+                <div className="flex gap-2">
+                  <Input
+                    type="date"
+                    placeholder="Desde"
+                    value={fechaDesde}
+                    onChange={(e) => setFechaDesde(e.target.value)}
+                    className="w-36 h-8 text-xs"
+                  />
+                  <Input
+                    type="date"
+                    placeholder="Hasta"
+                    value={fechaHasta}
+                    onChange={(e) => setFechaHasta(e.target.value)}
+                    className="w-36 h-8 text-xs"
+                  />
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => { setFechaDesde(""); setFechaHasta(""); }}
+                  >
+                    Limpiar
+                  </Button>
+                </div>
+              </div>
             </div>
             <Table>
               <TableHeader>

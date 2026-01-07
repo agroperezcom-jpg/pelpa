@@ -41,6 +41,9 @@ import { es } from "date-fns/locale";
 
 export default function MovimientosView() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [fechaDesde, setFechaDesde] = useState("");
+  const [fechaHasta, setFechaHasta] = useState("");
+  const [tipoFiltro, setTipoFiltro] = useState("todos");
   const [formData, setFormData] = useState({
     fecha: new Date().toISOString().split('T')[0],
     tipo: "INGRESO",
@@ -180,6 +183,25 @@ export default function MovimientosView() {
 
   const medioSeleccionado = mediosPago.find(m => m.id === formData.medio_pago_id);
 
+  const movimientosFiltrados = movimientos.filter(mov => {
+    const fechaMov = new Date(mov.fecha);
+    const desde = fechaDesde ? new Date(fechaDesde) : null;
+    const hasta = fechaHasta ? new Date(fechaHasta) : null;
+
+    const cumpleFecha = (!desde || fechaMov >= desde) && (!hasta || fechaMov <= hasta);
+    const cumpleTipo = tipoFiltro === "todos" || mov.tipo === tipoFiltro;
+
+    return cumpleFecha && cumpleTipo;
+  });
+
+  const totalIngresos = movimientosFiltrados
+    .filter(m => m.tipo === "INGRESO")
+    .reduce((acc, m) => acc + m.importe, 0);
+  
+  const totalEgresos = movimientosFiltrados
+    .filter(m => m.tipo === "EGRESO")
+    .reduce((acc, m) => acc + m.importe, 0);
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -189,6 +211,67 @@ export default function MovimientosView() {
           Nuevo Movimiento
         </Button>
       </div>
+
+      {/* Filtros */}
+      <Card className="border-0 shadow-sm">
+        <div className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label className="text-xs">Desde</Label>
+              <Input
+                type="date"
+                value={fechaDesde}
+                onChange={(e) => setFechaDesde(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Hasta</Label>
+              <Input
+                type="date"
+                value={fechaHasta}
+                onChange={(e) => setFechaHasta(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Tipo</Label>
+              <Select value={tipoFiltro} onValueChange={setTipoFiltro}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="INGRESO">Solo Ingresos</SelectItem>
+                  <SelectItem value="EGRESO">Solo Egresos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setFechaDesde("");
+                  setFechaHasta("");
+                  setTipoFiltro("todos");
+                }}
+                className="w-full"
+              >
+                Limpiar Filtros
+              </Button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
+            <div>
+              <p className="text-xs text-slate-500">Total Ingresos</p>
+              <p className="text-2xl font-bold text-green-600">${totalIngresos.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Total Egresos</p>
+              <p className="text-2xl font-bold text-red-600">${totalEgresos.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+      </Card>
 
       <Card className="border-0 shadow-sm overflow-hidden">
         <Table>
@@ -204,7 +287,7 @@ export default function MovimientosView() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {movimientos.map((mov) => (
+            {movimientosFiltrados.map((mov) => (
               <TableRow key={mov.id} className="hover:bg-slate-50">
                 <TableCell className="text-sm text-slate-600">
                   {format(new Date(mov.fecha), "d MMM yyyy", { locale: es })}
@@ -246,8 +329,8 @@ export default function MovimientosView() {
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
-            ))}
-            {movimientos.length === 0 && (
+              ))}
+              {movimientosFiltrados.length === 0 && (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-slate-500">
                   No hay movimientos registrados
