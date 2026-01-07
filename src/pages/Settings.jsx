@@ -46,7 +46,8 @@ import {
   Shield,
   UserPlus,
   Mail,
-  Calendar
+  Calendar,
+  CheckCircle2
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
