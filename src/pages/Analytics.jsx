@@ -594,6 +594,7 @@ export default function Analytics() {
           <TabsTrigger value="comparacion">Comparación</TabsTrigger>
           <TabsTrigger value="pronostico">Pronóstico</TabsTrigger>
           <TabsTrigger value="segmentacion">Segmentación</TabsTrigger>
+          <TabsTrigger value="salud">Salud del Negocio</TabsTrigger>
         </TabsList>
 
         {/* DASHBOARD EJECUTIVO */}
