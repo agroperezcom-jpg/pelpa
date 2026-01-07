@@ -14,7 +14,7 @@ import {
   AlertTriangle, Award, ArrowUp, ArrowDown, Download, Zap, Target, Activity,
   Clock, Percent, RefreshCw, Bell, Calendar as CalendarIcon, Brain, Star, CheckCircle
 } from "lucide-react";
-import { format, subDays, startOfMonth, endOfMonth, isWithinInterval, differenceInDays } from "date-fns";
+import { format, subDays, startOfMonth, endOfMonth, isWithinInterval, differenceInDays, addDays, getMonth, getDay } from "date-fns";
 import { es } from "date-fns/locale";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -2477,6 +2477,260 @@ export default function Analytics() {
               </CardContent>
             </Card>
           </div>
+
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Cross-Selling: Productos que se Venden Juntos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {(() => {
+                  const combinaciones = {};
+                  filteredSales.forEach(sale => {
+                    if (sale.items?.length < 2) return;
+                    sale.items.forEach((item1, idx1) => {
+                      sale.items.forEach((item2, idx2) => {
+                        if (idx1 >= idx2) return;
+                        const key = [item1.name, item2.name].sort().join(' + ');
+                        if (!combinaciones[key]) {
+                          combinaciones[key] = { count: 0, productos: [item1.name, item2.name] };
+                        }
+                        combinaciones[key].count += 1;
+                      });
+                    });
+                  });
+
+                  return Object.entries(combinaciones)
+                    .sort(([, a], [, b]) => b.count - a.count)
+                    .slice(0, 10)
+                    .map(([combo, data], idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200">
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-indigo-600 text-white">{idx + 1}</Badge>
+                          <span className="text-sm font-medium">{combo}</span>
+                        </div>
+                        <Badge className="bg-purple-100 text-purple-700">
+                          {data.count} veces
+                        </Badge>
+                      </div>
+                    ));
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* SALUD DEL NEGOCIO */}
+        <TabsContent value="salud" className="space-y-4">
+          <Card className="border-0 shadow-lg overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Activity className="h-6 w-6" />
+                Score de Salud del Negocio
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {(() => {
+                let score = 0;
+                const factores = [];
+
+                if (variacionVentas > 10) { score += 20; factores.push({ nombre: 'Ventas', puntos: 20, max: 20, estado: 'excelente' }); }
+                else if (variacionVentas > 0) { score += 15; factores.push({ nombre: 'Ventas', puntos: 15, max: 20, estado: 'bueno' }); }
+                else if (variacionVentas > -10) { score += 10; factores.push({ nombre: 'Ventas', puntos: 10, max: 20, estado: 'regular' }); }
+                else { score += 5; factores.push({ nombre: 'Ventas', puntos: 5, max: 20, estado: 'critico' }); }
+
+                if (porcentajeMargenNeto > 20) { score += 20; factores.push({ nombre: 'Margen Neto', puntos: 20, max: 20, estado: 'excelente' }); }
+                else if (porcentajeMargenNeto > 15) { score += 15; factores.push({ nombre: 'Margen Neto', puntos: 15, max: 20, estado: 'bueno' }); }
+                else if (porcentajeMargenNeto > 10) { score += 10; factores.push({ nombre: 'Margen Neto', puntos: 10, max: 20, estado: 'regular' }); }
+                else { score += 5; factores.push({ nombre: 'Margen Neto', puntos: 5, max: 20, estado: 'critico' }); }
+
+                const cashFlowRatio = totalVentas > 0 ? (cashFlow / totalVentas) * 100 : 0;
+                if (cashFlowRatio > 20) { score += 20; factores.push({ nombre: 'Cash Flow', puntos: 20, max: 20, estado: 'excelente' }); }
+                else if (cashFlowRatio > 10) { score += 15; factores.push({ nombre: 'Cash Flow', puntos: 15, max: 20, estado: 'bueno' }); }
+                else if (cashFlowRatio > 0) { score += 10; factores.push({ nombre: 'Cash Flow', puntos: 10, max: 20, estado: 'regular' }); }
+                else { score += 5; factores.push({ nombre: 'Cash Flow', puntos: 5, max: 20, estado: 'critico' }); }
+
+                if (rotacionStock > 4) { score += 20; factores.push({ nombre: 'Rotación Stock', puntos: 20, max: 20, estado: 'excelente' }); }
+                else if (rotacionStock > 2) { score += 15; factores.push({ nombre: 'Rotación Stock', puntos: 15, max: 20, estado: 'bueno' }); }
+                else if (rotacionStock > 1) { score += 10; factores.push({ nombre: 'Rotación Stock', puntos: 10, max: 20, estado: 'regular' }); }
+                else { score += 5; factores.push({ nombre: 'Rotación Stock', puntos: 5, max: 20, estado: 'critico' }); }
+
+                if (tasaRetencion > 80) { score += 20; factores.push({ nombre: 'Retención', puntos: 20, max: 20, estado: 'excelente' }); }
+                else if (tasaRetencion > 60) { score += 15; factores.push({ nombre: 'Retención', puntos: 15, max: 20, estado: 'bueno' }); }
+                else if (tasaRetencion > 40) { score += 10; factores.push({ nombre: 'Retención', puntos: 10, max: 20, estado: 'regular' }); }
+                else { score += 5; factores.push({ nombre: 'Retención', puntos: 5, max: 20, estado: 'critico' }); }
+
+                const estadoNegocio = score >= 80 ? '🚀 Excelente' : score >= 60 ? '✓ Saludable' : score >= 40 ? '⚠ Regular' : '🔴 Crítico';
+
+                return (
+                  <div className="space-y-6">
+                    <div className="text-center">
+                      <div className={`w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl ${
+                        score >= 80 ? 'bg-gradient-to-br from-green-400 to-green-600' :
+                        score >= 60 ? 'bg-gradient-to-br from-emerald-400 to-emerald-600' :
+                        score >= 40 ? 'bg-gradient-to-br from-amber-400 to-amber-600' :
+                        'bg-gradient-to-br from-red-400 to-red-600'
+                      }`}>
+                        <div className="text-white">
+                          <p className="text-5xl font-bold">{score}</p>
+                          <p className="text-xs opacity-90">/ 100</p>
+                        </div>
+                      </div>
+                      <h3 className="text-2xl font-bold text-slate-800">{estadoNegocio}</h3>
+                      <p className="text-slate-600 mt-1">Estado general del negocio</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                      {factores.map((factor, idx) => {
+                        const pct = (factor.puntos / factor.max) * 100;
+                        return (
+                          <div key={idx} className="p-4 border-2 rounded-lg bg-white">
+                            <p className="text-xs font-medium text-slate-600 mb-2">{factor.nombre}</p>
+                            <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden mb-2">
+                              <div 
+                                className={`absolute top-0 left-0 h-full transition-all ${
+                                  factor.estado === 'excelente' ? 'bg-green-500' :
+                                  factor.estado === 'bueno' ? 'bg-emerald-500' :
+                                  factor.estado === 'regular' ? 'bg-amber-500' : 'bg-red-500'
+                                }`}
+                                style={{ width: `${pct}%` }}
+                              ></div>
+                            </div>
+                            <p className="text-sm font-bold text-slate-700">{factor.puntos}/{factor.max}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          <div className="grid lg:grid-cols-3 gap-4">
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Liquidez</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {(() => {
+                    const cuentasPorCobrar = clients.reduce((acc, c) => acc + (c.saldo_cc || 0), 0);
+                    const ratioLiquidez = totalGastos > 0 ? (cashFlow + cuentasPorCobrar) / totalGastos : 0;
+
+                    return (
+                      <>
+                        <div className="p-4 bg-blue-50 rounded-lg">
+                          <p className="text-sm text-blue-900">Ratio de Liquidez</p>
+                          <p className="text-3xl font-bold text-blue-600 mt-1">{ratioLiquidez.toFixed(2)}</p>
+                          <p className="text-xs text-blue-700 mt-1">
+                            {ratioLiquidez > 2 ? 'Excelente' : ratioLiquidez > 1 ? 'Buena' : 'Ajustada'}
+                          </p>
+                        </div>
+                        <div className="p-4 bg-slate-50 rounded-lg">
+                          <p className="text-sm text-slate-700">Cuentas por Cobrar</p>
+                          <p className="text-2xl font-bold text-slate-800 mt-1">${cuentasPorCobrar.toLocaleString()}</p>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Productividad</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="p-4 bg-emerald-50 rounded-lg">
+                    <p className="text-sm text-emerald-900">Ventas/Hora</p>
+                    <p className="text-3xl font-bold text-emerald-600 mt-1">
+                      ${(() => {
+                        const horasTrabajadas = filteredSales.length * 0.25;
+                        return horasTrabajadas > 0 ? (totalVentas / horasTrabajadas).toLocaleString(undefined, { maximumFractionDigits: 0 }) : 0;
+                      })()}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-slate-50 rounded-lg">
+                    <p className="text-sm text-slate-700">Conversión</p>
+                    <p className="text-2xl font-bold text-slate-800 mt-1">
+                      {filteredSales.length > 0 ? ((filteredSales.filter(s => s.total > 0).length / filteredSales.length) * 100).toFixed(0) : 0}%
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Inventario</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="p-4 bg-purple-50 rounded-lg">
+                    <p className="text-sm text-purple-900">Disponibilidad</p>
+                    <p className="text-3xl font-bold text-purple-600 mt-1">
+                      {products.length > 0 ? ((products.filter(p => p.stock > 0).length / products.length) * 100).toFixed(0) : 0}%
+                    </p>
+                  </div>
+                  <div className="p-4 bg-slate-50 rounded-lg">
+                    <p className="text-sm text-slate-700">Cobertura</p>
+                    <p className="text-2xl font-bold text-slate-800 mt-1">
+                      {diasInventario.toFixed(0)} días
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Plan de Acción Recomendado</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {(() => {
+                  const acciones = [];
+
+                  if (quiebreStock > 10) acciones.push({ prioridad: 'alta', accion: 'Reponer stock urgente', detalle: `${productosStockBajo} productos sin stock`, plazo: 'Inmediato' });
+                  if (variacionVentas < -10) acciones.push({ prioridad: 'alta', accion: 'Campaña de recuperación', detalle: 'Ventas en caída', plazo: '1 semana' });
+                  if (productosSinMovimiento > 10) acciones.push({ prioridad: 'media', accion: 'Promocionar estancados', detalle: `${productosSinMovimiento} productos sin venta`, plazo: '2 semanas' });
+                  if (tasaRetencion < 60) acciones.push({ prioridad: 'media', accion: 'Programa de fidelización', detalle: 'Mejorar retención', plazo: '1 mes' });
+                  if (porcentajeMargenNeto < 15) acciones.push({ prioridad: 'alta', accion: 'Optimizar costos', detalle: 'Revisar gastos y precios', plazo: '2 semanas' });
+
+                  if (acciones.length === 0) {
+                    return (
+                      <div className="text-center py-8">
+                        <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                        <p className="font-semibold text-slate-800">¡Todo en orden!</p>
+                        <p className="text-sm text-slate-600 mt-1">No hay acciones críticas</p>
+                      </div>
+                    );
+                  }
+
+                  return acciones.map((accion, idx) => (
+                    <div key={idx} className={`p-4 rounded-lg border-l-4 ${
+                      accion.prioridad === 'alta' ? 'bg-red-50 border-red-500' : 'bg-amber-50 border-amber-500'
+                    }`}>
+                      <div className="flex justify-between">
+                        <div>
+                          <Badge className={accion.prioridad === 'alta' ? 'bg-red-600' : 'bg-amber-600'}>
+                            {accion.prioridad.toUpperCase()}
+                          </Badge>
+                          <p className="font-semibold text-sm mt-2">{accion.accion}</p>
+                          <p className="text-xs text-slate-600 mt-1">{accion.detalle}</p>
+                        </div>
+                        <Badge variant="outline">{accion.plazo}</Badge>
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
