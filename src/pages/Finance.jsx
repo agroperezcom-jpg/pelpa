@@ -860,7 +860,41 @@ export default function Finance() {
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
+
+        <TabsContent value="gestion" className="space-y-4">
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-8">
+              <div className="max-w-2xl mx-auto text-center space-y-6">
+                <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto">
+                  <FileText className="h-10 w-10 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-800 mb-2">Gestión de Períodos Fiscales</h3>
+                  <p className="text-slate-600">
+                    Administra los períodos mensuales de IVA, cierra períodos, y exporta reportes fiscales completos
+                  </p>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left space-y-2">
+                  <p className="text-sm text-blue-900 font-medium">Características:</p>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>✓ Creación automática de períodos mensuales</li>
+                    <li>✓ Cálculo de IVA Débito (Ventas) y Crédito (Compras)</li>
+                    <li>✓ Cierre de períodos con protección fiscal</li>
+                    <li>✓ Exportación de datos para AFIP</li>
+                    <li>✓ Bloqueo automático de ventas/compras en períodos cerrados</li>
+                  </ul>
+                </div>
+                <Link to={createPageUrl("IVAMensual")}>
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-lg px-8 py-6">
+                    Ir a Gestión de IVA Mensual
+                    <ArrowRight className="h-5 w-5 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        </Tabs>
+        </div>
+        );
+        }

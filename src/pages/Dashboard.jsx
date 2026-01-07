@@ -66,6 +66,11 @@ export default function Dashboard() {
     queryFn: () => base44.entities.IVAVenta.list('-created_date', 100)
   });
 
+  const { data: periodosIVA = [] } = useQuery({
+    queryKey: ['periodosIVA'],
+    queryFn: () => base44.entities.PeriodoIVA.list('-anio,-mes', 3)
+  });
+
   const { data: unreadMessages = [] } = useQuery({
     queryKey: ['unreadMessages'],
     queryFn: () => base44.entities.ProjectMessage.filter({ is_read: false })
@@ -165,8 +170,46 @@ export default function Dashboard() {
       </div>
 
       {/* Notifications */}
-      {(unreadMessages.length > 0 || lowStockProducts.length > 0) && (
+      {(unreadMessages.length > 0 || lowStockProducts.length > 0 || (() => {
+        const mesActual = new Date().getMonth() + 1;
+        const anioActual = new Date().getFullYear();
+        const mesAnterior = mesActual === 1 ? 12 : mesActual - 1;
+        const anioAnterior = mesActual === 1 ? anioActual - 1 : anioActual;
+        const periodoAnterior = `${anioAnterior}-${String(mesAnterior).padStart(2, '0')}`;
+        const periodoAnteriorRecord = periodosIVA.find(p => p.periodo === periodoAnterior);
+        return periodoAnteriorRecord && periodoAnteriorRecord.estado === "ABIERTO";
+      })()) && (
         <div className="space-y-2">
+          {(() => {
+            const mesActual = new Date().getMonth() + 1;
+            const anioActual = new Date().getFullYear();
+            const mesAnterior = mesActual === 1 ? 12 : mesActual - 1;
+            const anioAnterior = mesActual === 1 ? anioActual - 1 : anioActual;
+            const periodoAnterior = `${anioAnterior}-${String(mesAnterior).padStart(2, '0')}`;
+            const periodoAnteriorRecord = periodosIVA.find(p => p.periodo === periodoAnterior);
+            
+            if (periodoAnteriorRecord && periodoAnteriorRecord.estado === "ABIERTO") {
+              return (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                    <AlertTriangle className="h-5 w-5 text-red-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-red-800">
+                      Período fiscal {format(new Date(anioAnterior, mesAnterior - 1), 'MMMM yyyy', { locale: es })} está ABIERTO
+                    </p>
+                    <p className="text-xs text-red-600 mt-1">Ciérralo para continuar operando correctamente</p>
+                  </div>
+                  <Link to={createPageUrl("IVAMensual")}>
+                    <Button variant="ghost" size="sm" className="text-red-600">
+                      Cerrar <ArrowRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </Link>
+                </div>
+              );
+            }
+            return null;
+          })()}
           {unreadMessages.length > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
               <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">

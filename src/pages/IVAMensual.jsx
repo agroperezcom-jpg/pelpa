@@ -43,7 +43,8 @@ import {
   TrendingDown,
   TrendingUp,
   DollarSign,
-  Receipt
+  Receipt,
+  RefreshCw
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
 import { es } from "date-fns/locale";
@@ -127,6 +128,40 @@ export default function IVAMensual() {
     },
     onError: (error) => {
       alert(error.message);
+    }
+  });
+
+  const recalcularPeriodoMutation = useMutation({
+    mutationFn: async (periodoId) => {
+      const periodo = periodos.find(p => p.id === periodoId);
+      if (!periodo) throw new Error('Período no encontrado');
+      if (periodo.estado === "CERRADO") throw new Error('No se puede recalcular un período cerrado');
+
+      const ventasPeriodo = ivaVentas.filter(iv => 
+        iv.fecha >= periodo.fecha_desde && iv.fecha <= periodo.fecha_hasta
+      );
+      const totalDebito = ventasPeriodo.reduce((acc, iv) => acc + (iv.iva_21 || 0), 0);
+
+      const comprasPeriodo = compras.filter(c => 
+        c.fecha >= periodo.fecha_desde && 
+        c.fecha <= periodo.fecha_hasta && 
+        c.estado === "CONFIRMADA" &&
+        (c.tipo_comprobante === "A" || c.tipo_comprobante === "B")
+      );
+      const totalCredito = comprasPeriodo.reduce((acc, c) => acc + (c.iva_21 || 0), 0);
+
+      const saldo = totalDebito - totalCredito;
+
+      return await base44.entities.PeriodoIVA.update(periodoId, {
+        total_iva_debito: totalDebito,
+        total_iva_credito: totalCredito,
+        saldo_iva: saldo,
+        cantidad_facturas_emitidas: ventasPeriodo.length,
+        cantidad_facturas_recibidas: comprasPeriodo.length
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['periodosIVA'] });
     }
   });
 
@@ -337,34 +372,73 @@ export default function IVAMensual() {
         </Card>
       </div>
 
-      {/* Períodos Sugeridos */}
-      {periodosSugeridos.length > 0 && (
-        <Card className="border-0 shadow-sm bg-blue-50 border-blue-200">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-blue-600 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-semibold text-blue-900 mb-2">
-                  Períodos Pendientes de Crear ({periodosSugeridos.length})
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {periodosSugeridos.slice(0, 6).map((p) => (
-                    <Button
-                      key={p.periodo}
-                      size="sm"
-                      variant="outline"
-                      className="bg-white"
-                      onClick={() => handleCrearPeriodo(p.mes, p.anio)}
-                    >
-                      {format(new Date(p.anio, p.mes - 1), 'MMMM yyyy', { locale: es })}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Alertas de períodos */}
+      {(() => {
+        const mesActual = new Date().getMonth() + 1;
+        const anioActual = new Date().getFullYear();
+        const mesAnterior = mesActual === 1 ? 12 : mesActual - 1;
+        const anioAnterior = mesActual === 1 ? anioActual - 1 : anioActual;
+        const periodoAnterior = `${anioAnterior}-${String(mesAnterior).padStart(2, '0')}`;
+        const periodoAnteriorRecord = periodos.find(p => p.periodo === periodoAnterior);
+        const periodoAnteriorAbierto = periodoAnteriorRecord && periodoAnteriorRecord.estado === "ABIERTO";
+
+        return (
+          <>
+            {periodoAnteriorAbierto && (
+              <Card className="border-0 shadow-sm bg-red-50 border-red-200">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-red-900 mb-1">
+                        ⚠️ Período {format(new Date(anioAnterior, mesAnterior - 1), 'MMMM yyyy', { locale: es })} ABIERTO
+                      </p>
+                      <p className="text-sm text-red-700 mb-3">
+                        Debes cerrar el período del mes pasado antes de continuar operando
+                      </p>
+                      <Button 
+                        size="sm" 
+                        className="bg-red-600 hover:bg-red-700"
+                        onClick={() => handleCerrarPeriodo(periodoAnteriorRecord)}
+                      >
+                        <Lock className="h-3 w-3 mr-1" />
+                        Cerrar Período Ahora
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {periodosSugeridos.length > 0 && (
+              <Card className="border-0 shadow-sm bg-blue-50 border-blue-200">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-blue-900 mb-2">
+                        Períodos Pendientes de Crear ({periodosSugeridos.length})
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {periodosSugeridos.slice(0, 6).map((p) => (
+                          <Button
+                            key={p.periodo}
+                            size="sm"
+                            variant="outline"
+                            className="bg-white"
+                            onClick={() => handleCrearPeriodo(p.mes, p.anio)}
+                          >
+                            {format(new Date(p.anio, p.mes - 1), 'MMMM yyyy', { locale: es })}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        );
+      })()}
 
       {/* Tabla de Períodos */}
       <Card className="border-0 shadow-sm overflow-hidden">
@@ -448,15 +522,26 @@ export default function IVAMensual() {
                       Ver Detalle
                     </Button>
                     {periodo.estado === "ABIERTO" && (
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() => handleCerrarPeriodo(periodo)}
-                      >
-                        <Lock className="h-3 w-3 mr-1" />
-                        Cerrar
-                      </Button>
+                      <>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-blue-600 hover:text-blue-700"
+                          onClick={() => recalcularPeriodoMutation.mutate(periodo.id)}
+                        >
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                          Recalcular
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => handleCerrarPeriodo(periodo)}
+                        >
+                          <Lock className="h-3 w-3 mr-1" />
+                          Cerrar
+                        </Button>
+                      </>
                     )}
                     <Button size="sm" variant="ghost" onClick={() => exportarPeriodo(periodo)}>
                       <Download className="h-3 w-3" />
