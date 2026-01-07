@@ -32,7 +32,15 @@ import {
   Users,
   RefreshCw,
   ExternalLink,
-  Sparkles
+  Sparkles,
+  Grid3x3,
+  CalendarDays,
+  CalendarRange,
+  Zap,
+  CheckSquare,
+  MessageSquare,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { 
   format, 
@@ -63,6 +71,9 @@ export default function Calendar() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [viewMode, setViewMode] = useState("month");
   const [googleEvents, setGoogleEvents] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [quickAddType, setQuickAddType] = useState("event");
 
   const queryClient = useQueryClient();
 
@@ -203,6 +214,24 @@ export default function Calendar() {
 
   const dayEvents = getEventsForDate(selectedDate);
 
+  // Get week range for week view
+  const weekStart = startOfWeek(currentDate, { locale: es });
+  const weekEnd = endOfWeek(currentDate, { locale: es });
+  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+  // Navigation for week/day views
+  const nextPeriod = () => {
+    if (viewMode === "month") setCurrentDate(addMonths(currentDate, 1));
+    else if (viewMode === "week") setCurrentDate(addMonths(currentDate, 1));
+    else setCurrentDate(new Date(currentDate.getTime() + 86400000));
+  };
+
+  const prevPeriod = () => {
+    if (viewMode === "month") setCurrentDate(subMonths(currentDate, 1));
+    else if (viewMode === "week") setCurrentDate(subMonths(currentDate, 1));
+    else setCurrentDate(new Date(currentDate.getTime() - 86400000));
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -216,7 +245,11 @@ export default function Calendar() {
             Proyectos, tareas y eventos sincronizados
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" onClick={() => setIsQuickAddOpen(true)} className="gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600 border-0">
+            <Plus className="h-4 w-4" />
+            Agregar Rápido
+          </Button>
           <Button variant="outline" onClick={loadGoogleEvents} className="gap-2">
             <RefreshCw className="h-4 w-4" />
             Sincronizar
@@ -234,25 +267,56 @@ export default function Calendar() {
         </div>
       </div>
 
-      {/* Legend */}
+      {/* View Selector & Legend */}
       <Card className="border-0 shadow-sm">
         <CardContent className="p-4">
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-blue-500 rounded"></div>
-              <span className="text-sm text-slate-600">Proyectos</span>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                variant={viewMode === "month" ? "default" : "outline"} 
+                size="sm"
+                onClick={() => setViewMode("month")}
+                className="gap-2"
+              >
+                <Grid3x3 className="h-4 w-4" />
+                Mensual
+              </Button>
+              <Button 
+                variant={viewMode === "week" ? "default" : "outline"} 
+                size="sm"
+                onClick={() => setViewMode("week")}
+                className="gap-2"
+              >
+                <CalendarRange className="h-4 w-4" />
+                Semanal
+              </Button>
+              <Button 
+                variant={viewMode === "day" ? "default" : "outline"} 
+                size="sm"
+                onClick={() => setViewMode("day")}
+                className="gap-2"
+              >
+                <CalendarDays className="h-4 w-4" />
+                Día
+              </Button>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-pink-500 rounded"></div>
-              <span className="text-sm text-slate-600">Campañas</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-violet-500 rounded"></div>
-              <span className="text-sm text-slate-600">Tareas</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-emerald-500 rounded"></div>
-              <span className="text-sm text-slate-600">Google Calendar</span>
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                <span className="text-sm text-slate-600">Proyectos</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-pink-500 rounded"></div>
+                <span className="text-sm text-slate-600">Campañas</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-violet-500 rounded"></div>
+                <span className="text-sm text-slate-600">Tareas</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-emerald-500 rounded"></div>
+                <span className="text-sm text-slate-600">Google Calendar</span>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -265,13 +329,15 @@ export default function Calendar() {
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <Button variant="outline" size="icon" onClick={prevMonth}>
+                  <Button variant="outline" size="icon" onClick={prevPeriod}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <h2 className="text-xl font-semibold">
-                    {format(currentDate, 'MMMM yyyy', { locale: es })}
+                    {viewMode === "month" && format(currentDate, 'MMMM yyyy', { locale: es })}
+                    {viewMode === "week" && `${format(weekStart, 'd MMM', { locale: es })} - ${format(weekEnd, 'd MMM yyyy', { locale: es })}`}
+                    {viewMode === "day" && format(currentDate, "d 'de' MMMM yyyy", { locale: es })}
                   </h2>
-                  <Button variant="outline" size="icon" onClick={nextMonth}>
+                  <Button variant="outline" size="icon" onClick={nextPeriod}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -281,61 +347,156 @@ export default function Calendar() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              {/* Weekdays */}
-              <div className="grid grid-cols-7 border-b">
-                {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => (
-                  <div key={day} className="p-3 text-center text-sm font-medium text-slate-600 border-r last:border-r-0">
-                    {day}
-                  </div>
-                ))}
-              </div>
-
-              {/* Days */}
-              <div className="grid grid-cols-7">
-                {dateRange.map((day, idx) => {
-                  const dayEvents = getEventsForDate(day);
-                  const isCurrentMonth = isSameMonth(day, currentDate);
-                  const isToday = isSameDay(day, new Date());
-                  const isSelected = isSameDay(day, selectedDate);
-
-                  return (
-                    <div
-                      key={idx}
-                      onClick={() => setSelectedDate(day)}
-                      className={`min-h-[100px] p-2 border-r border-b last:border-r-0 cursor-pointer hover:bg-slate-50 transition-colors ${
-                        !isCurrentMonth ? 'bg-slate-50' : ''
-                      } ${isSelected ? 'bg-blue-50' : ''}`}
-                    >
-                      <div className={`text-sm font-medium mb-1 ${
-                        !isCurrentMonth ? 'text-slate-400' : 
-                        isToday ? 'text-white bg-blue-600 w-6 h-6 rounded-full flex items-center justify-center' : 
-                        'text-slate-700'
-                      }`}>
-                        {format(day, 'd')}
+              {/* MONTH VIEW */}
+              {viewMode === "month" && (
+                <>
+                  <div className="grid grid-cols-7 border-b">
+                    {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => (
+                      <div key={day} className="p-3 text-center text-sm font-medium text-slate-600 border-r last:border-r-0">
+                        {day}
                       </div>
-                      <div className="space-y-1">
-                        {dayEvents.slice(0, 2).map(event => (
-                          <div
-                            key={event.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEventClick(event);
-                            }}
-                            className={`text-xs p-1 rounded truncate ${event.color.bg} ${event.color.text} border ${event.color.border} hover:shadow-sm transition-shadow`}
-                          >
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-7">
+                    {dateRange.map((day, idx) => {
+                      const dayEvents = getEventsForDate(day);
+                      const isCurrentMonth = isSameMonth(day, currentDate);
+                      const isToday = isSameDay(day, new Date());
+                      const isSelected = isSameDay(day, selectedDate);
+
+                      return (
+                        <div
+                          key={idx}
+                          onClick={() => setSelectedDate(day)}
+                          className={`min-h-[100px] p-2 border-r border-b last:border-r-0 cursor-pointer hover:bg-slate-50 transition-colors ${
+                            !isCurrentMonth ? 'bg-slate-50' : ''
+                          } ${isSelected ? 'bg-blue-50' : ''}`}
+                        >
+                          <div className={`text-sm font-medium mb-1 ${
+                            !isCurrentMonth ? 'text-slate-400' : 
+                            isToday ? 'text-white bg-blue-600 w-6 h-6 rounded-full flex items-center justify-center' : 
+                            'text-slate-700'
+                          }`}>
+                            {format(day, 'd')}
+                          </div>
+                          <div className="space-y-1">
+                            {dayEvents.slice(0, 2).map(event => (
+                              <div
+                                key={event.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEventClick(event);
+                                }}
+                                className={`text-xs p-1 rounded truncate ${event.color.bg} ${event.color.text} border ${event.color.border} hover:shadow-sm transition-shadow`}
+                              >
+                                {event.title}
+                              </div>
+                            ))}
+                            {dayEvents.length > 2 && (
+                              <div className="text-xs text-slate-500 pl-1">
+                                +{dayEvents.length - 2} más
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {/* WEEK VIEW */}
+              {viewMode === "week" && (
+                <>
+                  <div className="grid grid-cols-7 border-b">
+                    {weekDays.map(day => (
+                      <div key={day.toString()} className="p-3 text-center border-r last:border-r-0">
+                        <div className="text-xs font-medium text-slate-500">{format(day, 'EEE', { locale: es })}</div>
+                        <div className={`text-lg font-semibold mt-1 ${isSameDay(day, new Date()) ? 'text-blue-600' : 'text-slate-700'}`}>
+                          {format(day, 'd')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-7">
+                    {weekDays.map((day, idx) => {
+                      const dayEvents = getEventsForDate(day);
+                      const isToday = isSameDay(day, new Date());
+
+                      return (
+                        <div
+                          key={idx}
+                          onClick={() => setSelectedDate(day)}
+                          className={`min-h-[300px] p-2 border-r border-b last:border-r-0 cursor-pointer hover:bg-slate-50 ${isToday ? 'bg-blue-50' : ''}`}
+                        >
+                          <div className="space-y-1">
+                            {dayEvents.map(event => (
+                              <div
+                                key={event.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEventClick(event);
+                                }}
+                                className={`text-xs p-2 rounded ${event.color.bg} ${event.color.text} border ${event.color.border} hover:shadow-sm transition-shadow`}
+                              >
+                                <div className="font-medium truncate">{event.title}</div>
+                                <div className="text-xs opacity-75 mt-1">
+                                  {event.start.includes('T') ? format(parseISO(event.start), 'HH:mm', { locale: es }) : 'Todo el día'}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {/* DAY VIEW */}
+              {viewMode === "day" && (
+                <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto">
+                  {getEventsForDate(currentDate).length === 0 ? (
+                    <div className="text-center py-12 text-slate-400">
+                      <CalendarIcon className="h-16 w-16 mx-auto mb-3 opacity-50" />
+                      <p>No hay eventos este día</p>
+                    </div>
+                  ) : (
+                    getEventsForDate(currentDate).map(event => (
+                      <div
+                        key={event.id}
+                        onClick={() => handleEventClick(event)}
+                        className={`p-4 rounded-lg border cursor-pointer hover:shadow-md transition-shadow ${event.color.bg} ${event.color.border}`}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className={`font-semibold text-lg ${event.color.text}`}>
                             {event.title}
-                          </div>
-                        ))}
-                        {dayEvents.length > 2 && (
-                          <div className="text-xs text-slate-500 pl-1">
-                            +{dayEvents.length - 2} más
-                          </div>
+                          </h4>
+                          <Badge variant="secondary">
+                            {event.type === 'project' ? 'Proyecto' :
+                             event.type === 'campaign' ? 'Campaña' :
+                             event.type === 'task' ? 'Tarea' : 'Google'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <Clock className="h-4 w-4" />
+                          {event.start.includes('T') ? (
+                            <>
+                              {format(parseISO(event.start), 'HH:mm', { locale: es })} - 
+                              {format(parseISO(event.end), 'HH:mm', { locale: es })}
+                            </>
+                          ) : (
+                            'Todo el día'
+                          )}
+                        </div>
+                        {event.data.description && (
+                          <p className="text-sm text-slate-600 mt-2">{event.data.description}</p>
                         )}
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    ))
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -344,52 +505,160 @@ export default function Calendar() {
         <div>
           <Card className="border-0 shadow-sm">
             <CardHeader className="border-b">
-              <CardTitle className="text-base">
-                {format(selectedDate, "d 'de' MMMM, yyyy", { locale: es })}
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">
+                  {format(selectedDate, "d 'de' MMMM, yyyy", { locale: es })}
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                >
+                  {sidebarOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent className="p-4">
-              {dayEvents.length === 0 ? (
-                <div className="text-center py-8 text-slate-400">
-                  <CalendarIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No hay eventos este día</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {dayEvents.map(event => (
-                    <div
-                      key={event.id}
-                      onClick={() => handleEventClick(event)}
-                      className={`p-3 rounded-lg border cursor-pointer hover:shadow-md transition-shadow ${event.color.bg} ${event.color.border}`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className={`font-medium ${event.color.text}`}>
-                            {event.title}
-                          </h4>
-                          <div className="flex items-center gap-1 mt-1 text-xs text-slate-600">
-                            <Clock className="h-3 w-3" />
-                            {event.start.includes('T') ? (
-                              format(parseISO(event.start), 'HH:mm', { locale: es })
-                            ) : (
-                              'Todo el día'
-                            )}
+            {sidebarOpen && (
+              <CardContent className="p-4">
+                {dayEvents.length === 0 ? (
+                  <div className="text-center py-8 text-slate-400">
+                    <CalendarIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No hay eventos este día</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {dayEvents.map(event => (
+                      <div
+                        key={event.id}
+                        onClick={() => handleEventClick(event)}
+                        className={`p-3 rounded-lg border cursor-pointer hover:shadow-md transition-shadow ${event.color.bg} ${event.color.border}`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className={`font-medium ${event.color.text}`}>
+                              {event.title}
+                            </h4>
+                            <div className="flex items-center gap-1 mt-1 text-xs text-slate-600">
+                              <Clock className="h-3 w-3" />
+                              {event.start.includes('T') ? (
+                                format(parseISO(event.start), 'HH:mm', { locale: es })
+                              ) : (
+                                'Todo el día'
+                              )}
+                            </div>
                           </div>
+                          <Badge variant="secondary" className="text-xs">
+                            {event.type === 'project' ? 'Proyecto' :
+                             event.type === 'campaign' ? 'Campaña' :
+                             event.type === 'task' ? 'Tarea' : 'Google'}
+                          </Badge>
                         </div>
-                        <Badge variant="secondary" className="text-xs">
-                          {event.type === 'project' ? 'Proyecto' :
-                           event.type === 'campaign' ? 'Campaña' :
-                           event.type === 'task' ? 'Tarea' : 'Google'}
-                        </Badge>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            )}
           </Card>
         </div>
       </div>
+
+      {/* Quick Add Dialog */}
+      <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-indigo-600" />
+              Agregar Rápido
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600">Selecciona qué deseas crear:</p>
+            <div className="grid grid-cols-1 gap-3">
+              <Button
+                variant="outline"
+                className="h-auto p-4 justify-start"
+                onClick={() => {
+                  setIsQuickAddOpen(false);
+                  window.location.href = "/Projects?action=new";
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <CalendarIcon className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-semibold">Nuevo Proyecto</div>
+                    <div className="text-xs text-slate-500">Crear proyecto con fecha de entrega</div>
+                  </div>
+                </div>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-auto p-4 justify-start"
+                onClick={() => {
+                  setIsQuickAddOpen(false);
+                  window.location.href = "/Projects?action=newTask";
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center">
+                    <CheckSquare className="h-5 w-5 text-violet-600" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-semibold">Nueva Tarea</div>
+                    <div className="text-xs text-slate-500">Crear tarea con fecha límite</div>
+                  </div>
+                </div>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-auto p-4 justify-start"
+                onClick={() => {
+                  setIsQuickAddOpen(false);
+                  window.location.href = "/Marketing?action=new";
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-pink-100 flex items-center justify-center">
+                    <MessageSquare className="h-5 w-5 text-pink-600" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-semibold">Nueva Campaña</div>
+                    <div className="text-xs text-slate-500">Crear campaña de marketing</div>
+                  </div>
+                </div>
+              </Button>
+              <a 
+                href="https://calendar.google.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                onClick={() => setIsQuickAddOpen(false)}
+              >
+                <Button
+                  variant="outline"
+                  className="h-auto p-4 justify-start w-full"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                      <Sparkles className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-semibold">Evento Google Calendar</div>
+                      <div className="text-xs text-slate-500">Crear en Google Calendar</div>
+                    </div>
+                  </div>
+                </Button>
+              </a>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsQuickAddOpen(false)}>
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Event Details Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
