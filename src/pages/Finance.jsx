@@ -31,6 +31,21 @@ import {
   Area,
   AreaChart
 } from "recharts";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import {
+  Calculator,
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  ArrowUp,
+  ArrowDown,
+  Download,
+  FileText,
+  ArrowRight,
+  PieChart as PieChartIcon,
+  Minus
+} from "lucide-react";
 
 export default function Finance() {
   const [monthFilter, setMonthFilter] = useState(format(new Date(), 'yyyy-MM'));
