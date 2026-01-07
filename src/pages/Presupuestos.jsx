@@ -289,7 +289,10 @@ export default function Presupuestos() {
           venta_id: venta.id,
           proyecto_id: proyecto.id,
           fecha_aceptacion: new Date().toISOString(),
-          aceptado_por: user.email
+          aceptado_por: user.email,
+          genera_iva: generaIVA,
+          neto_gravado: netoGravado,
+          iva_21: ivaCalculado
         });
 
         return { venta, proyecto };
