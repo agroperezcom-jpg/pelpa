@@ -442,21 +442,4 @@ export default function ProjectTasksTab({ projectId, phases }) {
       </Dialog>
     </div>
   );
-
-  function handleAddAssignee(email) {
-    const user = users.find(u => u.email === email);
-    if (!user || formData.assigned_to.some(a => a.email === email)) return;
-    
-    setFormData({
-      ...formData,
-      assigned_to: [...formData.assigned_to, { email: user.email, name: user.full_name }]
-    });
-  }
-
-  function handleRemoveAssignee(email) {
-    setFormData({
-      ...formData,
-      assigned_to: formData.assigned_to.filter(a => a.email !== email)
-    });
-  }
 }
