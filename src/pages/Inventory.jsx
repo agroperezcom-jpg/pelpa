@@ -39,7 +39,9 @@ import {
   TrendingUp,
   TrendingDown,
   History,
-  Download
+  Download,
+  Upload,
+  FileSpreadsheet
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -61,6 +63,7 @@ export default function Inventory() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState("");
   const [reason, setReason] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -175,6 +178,72 @@ export default function Inventory() {
     link.click();
   };
 
+  const exportTemplate = () => {
+    const headers = ["nombre", "descripcion", "precio", "costo", "categoria", "proveedor", "stock", "stock_minimo", "codigo_barras"];
+    const example = ["Ejemplo: Cuaderno A5", "Cuaderno rayado 100 hojas", "5.99", "3.50", "papeleria", "Proveedor XYZ", "50", "10", "7891234567890"];
+    
+    const csvContent = [headers, example].map(row => row.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "plantilla_productos.csv";
+    link.click();
+  };
+
+  const handleImportCSV = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    const reader = new FileReader();
+
+    reader.onload = async (event) => {
+      try {
+        const text = event.target.result;
+        const lines = text.split('\n').filter(line => line.trim());
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+
+        const productsToCreate = [];
+
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim());
+          
+          if (values.length < headers.length || !values[0]) continue;
+
+          const product = {
+            name: values[headers.indexOf('nombre')] || '',
+            description: values[headers.indexOf('descripcion')] || '',
+            price: parseFloat(values[headers.indexOf('precio')]) || 0,
+            cost: parseFloat(values[headers.indexOf('costo')]) || 0,
+            category: values[headers.indexOf('categoria')] || 'otros',
+            supplier: values[headers.indexOf('proveedor')] || '',
+            stock: parseInt(values[headers.indexOf('stock')]) || 0,
+            min_stock: parseInt(values[headers.indexOf('stock_minimo')]) || 5,
+            barcode: values[headers.indexOf('codigo_barras')] || '',
+            is_active: true
+          };
+
+          productsToCreate.push(product);
+        }
+
+        if (productsToCreate.length > 0) {
+          await base44.entities.Product.bulkCreate(productsToCreate);
+          queryClient.invalidateQueries({ queryKey: ['products'] });
+          alert(`${productsToCreate.length} productos importados exitosamente`);
+        }
+      } catch (error) {
+        console.error('Error importing:', error);
+        alert('Error al importar productos. Verifica el formato del archivo.');
+      } finally {
+        setIsImporting(false);
+        e.target.value = '';
+      }
+    };
+
+    reader.readAsText(file);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -188,11 +257,30 @@ export default function Inventory() {
             Control de stock y movimientos
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" onClick={exportTemplate}>
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Plantilla
+          </Button>
           <Button variant="outline" onClick={exportToCSV}>
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
+          <label htmlFor="import-csv">
+            <Button variant="outline" asChild disabled={isImporting}>
+              <span className="cursor-pointer">
+                <Upload className="h-4 w-4 mr-2" />
+                {isImporting ? 'Importando...' : 'Importar'}
+              </span>
+            </Button>
+          </label>
+          <input
+            id="import-csv"
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={handleImportCSV}
+          />
           <Button variant="outline" onClick={() => handleOpenDialog('salida')} className="border-red-200 text-red-600 hover:bg-red-50">
             <Minus className="h-4 w-4 mr-2" />
             Salida

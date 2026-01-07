@@ -1,33 +1,33 @@
-import Dashboard from './pages/Dashboard';
-import Clients from './pages/Clients';
-import Products from './pages/Products';
-import Services from './pages/Services';
-import Inventory from './pages/Inventory';
-import Projects from './pages/Projects';
-import Sales from './pages/Sales';
-import Marketing from './pages/Marketing';
 import Analytics from './pages/Analytics';
-import Settings from './pages/Settings';
 import Calendar from './pages/Calendar';
+import Clients from './pages/Clients';
+import Dashboard from './pages/Dashboard';
 import Expenses from './pages/Expenses';
 import Finance from './pages/Finance';
+import Inventory from './pages/Inventory';
+import Marketing from './pages/Marketing';
+import Products from './pages/Products';
+import Projects from './pages/Projects';
+import Sales from './pages/Sales';
+import Services from './pages/Services';
+import Settings from './pages/Settings';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "Dashboard": Dashboard,
-    "Clients": Clients,
-    "Products": Products,
-    "Services": Services,
-    "Inventory": Inventory,
-    "Projects": Projects,
-    "Sales": Sales,
-    "Marketing": Marketing,
     "Analytics": Analytics,
-    "Settings": Settings,
     "Calendar": Calendar,
+    "Clients": Clients,
+    "Dashboard": Dashboard,
     "Expenses": Expenses,
     "Finance": Finance,
+    "Inventory": Inventory,
+    "Marketing": Marketing,
+    "Products": Products,
+    "Projects": Projects,
+    "Sales": Sales,
+    "Services": Services,
+    "Settings": Settings,
 }
 
 export const pagesConfig = {
