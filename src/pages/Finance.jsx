@@ -65,6 +65,11 @@ export default function Finance() {
     queryFn: () => base44.entities.IVAVenta.list('-created_date', 500)
   });
 
+  const { data: compras = [] } = useQuery({
+    queryKey: ['compras'],
+    queryFn: () => base44.entities.Compra.list('-created_date', 500)
+  });
+
   // Calculate financial metrics for selected month
   const calculateMonthMetrics = (month) => {
     // Sales and revenue
@@ -324,6 +329,7 @@ export default function Finance() {
           <TabsTrigger value="trends">Tendencias</TabsTrigger>
           <TabsTrigger value="margins">Márgenes</TabsTrigger>
           <TabsTrigger value="iva">Libro IVA Ventas</TabsTrigger>
+          <TabsTrigger value="posicion-iva">Posición IVA</TabsTrigger>
         </TabsList>
 
         <TabsContent value="statement" className="space-y-4">
@@ -656,6 +662,201 @@ export default function Finance() {
                   )}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="posicion-iva" className="space-y-4">
+          {/* Resumen Posición IVA */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-6">
+                <div>
+                  <p className="text-xs font-medium text-slate-500 uppercase mb-2">IVA Débito Fiscal (Ventas)</p>
+                  <p className="text-3xl font-bold text-red-600">
+                    ${ivaVentas
+                      .filter(iv => iv.fecha?.startsWith(monthFilter))
+                      .reduce((acc, iv) => acc + (iv.iva_21 || 0), 0)
+                      .toFixed(2)}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-2">
+                    {ivaVentas.filter(iv => iv.fecha?.startsWith(monthFilter)).length} operaciones
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-6">
+                <div>
+                  <p className="text-xs font-medium text-slate-500 uppercase mb-2">IVA Crédito Fiscal (Compras)</p>
+                  <p className="text-3xl font-bold text-emerald-600">
+                    ${compras
+                      .filter(c => c.fecha?.startsWith(monthFilter) && c.estado === "CONFIRMADA")
+                      .reduce((acc, c) => acc + (c.iva_21 || 0), 0)
+                      .toFixed(2)}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-2">
+                    {compras.filter(c => c.fecha?.startsWith(monthFilter) && c.estado === "CONFIRMADA").length} operaciones
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-6">
+                <div>
+                  <p className="text-xs font-medium text-slate-500 uppercase mb-2">Saldo IVA</p>
+                  {(() => {
+                    const debitoFiscal = ivaVentas
+                      .filter(iv => iv.fecha?.startsWith(monthFilter))
+                      .reduce((acc, iv) => acc + (iv.iva_21 || 0), 0);
+                    const creditoFiscal = compras
+                      .filter(c => c.fecha?.startsWith(monthFilter) && c.estado === "CONFIRMADA")
+                      .reduce((acc, c) => acc + (c.iva_21 || 0), 0);
+                    const saldo = debitoFiscal - creditoFiscal;
+                    return (
+                      <>
+                        <p className={`text-3xl font-bold ${saldo > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                          ${Math.abs(saldo).toFixed(2)}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-2">
+                          {saldo > 0 ? 'A pagar' : saldo < 0 ? 'A favor' : 'Neutro'}
+                        </p>
+                      </>
+                    );
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Detalle Comparativo */}
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="border-b">
+              <CardTitle className="text-base">
+                Liquidación IVA - {format(new Date(monthFilter + '-01'), "MMMM yyyy", { locale: es })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableBody>
+                  <TableRow className="bg-red-50">
+                    <TableCell className="font-bold">IVA DÉBITO FISCAL</TableCell>
+                    <TableCell className="text-right font-bold text-red-600">
+                      ${ivaVentas
+                        .filter(iv => iv.fecha?.startsWith(monthFilter))
+                        .reduce((acc, iv) => acc + (iv.iva_21 || 0), 0)
+                        .toFixed(2)}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="pl-8 text-slate-600">Ventas gravadas</TableCell>
+                    <TableCell className="text-right text-slate-600">
+                      ${ivaVentas
+                        .filter(iv => iv.fecha?.startsWith(monthFilter))
+                        .reduce((acc, iv) => acc + (iv.neto_gravado || 0), 0)
+                        .toFixed(2)}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="pl-8 text-slate-600">IVA 21%</TableCell>
+                    <TableCell className="text-right text-slate-600">
+                      ${ivaVentas
+                        .filter(iv => iv.fecha?.startsWith(monthFilter))
+                        .reduce((acc, iv) => acc + (iv.iva_21 || 0), 0)
+                        .toFixed(2)}
+                    </TableCell>
+                  </TableRow>
+
+                  <TableRow className="border-t-2 bg-emerald-50">
+                    <TableCell className="font-bold">IVA CRÉDITO FISCAL</TableCell>
+                    <TableCell className="text-right font-bold text-emerald-600">
+                      ${compras
+                        .filter(c => c.fecha?.startsWith(monthFilter) && c.estado === "CONFIRMADA")
+                        .reduce((acc, c) => acc + (c.iva_21 || 0), 0)
+                        .toFixed(2)}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="pl-8 text-slate-600">Compras gravadas</TableCell>
+                    <TableCell className="text-right text-slate-600">
+                      ${compras
+                        .filter(c => c.fecha?.startsWith(monthFilter) && c.estado === "CONFIRMADA")
+                        .reduce((acc, c) => acc + (c.neto_gravado || 0), 0)
+                        .toFixed(2)}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="pl-8 text-slate-600">IVA 21%</TableCell>
+                    <TableCell className="text-right text-slate-600">
+                      ${compras
+                        .filter(c => c.fecha?.startsWith(monthFilter) && c.estado === "CONFIRMADA")
+                        .reduce((acc, c) => acc + (c.iva_21 || 0), 0)
+                        .toFixed(2)}
+                    </TableCell>
+                  </TableRow>
+
+                  {(() => {
+                    const debitoFiscal = ivaVentas
+                      .filter(iv => iv.fecha?.startsWith(monthFilter))
+                      .reduce((acc, iv) => acc + (iv.iva_21 || 0), 0);
+                    const creditoFiscal = compras
+                      .filter(c => c.fecha?.startsWith(monthFilter) && c.estado === "CONFIRMADA")
+                      .reduce((acc, c) => acc + (c.iva_21 || 0), 0);
+                    const saldo = debitoFiscal - creditoFiscal;
+                    return (
+                      <TableRow className={`border-t-4 ${saldo > 0 ? 'bg-red-100' : 'bg-emerald-100'}`}>
+                        <TableCell className="font-bold text-lg">
+                          {saldo > 0 ? 'SALDO A PAGAR' : saldo < 0 ? 'SALDO A FAVOR' : 'SALDO NEUTRO'}
+                        </TableCell>
+                        <TableCell className={`text-right font-bold text-lg ${saldo > 0 ? 'text-red-700' : 'text-emerald-700'}`}>
+                          ${Math.abs(saldo).toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })()}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* Evolución Anual */}
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Evolución Posición IVA - 12 Meses</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={last12Months.map(month => {
+                    const debitoFiscal = ivaVentas
+                      .filter(iv => iv.fecha?.startsWith(month))
+                      .reduce((acc, iv) => acc + (iv.iva_21 || 0), 0);
+                    const creditoFiscal = compras
+                      .filter(c => c.fecha?.startsWith(month) && c.estado === "CONFIRMADA")
+                      .reduce((acc, c) => acc + (c.iva_21 || 0), 0);
+                    return {
+                      month: format(new Date(month + '-01'), 'MMM', { locale: es }),
+                      debito: debitoFiscal,
+                      credito: creditoFiscal,
+                      saldo: debitoFiscal - creditoFiscal
+                    };
+                  })}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                    <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      formatter={(value) => `$${value.toFixed(2)}`}
+                    />
+                    <Legend />
+                    <Bar dataKey="debito" fill="#ef4444" name="IVA Débito" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="credito" fill="#10b981" name="IVA Crédito" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="saldo" fill="#3b82f6" name="Saldo" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
