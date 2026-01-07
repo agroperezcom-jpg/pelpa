@@ -11,10 +11,10 @@ import {
   Plus,
   DollarSign
 } from "lucide-react";
-import CuentasView from "../components/treasury/CuentasView";
-import MovimientosView from "../components/treasury/MovimientosView";
-import ChequesView from "../components/treasury/ChequesView";
-import CobrosView from "../components/treasury/CobrosView";
+import CuentasView from "../components/treasury/CuentasView.js";
+import MovimientosView from "../components/treasury/MovimientosView.js";
+import ChequesView from "../components/treasury/ChequesView.js";
+import CobrosView from "../components/treasury/CobrosView.js";
 
 export default function Treasury() {
   const { data: accounts = [] } = useQuery({
