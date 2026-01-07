@@ -551,6 +551,215 @@ export default function Purchases() {
           </TableBody>
         </Table>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="reportes" className="space-y-4">
+          <div className="flex items-center gap-4 mb-4">
+            <Label>Período:</Label>
+            <Input
+              type="month"
+              value={fechaReporte}
+              onChange={(e) => setFechaReporte(e.target.value)}
+              className="w-48"
+            />
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-4">
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-slate-500 uppercase">Compras del Mes</p>
+                    <p className="text-3xl font-bold text-slate-800 mt-2">
+                      {compras.filter(c => c.fecha?.startsWith(fechaReporte) && c.estado === "CONFIRMADA").length}
+                    </p>
+                  </div>
+                  <FileText className="h-10 w-10 text-blue-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-slate-500 uppercase">Total Comprado</p>
+                    <p className="text-3xl font-bold text-blue-600 mt-2">
+                      ${compras.filter(c => c.fecha?.startsWith(fechaReporte) && c.estado === "CONFIRMADA")
+                        .reduce((acc, c) => acc + (c.total_compra || 0), 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <DollarSign className="h-10 w-10 text-blue-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-slate-500 uppercase">IVA Crédito Fiscal</p>
+                    <p className="text-3xl font-bold text-emerald-600 mt-2">
+                      ${compras.filter(c => c.fecha?.startsWith(fechaReporte) && c.estado === "CONFIRMADA")
+                        .reduce((acc, c) => acc + (c.iva_21 || 0), 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <TrendingUp className="h-10 w-10 text-emerald-600" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="border-0 shadow-sm overflow-hidden">
+            <div className="p-4 bg-slate-50 border-b">
+              <h3 className="font-semibold flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-blue-600" />
+                Compras por Proveedor
+              </h3>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead>Proveedor</TableHead>
+                  <TableHead className="text-center">Compras</TableHead>
+                  <TableHead className="text-right">Neto Gravado</TableHead>
+                  <TableHead className="text-right">IVA 21%</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(() => {
+                  const comprasPorProveedor = {};
+                  compras.filter(c => c.fecha?.startsWith(fechaReporte) && c.estado === "CONFIRMADA").forEach(c => {
+                    const prov = c.proveedor_nombre || "Sin proveedor";
+                    if (!comprasPorProveedor[prov]) {
+                      comprasPorProveedor[prov] = { cantidad: 0, neto: 0, iva: 0, total: 0 };
+                    }
+                    comprasPorProveedor[prov].cantidad += 1;
+                    comprasPorProveedor[prov].neto += c.neto_gravado || 0;
+                    comprasPorProveedor[prov].iva += c.iva_21 || 0;
+                    comprasPorProveedor[prov].total += c.total_compra || 0;
+                  });
+
+                  return Object.entries(comprasPorProveedor)
+                    .sort(([, a], [, b]) => b.total - a.total)
+                    .map(([prov, data]) => (
+                      <TableRow key={prov}>
+                        <TableCell className="font-medium">{prov}</TableCell>
+                        <TableCell className="text-center">{data.cantidad}</TableCell>
+                        <TableCell className="text-right">${data.neto.toLocaleString()}</TableCell>
+                        <TableCell className="text-right text-emerald-600">${data.iva.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-bold text-blue-600">
+                          ${data.total.toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ));
+                })()}
+              </TableBody>
+            </Table>
+          </Card>
+
+          <Card className="border-0 shadow-sm overflow-hidden">
+            <div className="p-4 bg-slate-50 border-b">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Receipt className="h-5 w-5 text-emerald-600" />
+                Libro IVA Compras (Crédito Fiscal)
+              </h3>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Proveedor</TableHead>
+                  <TableHead>Comprobante</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead className="text-right">Neto Gravado</TableHead>
+                  <TableHead className="text-right">IVA 21%</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {compras
+                  .filter(c => c.fecha?.startsWith(fechaReporte) && c.estado === "CONFIRMADA")
+                  .map((compra) => (
+                    <TableRow key={compra.id}>
+                      <TableCell className="text-sm text-slate-600">
+                        {format(new Date(compra.fecha), "dd/MM/yyyy", { locale: es })}
+                      </TableCell>
+                      <TableCell className="font-medium">{compra.proveedor_nombre}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {compra.tipo_comprobante} - {compra.numero_comprobante_proveedor}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={
+                          compra.tipo_compra === "CONTADO" ? "bg-green-100 text-green-700" :
+                          compra.tipo_compra === "CTA_CTE" ? "bg-red-100 text-red-700" :
+                          "bg-amber-100 text-amber-700"
+                        }>
+                          {compra.tipo_compra}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">${compra.neto_gravado?.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-bold text-emerald-600">
+                        ${compra.iva_21?.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right font-bold text-blue-600">
+                        ${compra.total_compra?.toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                {compras.filter(c => c.fecha?.startsWith(fechaReporte) && c.estado === "CONFIRMADA").length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                      No hay compras en este período
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+
+          <Card className="border-0 shadow-sm overflow-hidden">
+            <div className="p-4 bg-slate-50 border-b">
+              <h3 className="font-semibold flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+                Deuda a Proveedores
+              </h3>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead>Proveedor</TableHead>
+                  <TableHead className="text-right">Saldo Deudor</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {proveedores
+                  .filter(p => p.saldo_cc > 0)
+                  .sort((a, b) => b.saldo_cc - a.saldo_cc)
+                  .map((prov) => (
+                    <TableRow key={prov.id}>
+                      <TableCell className="font-medium">{prov.nombre}</TableCell>
+                      <TableCell className="text-right font-bold text-red-600">
+                        ${prov.saldo_cc.toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                {proveedores.filter(p => p.saldo_cc > 0).length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={2} className="text-center py-8 text-slate-500">
+                      <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                      <p>Sin deudas pendientes</p>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Dialog Nueva Compra */}
       <Dialog open={isDialogOpen && !isPagosDialogOpen} onOpenChange={setIsDialogOpen}>
