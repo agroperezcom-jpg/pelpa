@@ -39,6 +39,7 @@ import {
   Receipt,
   AlertTriangle,
   CheckCircle,
+  CheckCircle2,
   TrendingUp,
   FileText,
   Clock
