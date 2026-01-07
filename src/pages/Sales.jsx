@@ -44,7 +44,8 @@ import {
   Minus,
   AlertTriangle,
   TrendingUp,
-  FileText
+  FileText,
+  FileCheck
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -59,8 +60,15 @@ export default function Sales() {
   const [pagosConfirmados, setPagosConfirmados] = useState([]);
   const [user, setUser] = useState(null);
   const [cart, setCart] = useState([]);
-  const [selectedClient, setSelectedClient] = useState("");
-  const [tipoLista, setTipoLista] = useState("MINORISTA");
+  const [currentSale, setCurrentSale] = useState({
+    client_id: "",
+    client_name: "",
+    client_tipo_iva: "",
+    tipo_lista: "MINORISTA",
+    genera_iva: false,
+    discount: 0,
+    notes: ""
+  });
   const [productSearch, setProductSearch] = useState("");
   const [activeTab, setActiveTab] = useState("products");
 
@@ -130,7 +138,7 @@ export default function Sales() {
 
     let precio_lista, precio_minimo;
     
-    if (tipoLista === "MINORISTA") {
+    if (currentSale.tipo_lista === "MINORISTA") {
       precio_lista = product.precio_lista_minorista;
       precio_minimo = product.precio_minimo_minorista;
     } else {
@@ -194,15 +202,18 @@ export default function Sales() {
         }
       }
 
-      // Generar número de comprobante
-      let tipoComprobante = tiposComprobante.find(tc => tc.codigo === "X");
+      // Determinar tipo de comprobante
+      const tipoComprobante = saleData.genera_iva ? "B" : "X";
       
-      // Si no existe, crear tipo de comprobante X
-      if (!tipoComprobante) {
-        tipoComprobante = await base44.entities.TipoComprobante.create({
-          codigo: "X",
-          descripcion: "Ticket No Fiscal",
-          prefijo: "X",
+      // Buscar tipo de comprobante
+      let tipoComprobanteRecord = tiposComprobante.find(tc => tc.codigo === tipoComprobante);
+      
+      // Si no existe, crear tipo de comprobante
+      if (!tipoComprobanteRecord) {
+        tipoComprobanteRecord = await base44.entities.TipoComprobante.create({
+          codigo: tipoComprobante,
+          descripcion: tipoComprobante === "B" ? "Factura B - Con IVA" : "Ticket X - Sin IVA",
+          prefijo: tipoComprobante,
           longitud_numero: 4,
           ultimo_numero: 0,
           is_active: true
@@ -210,23 +221,39 @@ export default function Sales() {
       }
 
       // Incrementar número
-      const nuevoNumero = tipoComprobante.ultimo_numero + 1;
-      const numeroFormateado = String(nuevoNumero).padStart(tipoComprobante.longitud_numero, '0');
-      const numeroComprobante = `${tipoComprobante.prefijo}-${numeroFormateado}`;
+      const nuevoNumero = tipoComprobanteRecord.ultimo_numero + 1;
+      const numeroFormateado = String(nuevoNumero).padStart(tipoComprobanteRecord.longitud_numero, '0');
+      const numeroComprobante = `${tipoComprobanteRecord.prefijo}-${numeroFormateado}`;
 
       // Actualizar tipo de comprobante
-      await base44.entities.TipoComprobante.update(tipoComprobante.id, {
+      await base44.entities.TipoComprobante.update(tipoComprobanteRecord.id, {
         ultimo_numero: nuevoNumero
       });
 
-      // Crear venta con tipo y estado
+      // Crear venta con IVA
       const sale = await base44.entities.Sale.create({
         ...saleData,
         tipo_venta: tipoVenta,
         estado: "CONFIRMADA",
-        tipo_comprobante: "X",
+        tipo_comprobante: tipoComprobante,
         numero_comprobante: numeroComprobante
       });
+
+      // Generar IVA Ventas si corresponde
+      if (saleData.genera_iva) {
+        await base44.entities.IVAVenta.create({
+          venta_id: sale.id,
+          fecha: format(new Date(), 'yyyy-MM-dd'),
+          tipo_comprobante: tipoComprobante,
+          numero_comprobante: numeroComprobante,
+          cliente_nombre: saleData.client_name,
+          cliente_tipo_iva: saleData.client_tipo_iva,
+          neto_gravado: saleData.neto_gravado,
+          iva_21: saleData.iva_21,
+          total: saleData.total,
+          periodo: format(new Date(), 'yyyy-MM')
+        });
+      }
 
       // Procesar cada pago
       for (const pago of pagos) {
@@ -310,6 +337,7 @@ export default function Sales() {
       queryClient.invalidateQueries({ queryKey: ['bancos'] });
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       queryClient.invalidateQueries({ queryKey: ['tiposComprobante'] });
+      queryClient.invalidateQueries({ queryKey: ['ivaVentas'] });
       setIsPagosDialogOpen(false);
       setVentaConfirmada(sale);
       setPagosConfirmados(variables.pagos);
@@ -322,8 +350,15 @@ export default function Sales() {
 
   const handleOpenDialog = () => {
     setCart([]);
-    setSelectedClient("");
-    setTipoLista("MINORISTA");
+    setCurrentSale({
+      client_id: "",
+      client_name: "",
+      client_tipo_iva: "",
+      tipo_lista: "MINORISTA",
+      genera_iva: false,
+      discount: 0,
+      notes: ""
+    });
     setProductSearch("");
     setIsDialogOpen(true);
   };
@@ -331,9 +366,6 @@ export default function Sales() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setCart([]);
-    setSelectedClient("");
-    setTipoLista("MINORISTA");
-    setProductSearch("");
   };
 
   const handleCloseTicket = () => {
@@ -376,7 +408,6 @@ export default function Sales() {
         cartItem.total = calc.precio_venta * cartItem.quantity;
       }
     } else {
-      // Servicios sin cálculo especial
       const service = services.find(s => s.id === cartItem.item_id);
       if (service) {
         cartItem.precio_lista = service.price;
@@ -393,7 +424,7 @@ export default function Sales() {
     const newCart = [...cart];
     newCart.forEach(item => updateCartItemPricing(item));
     setCart(newCart);
-  }, [tipoLista]);
+  }, [currentSale.tipo_lista]);
 
   const updateCartQuantity = (index, quantity) => {
     if (quantity <= 0) {
@@ -419,8 +450,13 @@ export default function Sales() {
     setCart(cart.filter((_, i) => i !== index));
   };
 
-  const getSubtotal = () => cart.reduce((acc, item) => acc + item.total, 0);
-  const getTotal = () => getSubtotal();
+  const subtotal = cart.reduce((acc, item) => acc + item.total, 0);
+  const totalWithDiscount = subtotal - (currentSale.discount || 0);
+  
+  // Cálculo de IVA
+  const neto_gravado = currentSale.genera_iva ? totalWithDiscount / 1.21 : totalWithDiscount;
+  const iva_21 = currentSale.genera_iva ? neto_gravado * 0.21 : 0;
+  const total_final = neto_gravado + iva_21;
 
   const tieneItemsInvalidos = cart.some(item => item.valido === false);
 
@@ -435,19 +471,24 @@ export default function Sales() {
   };
 
   const handleConfirmarPagos = (pagos, tipoVenta) => {
-    const client = clients.find(c => c.id === selectedClient);
+    const cliente = clients.find(c => c.id === currentSale.client_id);
 
     createSaleMutation.mutate({
       saleData: {
-        client_id: selectedClient || null,
-        client_name: client?.name || "Cliente general",
+        client_id: currentSale.client_id || null,
+        client_name: cliente?.name || "Consumidor Final",
+        client_tipo_iva: cliente?.tipo_iva || "CONSUMIDOR_FINAL",
         employee_email: user?.email,
         employee_name: user?.full_name,
-        tipo_lista: tipoLista,
+        tipo_lista: currentSale.tipo_lista,
         items: cart,
-        subtotal: getSubtotal(),
-        discount: 0,
-        total: getTotal()
+        subtotal: subtotal,
+        discount: currentSale.discount || 0,
+        genera_iva: currentSale.genera_iva,
+        neto_gravado: neto_gravado,
+        iva_21: iva_21,
+        total: total_final,
+        notes: currentSale.notes
       },
       pagos,
       tipoVenta
@@ -548,11 +589,11 @@ export default function Sales() {
           <TableHeader>
             <TableRow className="bg-slate-50">
               <TableHead>Fecha</TableHead>
+              <TableHead>Comprobante</TableHead>
               <TableHead>Cliente</TableHead>
+              <TableHead>IVA</TableHead>
               <TableHead>Lista</TableHead>
-              <TableHead>Empleado</TableHead>
               <TableHead>Items</TableHead>
-              <TableHead>Método</TableHead>
               <TableHead className="text-right">Total</TableHead>
             </TableRow>
           </TableHeader>
@@ -560,19 +601,32 @@ export default function Sales() {
             {filteredSales.map((sale) => (
               <TableRow key={sale.id} className="hover:bg-slate-50">
                 <TableCell className="text-slate-500 text-sm">
-                  {format(new Date(sale.created_date), "d MMM yyyy HH:mm", { locale: es })}
+                  {format(new Date(sale.created_date), "d MMM HH:mm", { locale: es })}
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="font-mono">
+                    {sale.numero_comprobante || "—"}
+                  </Badge>
                 </TableCell>
                 <TableCell className="font-medium">{sale.client_name || 'General'}</TableCell>
+                <TableCell>
+                  {sale.genera_iva ? (
+                    <Badge className="bg-blue-100 text-blue-700">
+                      <FileCheck className="h-3 w-3 mr-1" />
+                      Con IVA
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-slate-100 text-slate-600">Sin IVA</Badge>
+                  )}
+                </TableCell>
                 <TableCell>
                   <Badge className={sale.tipo_lista === "MINORISTA" ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700"}>
                     {sale.tipo_lista || "MINORISTA"}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-slate-600">{sale.employee_name}</TableCell>
                 <TableCell>
-                  <Badge variant="secondary">{sale.items?.length || 0} items</Badge>
+                  <Badge variant="secondary">{sale.items?.length || 0}</Badge>
                 </TableCell>
-                <TableCell className="capitalize">{sale.payment_method}</TableCell>
                 <TableCell className="text-right font-bold text-emerald-600">
                   ${sale.total?.toLocaleString()}
                 </TableCell>
@@ -700,14 +754,12 @@ export default function Sales() {
                             <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
                               <span>${item.precio_venta?.toFixed(2)} c/u</span>
                               {item.type === 'product' && (
-                                <>
-                                  <span className={`flex items-center gap-1 ${
-                                    item.margen_real < 0.2 ? 'text-red-600 font-medium' : 'text-emerald-600'
-                                  }`}>
-                                    <TrendingUp className="h-3 w-3" />
-                                    {(item.margen_real * 100).toFixed(0)}%
-                                  </span>
-                                </>
+                                <span className={`flex items-center gap-1 ${
+                                  item.margen_real < 0.2 ? 'text-red-600 font-medium' : 'text-emerald-600'
+                                }`}>
+                                  <TrendingUp className="h-3 w-3" />
+                                  {(item.margen_real * 100).toFixed(0)}%
+                                </span>
                               )}
                             </div>
                             {!item.valido && (
@@ -757,7 +809,10 @@ export default function Sales() {
               <div className="space-y-3">
                 <div className="space-y-1">
                   <Label className="text-xs">Lista de Precios</Label>
-                  <Select value={tipoLista} onValueChange={setTipoLista}>
+                  <Select 
+                    value={currentSale.tipo_lista} 
+                    onValueChange={(v) => setCurrentSale({ ...currentSale, tipo_lista: v })}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -770,23 +825,93 @@ export default function Sales() {
 
                 <div className="space-y-1">
                   <Label className="text-xs">Cliente</Label>
-                  <Select value={selectedClient} onValueChange={setSelectedClient}>
+                  <Select 
+                    value={currentSale.client_id} 
+                    onValueChange={(v) => {
+                      const cliente = clients.find(c => c.id === v);
+                      const shouldGenerateIVA = cliente?.tipo_iva === "RESP_INSCRIPTO" || cliente?.tipo_iva === "MONOTRIBUTO";
+                      setCurrentSale({ 
+                        ...currentSale, 
+                        client_id: v,
+                        client_name: cliente?.name || "",
+                        client_tipo_iva: cliente?.tipo_iva || "",
+                        genera_iva: shouldGenerateIVA
+                      });
+                    }}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="Cliente general" />
+                      <SelectValue placeholder="Consumidor Final" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={null}>Cliente general</SelectItem>
+                      <SelectItem value={null}>Consumidor Final</SelectItem>
                       {clients.map(c => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                          {c.tipo_iva && (
+                            <span className="text-xs text-slate-400 ml-2">
+                              ({c.tipo_iva})
+                            </span>
+                          )}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="bg-slate-50 rounded-lg p-4 space-y-2">
-                  <div className="flex justify-between text-lg font-bold border-t pt-2">
-                    <span>Total</span>
-                    <span className="text-emerald-600">${getTotal().toFixed(2)}</span>
+                {/* Toggle IVA */}
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-semibold text-blue-900">Generar IVA Ventas</Label>
+                      <p className="text-xs text-blue-700 mt-1">
+                        {currentSale.genera_iva ? "Factura B - IVA discriminado" : "Ticket X - Sin IVA"}
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={currentSale.genera_iva}
+                        onChange={(e) => setCurrentSale({ ...currentSale, genera_iva: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-6 border-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 uppercase mb-1">Subtotal</p>
+                      <p className="text-xl font-bold text-slate-800">${subtotal.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 uppercase mb-1">Descuento</p>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={currentSale.discount || ""}
+                        onChange={(e) => setCurrentSale({ ...currentSale, discount: parseFloat(e.target.value) || 0 })}
+                        className="text-lg font-bold h-9"
+                        placeholder="0.00"
+                      />
+                    </div>
+                    {currentSale.genera_iva && (
+                      <>
+                        <div>
+                          <p className="text-xs font-medium text-slate-500 uppercase mb-1">Neto Gravado</p>
+                          <p className="text-lg font-bold text-slate-700">${neto_gravado.toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-emerald-600 uppercase mb-1">IVA 21%</p>
+                          <p className="text-lg font-bold text-emerald-600">${iva_21.toFixed(2)}</p>
+                        </div>
+                      </>
+                    )}
+                    <div className="col-span-2 border-t pt-4">
+                      <p className="text-sm font-medium text-slate-600 uppercase mb-2">Total Final</p>
+                      <p className="text-4xl font-bold text-emerald-600">${total_final.toFixed(2)}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -812,19 +937,19 @@ export default function Sales() {
       <PagosDialog
         isOpen={isPagosDialogOpen}
         onClose={() => setIsPagosDialogOpen(false)}
-        total={getTotal()}
+        total={total_final}
         onConfirm={handleConfirmarPagos}
-        clienteId={selectedClient}
+        clienteId={currentSale.client_id}
       />
 
       <ReportesDialog
         isOpen={isReportesDialogOpen}
         onClose={() => setIsReportesDialogOpen(false)}
         user={user}
-        />
+      />
 
-        {/* Ticket Dialog */}
-        <Dialog open={isTicketDialogOpen} onOpenChange={setIsTicketDialogOpen}>
+      {/* Ticket Dialog */}
+      <Dialog open={isTicketDialogOpen} onOpenChange={setIsTicketDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -847,6 +972,12 @@ export default function Sales() {
             <p className="text-sm text-slate-500">
               Cliente: {ventaConfirmada?.client_name}
             </p>
+            {ventaConfirmada?.genera_iva && (
+              <Badge className="bg-blue-100 text-blue-700 mt-2">
+                <FileCheck className="h-3 w-3 mr-1" />
+                Factura B generada
+              </Badge>
+            )}
           </div>
 
           {ventaConfirmada && (
@@ -862,7 +993,7 @@ export default function Sales() {
             </Button>
           </DialogFooter>
         </DialogContent>
-        </Dialog>
-        </div>
-        );
-        }
+      </Dialog>
+    </div>
+  );
+}
