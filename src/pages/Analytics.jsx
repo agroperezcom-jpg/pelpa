@@ -581,8 +581,9 @@ export default function Analytics() {
         </div>
       </div>
 
-      <Tabs defaultValue="comerciales" className="space-y-4">
+      <Tabs defaultValue="dashboard" className="space-y-4">
         <TabsList className="bg-white border shadow-sm flex-wrap h-auto">
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="comerciales">KPI Comerciales</TabsTrigger>
           <TabsTrigger value="stock">KPI Stock</TabsTrigger>
           <TabsTrigger value="financieros">KPI Financieros</TabsTrigger>
@@ -591,7 +592,275 @@ export default function Analytics() {
           <TabsTrigger value="rankings">Rankings</TabsTrigger>
           <TabsTrigger value="tendencias">Tendencias</TabsTrigger>
           <TabsTrigger value="comparacion">Comparación</TabsTrigger>
+          <TabsTrigger value="pronostico">Pronóstico</TabsTrigger>
         </TabsList>
+
+        {/* DASHBOARD EJECUTIVO */}
+        <TabsContent value="dashboard" className="space-y-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+              <CardContent className="p-6">
+                <p className="text-xs font-medium opacity-90 uppercase">Ventas Total</p>
+                <p className="text-3xl font-bold mt-2">${(totalVentas / 1000).toFixed(0)}k</p>
+                <div className="flex items-center gap-1 mt-2">
+                  {variacionVentas > 0 ? (
+                    <ArrowUp className="h-4 w-4" />
+                  ) : (
+                    <ArrowDown className="h-4 w-4" />
+                  )}
+                  <span className="text-sm font-medium">{variacionVentas > 0 && '+'}{variacionVentas.toFixed(1)}%</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+              <CardContent className="p-6">
+                <p className="text-xs font-medium opacity-90 uppercase">Margen Neto</p>
+                <p className="text-3xl font-bold mt-2">{porcentajeMargenNeto.toFixed(1)}%</p>
+                <div className="flex items-center gap-1 mt-2">
+                  <span className="text-sm">${margenNeto.toLocaleString()}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+              <CardContent className="p-6">
+                <p className="text-xs font-medium opacity-90 uppercase">Clientes Activos</p>
+                <p className="text-3xl font-bold mt-2">{clientesActivos}</p>
+                <div className="flex items-center gap-1 mt-2">
+                  <span className="text-sm">Tasa retención: {tasaRetencion.toFixed(0)}%</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-500 to-amber-600 text-white">
+              <CardContent className="p-6">
+                <p className="text-xs font-medium opacity-90 uppercase">Cash Flow</p>
+                <p className="text-3xl font-bold mt-2">${(cashFlow / 1000).toFixed(0)}k</p>
+                <div className="flex items-center gap-1 mt-2">
+                  <span className="text-sm">
+                    {cashFlow > 0 ? 'Positivo' : 'Negativo'}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Tendencia de Ventas (Últimos 30 días)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={(() => {
+                      const ultimos30Dias = Array.from({ length: 30 }, (_, i) => {
+                        const fecha = format(subDays(new Date(), 29 - i), 'yyyy-MM-dd');
+                        const ventasDia = sales.filter(s => s.created_date?.startsWith(fecha) && s.estado === "CONFIRMADA");
+                        return {
+                          fecha: format(new Date(fecha), 'dd/MM', { locale: es }),
+                          ventas: ventasDia.reduce((acc, v) => acc + v.total, 0)
+                        };
+                      });
+                      return ultimos30Dias;
+                    })()}>
+                      <defs>
+                        <linearGradient id="colorVentas" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis dataKey="fecha" tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                      <YAxis tick={{ fontSize: 11 }} stroke="#94a3b8" />
+                      <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
+                      <Area type="monotone" dataKey="ventas" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorVentas)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-amber-500" />
+                  Recomendaciones Inteligentes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {(() => {
+                    const recomendaciones = [];
+
+                    // Recomendación por margen bajo
+                    if (porcentajeMargenNeto < 15) {
+                      recomendaciones.push({
+                        tipo: 'warning',
+                        titulo: 'Margen Neto Bajo',
+                        descripcion: `Tu margen neto es ${porcentajeMargenNeto.toFixed(1)}%. Considera revisar costos operativos o aumentar precios.`,
+                        icon: AlertCircle
+                      });
+                    }
+
+                    // Recomendación por stock
+                    if (quiebreStock > 10) {
+                      recomendaciones.push({
+                        tipo: 'warning',
+                        titulo: 'Alto Quiebre de Stock',
+                        descripcion: `${quiebreStock.toFixed(0)}% de productos sin stock. Prioriza reposición de productos top.`,
+                        icon: Package
+                      });
+                    }
+
+                    // Recomendación por productos sin movimiento
+                    if (productosSinMovimiento > valorInventario * 0.3) {
+                      recomendaciones.push({
+                        tipo: 'info',
+                        titulo: 'Productos Estancados',
+                        descripcion: `$${productosSinMovimiento.toLocaleString()} en productos sin venta. Considera promociones.`,
+                        icon: TrendingDown
+                      });
+                    }
+
+                    // Recomendación por retención
+                    if (tasaRetencion < 60) {
+                      recomendaciones.push({
+                        tipo: 'warning',
+                        titulo: 'Mejorar Fidelización',
+                        descripcion: `Tasa de retención ${tasaRetencion.toFixed(0)}%. Implementa programa de puntos o beneficios.`,
+                        icon: Users
+                      });
+                    }
+
+                    // Recomendación por ventas en baja
+                    if (variacionVentas < -10) {
+                      recomendaciones.push({
+                        tipo: 'alert',
+                        titulo: 'Caída de Ventas',
+                        descripcion: `Ventas bajaron ${Math.abs(variacionVentas).toFixed(0)}%. Analiza causas y lanza campaña de recuperación.`,
+                        icon: ArrowDown
+                      });
+                    }
+
+                    // Recomendación positiva si todo va bien
+                    if (porcentajeMargenNeto > 20 && tasaRetencion > 70 && variacionVentas > 5) {
+                      recomendaciones.push({
+                        tipo: 'success',
+                        titulo: '¡Excelente Desempeño!',
+                        descripcion: 'Tu negocio está funcionando muy bien. Mantén el ritmo y considera expandir operaciones.',
+                        icon: TrendingUp
+                      });
+                    }
+
+                    // Recomendación por mejores productos
+                    const topProducto = topProductos[0];
+                    if (topProducto) {
+                      recomendaciones.push({
+                        tipo: 'info',
+                        titulo: 'Producto Estrella',
+                        descripcion: `"${topProducto.nombre}" es tu producto más vendido. Asegura stock suficiente.`,
+                        icon: Star
+                      });
+                    }
+
+                    return recomendaciones.slice(0, 5).map((rec, idx) => {
+                      const Icon = rec.icon;
+                      const colorClasses = {
+                        success: 'bg-green-50 border-green-200 text-green-800',
+                        warning: 'bg-amber-50 border-amber-200 text-amber-800',
+                        alert: 'bg-red-50 border-red-200 text-red-800',
+                        info: 'bg-blue-50 border-blue-200 text-blue-800'
+                      };
+                      
+                      return (
+                        <div key={idx} className={`p-3 rounded-lg border ${colorClasses[rec.tipo]}`}>
+                          <div className="flex items-start gap-3">
+                            <Icon className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="font-semibold text-sm">{rec.titulo}</p>
+                              <p className="text-xs mt-1 opacity-90">{rec.descripcion}</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-4">
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Top 5 Productos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {topProductos.slice(0, 5).map((producto, idx) => (
+                    <div key={producto.id} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded">
+                      <div className="flex items-center gap-2">
+                        <Badge className={idx === 0 ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}>
+                          {idx + 1}
+                        </Badge>
+                        <span className="text-sm font-medium truncate">{producto.nombre}</span>
+                      </div>
+                      <span className="text-sm font-bold text-emerald-600">${producto.total.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Top 5 Clientes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {topClientes.slice(0, 5).map((cliente, idx) => (
+                    <div key={cliente.id} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded">
+                      <div className="flex items-center gap-2">
+                        <Badge className={idx === 0 ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}>
+                          {idx + 1}
+                        </Badge>
+                        <span className="text-sm font-medium truncate">{cliente.nombre}</span>
+                      </div>
+                      <span className="text-sm font-bold text-blue-600">${cliente.total.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Alertas Críticas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {alertas.slice(0, 5).map((alerta, idx) => (
+                    <div key={idx} className={`p-2 rounded border-l-4 ${
+                      alerta.nivel === 'critico' ? 'bg-red-50 border-red-500' :
+                      alerta.nivel === 'medio' ? 'bg-amber-50 border-amber-500' :
+                      'bg-blue-50 border-blue-500'
+                    }`}>
+                      <p className="text-xs font-medium">{alerta.mensaje}</p>
+                    </div>
+                  ))}
+                  {alertas.length === 0 && (
+                    <div className="text-center py-4">
+                      <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                      <p className="text-sm text-slate-600">Sin alertas críticas</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
         {/* KPI COMERCIALES */}
         <TabsContent value="comerciales" className="space-y-4">
@@ -1648,6 +1917,201 @@ export default function Analytics() {
                         </div>
                       </div>
                     ));
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* PRONÓSTICO Y ESTACIONALIDAD */}
+        <TabsContent value="pronostico" className="space-y-4">
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Brain className="h-5 w-5 text-purple-600" />
+                Pronóstico de Ventas (Próximos 30 días)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={(() => {
+                    // Obtener datos históricos últimos 60 días
+                    const historico = Array.from({ length: 60 }, (_, i) => {
+                      const fecha = subDays(new Date(), 59 - i);
+                      const ventasDia = sales.filter(s => 
+                        s.created_date?.startsWith(format(fecha, 'yyyy-MM-dd')) && 
+                        s.estado === "CONFIRMADA"
+                      );
+                      return {
+                        dia: i,
+                        ventas: ventasDia.reduce((acc, v) => acc + v.total, 0)
+                      };
+                    });
+
+                    // Calcular tendencia lineal simple
+                    const n = historico.length;
+                    const sumX = historico.reduce((acc, d) => acc + d.dia, 0);
+                    const sumY = historico.reduce((acc, d) => acc + d.ventas, 0);
+                    const sumXY = historico.reduce((acc, d) => acc + d.dia * d.ventas, 0);
+                    const sumX2 = historico.reduce((acc, d) => acc + d.dia * d.dia, 0);
+                    
+                    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+                    const intercept = (sumY - slope * sumX) / n;
+
+                    // Generar pronóstico
+                    const pronostico = Array.from({ length: 30 }, (_, i) => {
+                      const dia = 60 + i;
+                      const ventasPronostico = slope * dia + intercept;
+                      return {
+                        fecha: format(addDays(new Date(), i + 1), 'dd/MM', { locale: es }),
+                        pronostico: Math.max(0, ventasPronostico),
+                        tipo: 'pronostico'
+                      };
+                    });
+
+                    // Combinar histórico reciente con pronóstico
+                    const historicoReciente = historico.slice(-30).map(d => ({
+                      fecha: format(subDays(new Date(), 29 - (d.dia - 30)), 'dd/MM', { locale: es }),
+                      historico: d.ventas,
+                      tipo: 'historico'
+                    }));
+
+                    return [...historicoReciente, ...pronostico];
+                  })()}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="fecha" tick={{ fontSize: 9 }} stroke="#94a3b8" />
+                    <YAxis tick={{ fontSize: 11 }} stroke="#94a3b8" />
+                    <Tooltip formatter={(value) => value ? `$${value.toLocaleString()}` : ''} />
+                    <Legend />
+                    <Line type="monotone" dataKey="historico" stroke="#3b82f6" strokeWidth={2} name="Histórico" dot={false} />
+                    <Line type="monotone" dataKey="pronostico" stroke="#8b5cf6" strokeWidth={2} strokeDasharray="5 5" name="Pronóstico" dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-4 p-4 bg-purple-50 rounded-lg">
+                <p className="text-sm text-purple-900">
+                  📊 <strong>Interpretación:</strong> El pronóstico usa regresión lineal sobre los últimos 60 días. 
+                  Tendencia {(() => {
+                    const primerDia = sales.filter(s => s.created_date?.startsWith(format(subDays(new Date(), 59), 'yyyy-MM-dd')));
+                    const ultimoDia = sales.filter(s => s.created_date?.startsWith(format(new Date(), 'yyyy-MM-dd')));
+                    const primerTotal = primerDia.reduce((acc, v) => acc + v.total, 0);
+                    const ultimoTotal = ultimoDia.reduce((acc, v) => acc + v.total, 0);
+                    return ultimoTotal > primerTotal ? 'creciente' : 'decreciente';
+                  })()} detectada.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-blue-600" />
+                  Estacionalidad por Mes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={(() => {
+                      const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                      const ventasPorMes = meses.map((_, idx) => ({
+                        mes: meses[idx],
+                        ventas: sales
+                          .filter(s => s.estado === "CONFIRMADA" && getMonth(new Date(s.created_date)) === idx)
+                          .reduce((acc, v) => acc + v.total, 0)
+                      }));
+                      return ventasPorMes;
+                    })()}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis dataKey="mes" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
+                      <Bar dataKey="ventas" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Heatmap de Ventas (Día/Hora)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((dia, diaIdx) => (
+                    <div key={diaIdx} className="flex items-center gap-2">
+                      <span className="text-xs font-medium w-10">{dia}</span>
+                      <div className="flex-1 grid grid-cols-8 gap-1">
+                        {[9, 11, 13, 15, 17, 19, 21, 23].map((hora, horaIdx) => {
+                          const ventasEnHora = sales.filter(s => {
+                            if (!s.created_date || s.estado !== "CONFIRMADA") return false;
+                            const fecha = new Date(s.created_date);
+                            const diaSemana = (getDay(fecha) + 6) % 7; // Ajustar para que lunes sea 0
+                            const horaVenta = fecha.getHours();
+                            return diaSemana === diaIdx && horaVenta >= hora && horaVenta < hora + 2;
+                          });
+                          const total = ventasEnHora.reduce((acc, v) => acc + v.total, 0);
+                          const maxVentas = 50000; // Ajusta según tu escala
+                          const intensidad = Math.min(total / maxVentas, 1);
+                          
+                          return (
+                            <div
+                              key={horaIdx}
+                              className="h-8 rounded flex items-center justify-center text-xs font-medium cursor-pointer hover:scale-110 transition-transform"
+                              style={{
+                                backgroundColor: intensidad > 0 
+                                  ? `rgba(59, 130, 246, ${0.2 + intensidad * 0.8})` 
+                                  : '#f1f5f9',
+                                color: intensidad > 0.5 ? 'white' : '#475569'
+                              }}
+                              title={`${dia} ${hora}h: $${total.toLocaleString()}`}
+                            >
+                              {hora}h
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-slate-500 mt-3">
+                  💡 Los colores más intensos indican mayor volumen de ventas
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Proyección Financiera (Próximo Mes)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {(() => {
+                  // Calcular promedio diario del último mes
+                  const promedioDiario = totalVentas / Math.max(differenceInDays(new Date(endDate), new Date(startDate)), 1);
+                  const ventasProyectadas = promedioDiario * 30;
+                  const margenProyectado = ventasProyectadas * (porcentajeMargen / 100);
+                  const gastosProyectados = (totalGastos / Math.max(filteredSales.length, 1)) * (ventasProyectadas / ticketPromedio);
+                  const utilidadProyectada = margenProyectado - gastosProyectados;
+
+                  return [
+                    { titulo: 'Ventas Proyectadas', valor: ventasProyectadas, color: 'blue' },
+                    { titulo: 'Margen Proyectado', valor: margenProyectado, color: 'green' },
+                    { titulo: 'Gastos Proyectados', valor: gastosProyectados, color: 'amber' },
+                    { titulo: 'Utilidad Proyectada', valor: utilidadProyectada, color: utilidadProyectada > 0 ? 'purple' : 'red' }
+                  ].map((item, idx) => (
+                    <div key={idx} className="p-4 border rounded-lg">
+                      <p className="text-xs font-medium text-slate-500 uppercase">{item.titulo}</p>
+                      <p className={`text-2xl font-bold mt-2 text-${item.color}-600`}>
+                        ${item.valor.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </p>
+                    </div>
+                  ));
                 })()}
               </div>
             </CardContent>
