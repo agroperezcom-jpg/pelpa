@@ -26,7 +26,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ShoppingBag,
-  FileText
+  FileText,
+  Target
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -95,6 +96,7 @@ export default function Layout({ children, currentPageName }) {
 
   const navItems = [
     { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
+    { name: "Dashboard Ejecutivo", page: "DashboardEjecutivo", icon: Target },
     { name: "Calendario", page: "Calendar", icon: CalendarIcon },
     { name: "Clientes", page: "Clients", icon: Users },
     { name: "Productos", page: "Products", icon: Package },
