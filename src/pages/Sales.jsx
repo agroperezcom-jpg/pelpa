@@ -87,6 +87,21 @@ export default function Sales() {
     queryFn: () => base44.entities.TipoArticulo.list()
   });
 
+  const { data: mediosPago = [] } = useQuery({
+    queryKey: ['mediosPago'],
+    queryFn: () => base44.entities.MedioPago.list()
+  });
+
+  const { data: cajas = [] } = useQuery({
+    queryKey: ['cajas'],
+    queryFn: () => base44.entities.Caja.list()
+  });
+
+  const { data: bancos = [] } = useQuery({
+    queryKey: ['bancos'],
+    queryFn: () => base44.entities.Banco.list()
+  });
+
   const calcularPrecioYMargen = (product, quantity) => {
     if (!product.tipo_articulo_id) {
       // Para productos sin tipo (legacy), usar precio original
@@ -146,6 +161,9 @@ export default function Sales() {
         }
       }
 
+      const medio = mediosPago.find(m => m.nombre === saleData.payment_method);
+      const esCuentaCorriente = medio?.nombre === "Cuenta Corriente";
+
       // Update product stock
       for (const item of saleData.items.filter(i => i.type === 'product')) {
         const product = products.find(p => p.id === item.item_id);
@@ -166,18 +184,82 @@ export default function Sales() {
         }
       }
 
-      if (saleData.client_id) {
+      // Crear venta
+      const sale = await base44.entities.Sale.create(saleData);
+
+      // Integración con Tesorería
+      if (esCuentaCorriente && saleData.client_id) {
+        // CUENTA CORRIENTE: Solo movimiento CC (NO Tesorería)
+        const client = clients.find(c => c.id === saleData.client_id);
+        const nuevoSaldo = (client?.saldo_cc || 0) + saleData.total;
+
+        await base44.entities.MovimientoCC.create({
+          tipo_entidad: "CLIENTE",
+          entidad_id: saleData.client_id,
+          entidad_nombre: saleData.client_name,
+          fecha: new Date().toISOString().split('T')[0],
+          concepto: `Venta #${sale.id}`,
+          debe: saleData.total,
+          haber: 0,
+          saldo: nuevoSaldo,
+          referencia_tipo: "venta",
+          referencia_id: sale.id
+        });
+
         await base44.entities.Client.update(saleData.client_id, {
+          saldo_cc: nuevoSaldo,
           last_contact: new Date().toISOString().split('T')[0]
         });
+      } else if (medio) {
+        // PAGO CONTADO: Generar movimiento de Tesorería
+        const caja = cajas.find(c => c.is_active);
+        const banco = bancos.find(b => b.is_active);
+
+        const movimiento = await base44.entities.MovimientoTesoreria.create({
+          fecha: new Date().toISOString().split('T')[0],
+          tipo: "INGRESO",
+          medio_pago_id: medio.id,
+          medio_pago_nombre: medio.nombre,
+          banco_id: medio.requiere_banco ? banco?.id : null,
+          banco_nombre: medio.requiere_banco ? banco?.nombre : "",
+          caja_id: medio.requiere_caja ? caja?.id : null,
+          caja_nombre: medio.requiere_caja ? caja?.nombre : "",
+          importe: saleData.total,
+          referencia_tipo: "venta",
+          referencia_id: sale.id,
+          observaciones: `Venta #${sale.id} - ${saleData.client_name}`
+        });
+
+        // Actualizar saldos
+        if (medio.requiere_banco && banco) {
+          await base44.entities.Banco.update(banco.id, {
+            saldo_actual: banco.saldo_actual + saleData.total
+          });
+        }
+        if (medio.requiere_caja && caja) {
+          await base44.entities.Caja.update(caja.id, {
+            saldo_actual: caja.saldo_actual + saleData.total
+          });
+        }
+
+        if (saleData.client_id) {
+          await base44.entities.Client.update(saleData.client_id, {
+            last_contact: new Date().toISOString().split('T')[0]
+          });
+        }
       }
 
-      return base44.entities.Sale.create(saleData);
+      return sale;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sales'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['movements'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosCC'] });
+      queryClient.invalidateQueries({ queryKey: ['cajas'] });
+      queryClient.invalidateQueries({ queryKey: ['bancos'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
       handleCloseDialog();
     },
     onError: (error) => {
@@ -189,7 +271,7 @@ export default function Sales() {
     setCart([]);
     setSelectedClient("");
     setTipoLista("MINORISTA");
-    setPaymentMethod("EFECTIVO");
+    setPaymentMethod(mediosPago[0]?.nombre || "Efectivo");
     setProductSearch("");
     setIsDialogOpen(true);
   };
@@ -618,9 +700,9 @@ export default function Sales() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="EFECTIVO">Efectivo</SelectItem>
-                        <SelectItem value="TARJETA">Tarjeta</SelectItem>
-                        <SelectItem value="CTA_CTE">Cuenta Corriente</SelectItem>
+                        {mediosPago.map(m => (
+                          <SelectItem key={m.id} value={m.nombre}>{m.nombre}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
