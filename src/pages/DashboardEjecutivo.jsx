@@ -10,8 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   TrendingUp, TrendingDown, DollarSign, AlertTriangle, ArrowRight, 
-  Wallet, Building2, Receipt, FileText, Users, Package, 
-  Target, Calendar, CheckCircle2, XCircle, AlertCircle, Landmark
+  Wallet, Receipt, FileText, Users, Package, 
+  Target, Calendar, CheckCircle2, XCircle, Landmark
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths, differenceInDays, addMonths } from "date-fns";
 import { es } from "date-fns/locale";
