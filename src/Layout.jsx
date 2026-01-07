@@ -104,6 +104,7 @@ export default function Layout({ children, currentPageName }) {
     { name: "Servicios", page: "Services", icon: Briefcase },
     { name: "Inventario", page: "Inventory", icon: Warehouse },
     { name: "Compras", page: "Purchases", icon: ShoppingBag },
+    { name: "Pagos Proveedores", page: "PagosProveedores", icon: DollarSign },
     { name: "Proyectos", page: "Projects", icon: BookOpen },
     { name: "Presupuestos", page: "Presupuestos", icon: FileText },
     { name: "Ventas", page: "Sales", icon: ShoppingCart },

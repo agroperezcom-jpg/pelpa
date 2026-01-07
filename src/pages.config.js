@@ -19,6 +19,7 @@ import TesoreriaV2 from './pages/TesoreriaV2';
 import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
 import Proveedores from './pages/Proveedores';
+import PagosProveedores from './pages/PagosProveedores';
 import __Layout from './Layout.jsx';
 
 
@@ -44,6 +45,7 @@ export const PAGES = {
     "TiposArticulo": TiposArticulo,
     "Treasury": Treasury,
     "Proveedores": Proveedores,
+    "PagosProveedores": PagosProveedores,
 }
 
 export const pagesConfig = {
