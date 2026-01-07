@@ -593,6 +593,7 @@ export default function Analytics() {
           <TabsTrigger value="tendencias">Tendencias</TabsTrigger>
           <TabsTrigger value="comparacion">Comparación</TabsTrigger>
           <TabsTrigger value="pronostico">Pronóstico</TabsTrigger>
+          <TabsTrigger value="segmentacion">Segmentación</TabsTrigger>
         </TabsList>
 
         {/* DASHBOARD EJECUTIVO */}
@@ -2116,6 +2117,365 @@ export default function Analytics() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* SEGMENTACIÓN AVANZADA */}
+        <TabsContent value="segmentacion" className="space-y-4">
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Segmentación ABC de Clientes</CardTitle>
+                <p className="text-xs text-slate-500">Basado en volumen de compras</p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {(() => {
+                    const clientesOrdenados = topClientes.slice().sort((a, b) => b.total - a.total);
+                    const totalGeneral = clientesOrdenados.reduce((acc, c) => acc + c.total, 0);
+                    let acumulado = 0;
+                    const segmentos = { A: [], B: [], C: [] };
+                    
+                    clientesOrdenados.forEach(cliente => {
+                      acumulado += cliente.total;
+                      const pctAcum = (acumulado / totalGeneral) * 100;
+                      if (pctAcum <= 80) segmentos.A.push(cliente);
+                      else if (pctAcum <= 95) segmentos.B.push(cliente);
+                      else segmentos.C.push(cliente);
+                    });
+
+                    return Object.entries(segmentos).map(([seg, clientes]) => {
+                      const totalSeg = clientes.reduce((acc, c) => acc + c.total, 0);
+                      const pctTotal = totalGeneral > 0 ? (totalSeg / totalGeneral) * 100 : 0;
+                      const colorClass = {
+                        A: 'bg-green-50 border-green-500 text-green-900',
+                        B: 'bg-amber-50 border-amber-500 text-amber-900',
+                        C: 'bg-slate-50 border-slate-500 text-slate-900'
+                      }[seg];
+
+                      return (
+                        <div key={seg} className={`p-4 rounded-lg border-l-4 ${colorClass}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <p className="font-bold text-lg">Segmento {seg}</p>
+                              <p className="text-xs opacity-70">
+                                {seg === 'A' ? 'Alto valor - 80% ingresos' : 
+                                 seg === 'B' ? 'Medio valor - 15% ingresos' : 
+                                 'Bajo valor - 5% ingresos'}
+                              </p>
+                            </div>
+                            <Badge className="text-lg px-3 py-1">
+                              {clientes.length}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between text-sm mt-3 pt-3 border-t border-current border-opacity-20">
+                            <span>Total facturado</span>
+                            <span className="font-bold">${totalSeg.toLocaleString()} ({pctTotal.toFixed(0)}%)</span>
+                          </div>
+                          <div className="flex justify-between text-sm mt-1">
+                            <span>Promedio por cliente</span>
+                            <span className="font-bold">
+                              ${clientes.length > 0 ? (totalSeg / clientes.length).toLocaleString(undefined, { maximumFractionDigits: 0 }) : 0}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Análisis RFM Simplificado</CardTitle>
+                <p className="text-xs text-slate-500">Recencia, Frecuencia, Monto</p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {(() => {
+                    const rfmClientes = topClientes.slice(0, 10).map(cliente => {
+                      const recencia = differenceInDays(new Date(), new Date(cliente.ultimaCompra));
+                      const frecuencia = cliente.compras;
+                      const monto = cliente.total;
+
+                      // Scoring simple (1-5)
+                      const rScore = recencia < 30 ? 5 : recencia < 60 ? 4 : recencia < 90 ? 3 : recencia < 180 ? 2 : 1;
+                      const fScore = frecuencia > 10 ? 5 : frecuencia > 7 ? 4 : frecuencia > 4 ? 3 : frecuencia > 2 ? 2 : 1;
+                      const mScore = monto > 50000 ? 5 : monto > 30000 ? 4 : monto > 15000 ? 3 : monto > 5000 ? 2 : 1;
+                      
+                      const rfmScore = rScore + fScore + mScore;
+                      
+                      let segmento = '';
+                      if (rfmScore >= 13) segmento = '🏆 Champions';
+                      else if (rfmScore >= 10) segmento = '⭐ Leales';
+                      else if (rfmScore >= 7) segmento = '📈 Potenciales';
+                      else segmento = '⚠️ En Riesgo';
+
+                      return {
+                        nombre: cliente.nombre,
+                        recencia: `${recencia}d`,
+                        frecuencia,
+                        monto: `$${monto.toLocaleString()}`,
+                        segmento,
+                        score: rfmScore
+                      };
+                    });
+
+                    return rfmClientes.map((cliente, idx) => (
+                      <div key={idx} className="p-3 border rounded-lg hover:bg-slate-50">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium text-sm">{cliente.nombre}</span>
+                          <Badge className={
+                            cliente.score >= 13 ? 'bg-purple-100 text-purple-700' :
+                            cliente.score >= 10 ? 'bg-blue-100 text-blue-700' :
+                            cliente.score >= 7 ? 'bg-green-100 text-green-700' :
+                            'bg-red-100 text-red-700'
+                          }>
+                            {cliente.segmento}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <p className="text-slate-500">Recencia</p>
+                            <p className="font-medium">{cliente.recencia}</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-500">Frecuencia</p>
+                            <p className="font-medium">{cliente.frecuencia}</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-500">Monto</p>
+                            <p className="font-medium">{cliente.monto}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Rentabilidad por Lista de Precios</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid lg:grid-cols-2 gap-4">
+                {['MINORISTA', 'MAYORISTA'].map(lista => {
+                  const ventasLista = filteredSales.filter(s => s.tipo_lista === lista);
+                  const totalLista = ventasLista.reduce((acc, s) => acc + s.total, 0);
+                  const costoLista = ventasLista.reduce((acc, s) => {
+                    return acc + (s.items?.reduce((sum, item) => sum + item.costo_unitario * item.quantity, 0) || 0);
+                  }, 0);
+                  const margenLista = totalLista - costoLista;
+                  const pctMargen = totalLista > 0 ? (margenLista / totalLista) * 100 : 0;
+
+                  return (
+                    <div key={lista} className="p-6 border-2 rounded-xl bg-gradient-to-br from-white to-slate-50">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-bold text-lg">{lista}</h3>
+                        <Badge className="text-lg px-3 py-1">
+                          {ventasLista.length} ventas
+                        </Badge>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Ventas totales</span>
+                          <span className="font-bold text-blue-600 text-lg">${totalLista.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Margen generado</span>
+                          <span className="font-bold text-green-600 text-lg">${margenLista.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between pt-3 border-t">
+                          <span className="text-slate-600 font-medium">% Margen</span>
+                          <span className={`font-bold text-xl ${
+                            pctMargen > 30 ? 'text-green-600' : 
+                            pctMargen > 20 ? 'text-amber-600' : 
+                            'text-red-600'
+                          }`}>
+                            {pctMargen.toFixed(1)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Distribución de Gastos por Categoría</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid lg:grid-cols-2 gap-6">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={(() => {
+                          const gastosPorCat = {};
+                          filteredExpenses.forEach(exp => {
+                            const cat = exp.category || 'otros';
+                            gastosPorCat[cat] = (gastosPorCat[cat] || 0) + exp.amount;
+                          });
+                          return Object.entries(gastosPorCat)
+                            .map(([cat, total]) => ({
+                              name: cat.charAt(0).toUpperCase() + cat.slice(1).replace('_', ' '),
+                              value: total
+                            }))
+                            .sort((a, b) => b.value - a.value);
+                        })()}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {COLORS.map((color, index) => (
+                          <Cell key={`cell-${index}`} fill={color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="space-y-2">
+                  {(() => {
+                    const gastosPorCat = {};
+                    filteredExpenses.forEach(exp => {
+                      const cat = exp.category || 'otros';
+                      gastosPorCat[cat] = (gastosPorCat[cat] || 0) + exp.amount;
+                    });
+                    return Object.entries(gastosPorCat)
+                      .sort(([, a], [, b]) => b - a)
+                      .slice(0, 8)
+                      .map(([cat, total], idx) => (
+                        <div key={cat} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
+                            <span className="text-sm font-medium capitalize">
+                              {cat.replace('_', ' ')}
+                            </span>
+                          </div>
+                          <span className="font-bold text-slate-700">${total.toLocaleString()}</span>
+                        </div>
+                      ));
+                  })()}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Productos por Nivel de Inventario</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4">
+                {(() => {
+                  const stockCritico = products.filter(p => p.stock === 0 && p.is_active);
+                  const stockBajo = products.filter(p => p.stock > 0 && p.stock <= p.min_stock && p.is_active);
+                  const stockNormal = products.filter(p => p.stock > p.min_stock && p.is_active);
+
+                  return [
+                    { label: 'Stock Crítico', cantidad: stockCritico.length, color: 'red', productos: stockCritico },
+                    { label: 'Stock Bajo', cantidad: stockBajo.length, color: 'amber', productos: stockBajo },
+                    { label: 'Stock Normal', cantidad: stockNormal.length, color: 'green', productos: stockNormal }
+                  ].map((nivel, idx) => (
+                    <div key={idx} className={`p-4 border-2 rounded-lg bg-${nivel.color}-50 border-${nivel.color}-200`}>
+                      <p className="text-xs font-medium text-slate-600 uppercase">{nivel.label}</p>
+                      <p className={`text-4xl font-bold text-${nivel.color}-600 mt-2`}>{nivel.cantidad}</p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {products.length > 0 ? ((nivel.cantidad / products.length) * 100).toFixed(0) : 0}% del total
+                      </p>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Card className="border-0 shadow-sm overflow-hidden">
+              <CardHeader>
+                <CardTitle className="text-base">Top 10 Gastos del Período</CardTitle>
+              </CardHeader>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50">
+                    <TableHead>Descripción</TableHead>
+                    <TableHead>Categoría</TableHead>
+                    <TableHead className="text-right">Monto</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredExpenses
+                    .sort((a, b) => b.amount - a.amount)
+                    .slice(0, 10)
+                    .map((gasto, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="font-medium">{gasto.description}</TableCell>
+                        <TableCell>
+                          <Badge className="bg-slate-100 text-slate-700 text-xs capitalize">
+                            {gasto.category?.replace('_', ' ')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-red-600">
+                          ${gasto.amount.toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Eficiencia Operativa</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <p className="text-sm font-medium text-blue-900 mb-2">Costo de Adquisición por Cliente (CAC)</p>
+                    <p className="text-3xl font-bold text-blue-600">
+                      ${(() => {
+                        const gastosMarketing = filteredExpenses.filter(e => e.category === 'marketing').reduce((acc, e) => acc + e.amount, 0);
+                        return clientesActivos > 0 ? (gastosMarketing / clientesActivos).toLocaleString(undefined, { maximumFractionDigits: 0 }) : 0;
+                      })()}
+                    </p>
+                    <p className="text-xs text-blue-700 mt-1">Por cliente adquirido</p>
+                  </div>
+
+                  <div className="p-4 bg-emerald-50 rounded-lg">
+                    <p className="text-sm font-medium text-emerald-900 mb-2">ROI Marketing</p>
+                    <p className="text-3xl font-bold text-emerald-600">
+                      {(() => {
+                        const gastosMarketing = filteredExpenses.filter(e => e.category === 'marketing').reduce((acc, e) => acc + e.amount, 0);
+                        return gastosMarketing > 0 ? ((totalVentas / gastosMarketing)).toFixed(1) : 0;
+                      })()}x
+                    </p>
+                    <p className="text-xs text-emerald-700 mt-1">Retorno por peso invertido</p>
+                  </div>
+
+                  <div className="p-4 bg-purple-50 rounded-lg">
+                    <p className="text-sm font-medium text-purple-900 mb-2">Punto de Equilibrio</p>
+                    <p className="text-3xl font-bold text-purple-600">
+                      ${(() => {
+                        const costosFijos = filteredExpenses.filter(e => ['renta', 'servicios', 'salarios'].includes(e.category)).reduce((acc, e) => acc + e.amount, 0);
+                        const margenContribucion = porcentajeMargen / 100;
+                        return margenContribucion > 0 ? (costosFijos / margenContribucion).toLocaleString(undefined, { maximumFractionDigits: 0 }) : 0;
+                      })()}
+                    </p>
+                    <p className="text-xs text-purple-700 mt-1">Ventas necesarias para cubrir costos</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
