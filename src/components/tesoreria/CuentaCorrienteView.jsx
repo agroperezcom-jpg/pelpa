@@ -1,9 +1,26 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -12,11 +29,23 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import { Users, Package, TrendingUp, TrendingDown } from "lucide-react";
+import { Users, Package, TrendingUp, TrendingDown, DollarSign, HandCoins } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 export default function CuentaCorrienteView() {
+  const [isCobroDialogOpen, setIsCobroDialogOpen] = useState(false);
+  const [isPagoDialogOpen, setIsPagoDialogOpen] = useState(false);
+  const [selectedEntity, setSelectedEntity] = useState(null);
+  const [formData, setFormData] = useState({
+    monto: "",
+    medio_pago_id: "",
+    banco_id: "",
+    caja_id: ""
+  });
+
+  const queryClient = useQueryClient();
+
   const { data: clientes = [] } = useQuery({
     queryKey: ['clients'],
     queryFn: () => base44.entities.Client.list()
@@ -32,11 +61,170 @@ export default function CuentaCorrienteView() {
     queryFn: () => base44.entities.MovimientoCC.list('-created_date', 100)
   });
 
+  const { data: mediosPago = [] } = useQuery({
+    queryKey: ['mediosPago'],
+    queryFn: () => base44.entities.MedioPago.list()
+  });
+
+  const { data: bancos = [] } = useQuery({
+    queryKey: ['bancos'],
+    queryFn: () => base44.entities.Banco.list()
+  });
+
+  const { data: cajas = [] } = useQuery({
+    queryKey: ['cajas'],
+    queryFn: () => base44.entities.Caja.list()
+  });
+
   const movimientosClientes = movimientosCC.filter(m => m.tipo_entidad === "CLIENTE");
   const movimientosProveedores = movimientosCC.filter(m => m.tipo_entidad === "PROVEEDOR");
 
   const totalDeudaClientes = clientes.reduce((acc, c) => acc + (c.saldo_cc || 0), 0);
   const totalDeudaProveedores = proveedores.reduce((acc, p) => acc + (p.saldo_cc || 0), 0);
+
+  const cobrarClienteMutation = useMutation({
+    mutationFn: async (data) => {
+      const medio = mediosPago.find(m => m.id === data.medio_pago_id);
+      const monto = parseFloat(data.monto);
+      const cliente = clientes.find(c => c.id === selectedEntity.id);
+      const nuevoSaldo = cliente.saldo_cc - monto;
+
+      // Crear MovimientoCC (HABER)
+      await base44.entities.MovimientoCC.create({
+        tipo_entidad: "CLIENTE",
+        entidad_id: cliente.id,
+        entidad_nombre: cliente.name,
+        fecha: new Date().toISOString().split('T')[0],
+        concepto: `Cobro - ${medio.nombre}`,
+        debe: 0,
+        haber: monto,
+        saldo: nuevoSaldo,
+        referencia_tipo: "cobro",
+        referencia_id: ""
+      });
+
+      // Actualizar saldo del cliente
+      await base44.entities.Client.update(cliente.id, { saldo_cc: nuevoSaldo });
+
+      // Crear MovimientoTesoreria (INGRESO)
+      const banco = bancos.find(b => b.id === data.banco_id);
+      const caja = cajas.find(c => c.id === data.caja_id);
+
+      await base44.entities.MovimientoTesoreria.create({
+        fecha: new Date().toISOString().split('T')[0],
+        tipo: "INGRESO",
+        medio_pago_id: medio.id,
+        medio_pago_nombre: medio.nombre,
+        banco_id: medio.requiere_banco ? banco?.id : null,
+        banco_nombre: medio.requiere_banco ? banco?.nombre : "",
+        caja_id: medio.requiere_caja ? caja?.id : null,
+        caja_nombre: medio.requiere_caja ? caja?.nombre : "",
+        importe: monto,
+        referencia_tipo: "cobro",
+        observaciones: `Cobro a ${cliente.name}`
+      });
+
+      // Actualizar saldos de banco/caja
+      if (medio.requiere_banco && banco) {
+        await base44.entities.Banco.update(banco.id, {
+          saldo_actual: banco.saldo_actual + monto
+        });
+      }
+      if (medio.requiere_caja && caja) {
+        await base44.entities.Caja.update(caja.id, {
+          saldo_actual: caja.saldo_actual + monto
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosCC'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
+      queryClient.invalidateQueries({ queryKey: ['bancos'] });
+      queryClient.invalidateQueries({ queryKey: ['cajas'] });
+      setIsCobroDialogOpen(false);
+      setFormData({ monto: "", medio_pago_id: "", banco_id: "", caja_id: "" });
+    }
+  });
+
+  const pagarProveedorMutation = useMutation({
+    mutationFn: async (data) => {
+      const medio = mediosPago.find(m => m.id === data.medio_pago_id);
+      const monto = parseFloat(data.monto);
+      const proveedor = proveedores.find(p => p.id === selectedEntity.id);
+      const nuevoSaldo = proveedor.saldo_cc - monto;
+
+      // Crear MovimientoCC (HABER)
+      await base44.entities.MovimientoCC.create({
+        tipo_entidad: "PROVEEDOR",
+        entidad_id: proveedor.id,
+        entidad_nombre: proveedor.nombre,
+        fecha: new Date().toISOString().split('T')[0],
+        concepto: `Pago - ${medio.nombre}`,
+        debe: 0,
+        haber: monto,
+        saldo: nuevoSaldo,
+        referencia_tipo: "pago",
+        referencia_id: ""
+      });
+
+      // Actualizar saldo del proveedor
+      await base44.entities.Proveedor.update(proveedor.id, { saldo_cc: nuevoSaldo });
+
+      // Crear MovimientoTesoreria (EGRESO)
+      const banco = bancos.find(b => b.id === data.banco_id);
+      const caja = cajas.find(c => c.id === data.caja_id);
+
+      await base44.entities.MovimientoTesoreria.create({
+        fecha: new Date().toISOString().split('T')[0],
+        tipo: "EGRESO",
+        medio_pago_id: medio.id,
+        medio_pago_nombre: medio.nombre,
+        banco_id: medio.requiere_banco ? banco?.id : null,
+        banco_nombre: medio.requiere_banco ? banco?.nombre : "",
+        caja_id: medio.requiere_caja ? caja?.id : null,
+        caja_nombre: medio.requiere_caja ? caja?.nombre : "",
+        importe: monto,
+        referencia_tipo: "pago",
+        observaciones: `Pago a ${proveedor.nombre}`
+      });
+
+      // Actualizar saldos de banco/caja
+      if (medio.requiere_banco && banco) {
+        await base44.entities.Banco.update(banco.id, {
+          saldo_actual: banco.saldo_actual - monto
+        });
+      }
+      if (medio.requiere_caja && caja) {
+        await base44.entities.Caja.update(caja.id, {
+          saldo_actual: caja.saldo_actual - monto
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['proveedores'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosCC'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
+      queryClient.invalidateQueries({ queryKey: ['bancos'] });
+      queryClient.invalidateQueries({ queryKey: ['cajas'] });
+      setIsPagoDialogOpen(false);
+      setFormData({ monto: "", medio_pago_id: "", banco_id: "", caja_id: "" });
+    }
+  });
+
+  const handleCobrarCliente = (cliente) => {
+    setSelectedEntity(cliente);
+    setFormData({ monto: cliente.saldo_cc.toString(), medio_pago_id: "", banco_id: "", caja_id: "" });
+    setIsCobroDialogOpen(true);
+  };
+
+  const handlePagarProveedor = (proveedor) => {
+    setSelectedEntity(proveedor);
+    setFormData({ monto: proveedor.saldo_cc.toString(), medio_pago_id: "", banco_id: "", caja_id: "" });
+    setIsPagoDialogOpen(true);
+  };
+
+  const medioSeleccionado = mediosPago.find(m => m.id === formData.medio_pago_id);
 
   return (
     <div className="space-y-4">
@@ -104,10 +292,14 @@ export default function CuentaCorrienteView() {
                 {clientes.filter(c => c.saldo_cc > 0).map((cliente) => (
                   <TableRow key={cliente.id} className="hover:bg-slate-50">
                     <TableCell className="font-medium">{cliente.name}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right flex items-center justify-end gap-2">
                       <span className="font-bold text-blue-600">
                         ${cliente.saldo_cc?.toLocaleString() || 0}
                       </span>
+                      <Button size="sm" variant="outline" onClick={() => handleCobrarCliente(cliente)}>
+                        <DollarSign className="h-3 w-3 mr-1" />
+                        Cobrar
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -189,10 +381,14 @@ export default function CuentaCorrienteView() {
                 {proveedores.filter(p => p.saldo_cc > 0).map((proveedor) => (
                   <TableRow key={proveedor.id} className="hover:bg-slate-50">
                     <TableCell className="font-medium">{proveedor.nombre}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right flex items-center justify-end gap-2">
                       <span className="font-bold text-amber-600">
                         ${proveedor.saldo_cc?.toLocaleString() || 0}
                       </span>
+                      <Button size="sm" variant="outline" onClick={() => handlePagarProveedor(proveedor)}>
+                        <HandCoins className="h-3 w-3 mr-1" />
+                        Pagar
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -261,6 +457,162 @@ export default function CuentaCorrienteView() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Dialog Cobrar Cliente */}
+      <Dialog open={isCobroDialogOpen} onOpenChange={setIsCobroDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cobrar a {selectedEntity?.name}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); cobrarClienteMutation.mutate(formData); }} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Monto a Cobrar *</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={formData.monto}
+                onChange={(e) => setFormData({ ...formData, monto: e.target.value })}
+                placeholder="0.00"
+                required
+              />
+              <p className="text-xs text-slate-500">Saldo actual: ${selectedEntity?.saldo_cc?.toLocaleString()}</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Medio de Pago *</Label>
+              <Select value={formData.medio_pago_id} onValueChange={(v) => setFormData({ ...formData, medio_pago_id: v, banco_id: "", caja_id: "" })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar medio" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mediosPago.filter(m => m.nombre !== "Cuenta Corriente").map(m => (
+                    <SelectItem key={m.id} value={m.id}>{m.nombre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {medioSeleccionado?.requiere_banco && (
+              <div className="space-y-2">
+                <Label>Banco *</Label>
+                <Select value={formData.banco_id} onValueChange={(v) => setFormData({ ...formData, banco_id: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar banco" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bancos.map(b => (
+                      <SelectItem key={b.id} value={b.id}>{b.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {medioSeleccionado?.requiere_caja && (
+              <div className="space-y-2">
+                <Label>Caja *</Label>
+                <Select value={formData.caja_id} onValueChange={(v) => setFormData({ ...formData, caja_id: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar caja" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cajas.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsCobroDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                Registrar Cobro
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Pagar Proveedor */}
+      <Dialog open={isPagoDialogOpen} onOpenChange={setIsPagoDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Pagar a {selectedEntity?.nombre}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); pagarProveedorMutation.mutate(formData); }} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Monto a Pagar *</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={formData.monto}
+                onChange={(e) => setFormData({ ...formData, monto: e.target.value })}
+                placeholder="0.00"
+                required
+              />
+              <p className="text-xs text-slate-500">Saldo actual: ${selectedEntity?.saldo_cc?.toLocaleString()}</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Medio de Pago *</Label>
+              <Select value={formData.medio_pago_id} onValueChange={(v) => setFormData({ ...formData, medio_pago_id: v, banco_id: "", caja_id: "" })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar medio" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mediosPago.filter(m => m.nombre !== "Cuenta Corriente").map(m => (
+                    <SelectItem key={m.id} value={m.id}>{m.nombre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {medioSeleccionado?.requiere_banco && (
+              <div className="space-y-2">
+                <Label>Banco *</Label>
+                <Select value={formData.banco_id} onValueChange={(v) => setFormData({ ...formData, banco_id: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar banco" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bancos.map(b => (
+                      <SelectItem key={b.id} value={b.id}>{b.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {medioSeleccionado?.requiere_caja && (
+              <div className="space-y-2">
+                <Label>Caja *</Label>
+                <Select value={formData.caja_id} onValueChange={(v) => setFormData({ ...formData, caja_id: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar caja" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cajas.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsPagoDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" className="bg-amber-600 hover:bg-amber-700">
+                Registrar Pago
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
