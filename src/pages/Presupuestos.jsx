@@ -47,6 +47,7 @@ import {
 import { format, addDays } from "date-fns";
 import { es } from "date-fns/locale";
 import PresupuestoPDF from "../components/presupuestos/PresupuestoPDF";
+import CobroPresupuestoDialog from "../components/presupuestos/CobroPresupuestoDialog";
 
 export default function Presupuestos() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -67,6 +68,7 @@ export default function Presupuestos() {
   const [productSearch, setProductSearch] = useState("");
   const [activeTab, setActiveTab] = useState("products");
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [isCobroDialogOpen, setIsCobroDialogOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -97,6 +99,16 @@ export default function Presupuestos() {
   const { data: tiposComprobante = [] } = useQuery({
     queryKey: ['tiposComprobante'],
     queryFn: () => base44.entities.TipoComprobante.list()
+  });
+
+  const { data: bancos = [] } = useQuery({
+    queryKey: ['bancos'],
+    queryFn: () => base44.entities.Banco.list()
+  });
+
+  const { data: cajas = [] } = useQuery({
+    queryKey: ['cajas'],
+    queryFn: () => base44.entities.Caja.list()
   });
 
   const createPresupuestoMutation = useMutation({
@@ -148,7 +160,7 @@ export default function Presupuestos() {
   });
 
   const cambiarEstadoMutation = useMutation({
-    mutationFn: async ({ presupuestoId, nuevoEstado }) => {
+    mutationFn: async ({ presupuestoId, nuevoEstado, pagos, generaIVA }) => {
       const presupuesto = presupuestos.find(p => p.id === presupuestoId);
       
       // Validaciones
@@ -162,11 +174,18 @@ export default function Presupuestos() {
         if (new Date(presupuesto.validez_hasta) < new Date()) {
           throw new Error("No se puede aceptar un presupuesto vencido");
         }
+        if (!pagos || pagos.length === 0) {
+          throw new Error("Debe registrar el cobro del presupuesto");
+        }
 
-        // CONVERSIÓN AUTOMÁTICA
+        const totalCobrado = pagos.reduce((acc, p) => acc + p.importe, 0);
+        if (Math.abs(totalCobrado - presupuesto.total_presupuesto) > 0.01) {
+          throw new Error("Debe cobrarse el 100% del presupuesto para aceptarlo");
+        }
+
+        // CONVERSIÓN AUTOMÁTICA CON COBRO
         
         // 1) Crear VENTA
-        const generaIVA = presupuesto.cliente_tipo_iva === "RESP_INSCRIPTO" || presupuesto.cliente_tipo_iva === "MONOTRIBUTO";
         const netoGravado = generaIVA ? presupuesto.total_presupuesto / 1.21 : presupuesto.total_presupuesto;
         const ivaCalculado = generaIVA ? presupuesto.total_presupuesto - netoGravado : 0;
         
@@ -179,7 +198,7 @@ export default function Presupuestos() {
           origen: "PRESUPUESTO",
           presupuesto_origen_id: presupuestoId,
           tipo_lista: "MINORISTA",
-          tipo_venta: "CTA_CTE",
+          tipo_venta: "CONTADO",
           estado: "CONFIRMADA",
           genera_iva: generaIVA,
           tipo_comprobante: generaIVA ? "B" : "X",
@@ -189,48 +208,59 @@ export default function Presupuestos() {
           neto_gravado: netoGravado,
           iva_21: ivaCalculado,
           total: presupuesto.total_presupuesto,
-          notes: `Generada automáticamente desde presupuesto ${presupuesto.numero_presupuesto}`,
+          notes: `Generada automáticamente desde presupuesto ${presupuesto.numero_presupuesto} - COBRADO`,
           project_id: null
         });
 
-        // Generar IVA Ventas si corresponde
-        if (venta.genera_iva) {
+        // 2) Generar IVA Ventas si corresponde
+        if (generaIVA) {
           await base44.entities.IVAVenta.create({
             venta_id: venta.id,
             fecha: format(new Date(), 'yyyy-MM-dd'),
-            tipo_comprobante: venta.tipo_comprobante,
-            numero_comprobante: venta.numero_comprobante || `AUTO-${venta.id.slice(0, 8)}`,
+            tipo_comprobante: "B",
+            numero_comprobante: `B-${venta.id.slice(0, 8)}`,
             cliente_nombre: venta.client_name,
             cliente_tipo_iva: venta.client_tipo_iva,
-            neto_gravado: venta.neto_gravado,
-            iva_21: venta.iva_21,
-            total: venta.total,
+            neto_gravado: netoGravado,
+            iva_21: ivaCalculado,
+            total: presupuesto.total_presupuesto,
             periodo: format(new Date(), 'yyyy-MM')
           });
         }
 
-        // 2) Crear MOVIMIENTO CUENTA CORRIENTE
-        const cliente = clients.find(c => c.id === presupuesto.cliente_id);
-        const nuevoSaldo = (cliente?.saldo_cc || 0) + presupuesto.total_presupuesto;
+        // 3) Registrar COBROS en TESORERÍA (NO cuenta corriente)
+        for (const pago of pagos) {
+          await base44.entities.MovimientoTesoreria.create({
+            fecha: format(new Date(), 'yyyy-MM-dd'),
+            tipo: "INGRESO",
+            medio_pago_id: pago.medio_pago_id,
+            medio_pago_nombre: pago.medio_pago_nombre,
+            banco_id: pago.banco_id,
+            banco_nombre: pago.banco_nombre,
+            caja_id: pago.caja_id,
+            caja_nombre: pago.caja_nombre,
+            importe: pago.importe,
+            referencia_tipo: "presupuesto",
+            referencia_id: presupuestoId,
+            observaciones: `Cobro presupuesto ${presupuesto.numero_presupuesto} - ${presupuesto.cliente_name}`
+          });
 
-        await base44.entities.MovimientoCC.create({
-          tipo_entidad: "CLIENTE",
-          entidad_id: presupuesto.cliente_id,
-          entidad_nombre: presupuesto.cliente_name,
-          fecha: format(new Date(), 'yyyy-MM-dd'),
-          concepto: `Presupuesto ${presupuesto.numero_presupuesto} aceptado`,
-          debe: presupuesto.total_presupuesto,
-          haber: 0,
-          saldo: nuevoSaldo,
-          referencia_tipo: "venta",
-          referencia_id: venta.id
-        });
+          // Actualizar saldos de bancos/cajas
+          if (pago.banco_id) {
+            const banco = bancos.find(b => b.id === pago.banco_id);
+            await base44.entities.Banco.update(pago.banco_id, {
+              saldo_actual: (banco?.saldo_actual || 0) + pago.importe
+            });
+          }
+          if (pago.caja_id) {
+            const caja = cajas.find(c => c.id === pago.caja_id);
+            await base44.entities.Caja.update(pago.caja_id, {
+              saldo_actual: (caja?.saldo_actual || 0) + pago.importe
+            });
+          }
+        }
 
-        await base44.entities.Client.update(presupuesto.cliente_id, {
-          saldo_cc: nuevoSaldo
-        });
-
-        // 3) Crear PROYECTO PMS
+        // 4) Crear PROYECTO PMS
         const proyecto = await base44.entities.Project.create({
           name: `Proyecto - ${presupuesto.numero_presupuesto}`,
           description: presupuesto.observaciones || `Proyecto generado automáticamente desde presupuesto ${presupuesto.numero_presupuesto}`,
@@ -251,7 +281,7 @@ export default function Presupuestos() {
           project_id: proyecto.id
         });
 
-        // Actualizar presupuesto
+        // 5) Actualizar presupuesto
         await base44.entities.Presupuesto.update(presupuestoId, {
           estado: "ACEPTADO",
           venta_id: venta.id,
@@ -272,10 +302,11 @@ export default function Presupuestos() {
       queryClient.invalidateQueries({ queryKey: ['presupuestos'] });
       queryClient.invalidateQueries({ queryKey: ['sales'] });
       queryClient.invalidateQueries({ queryKey: ['projects'] });
-      queryClient.invalidateQueries({ queryKey: ['movimientosCC'] });
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
+      queryClient.invalidateQueries({ queryKey: ['bancos'] });
+      queryClient.invalidateQueries({ queryKey: ['cajas'] });
       queryClient.invalidateQueries({ queryKey: ['ivaVentas'] });
-      setIsConfirmAceptarOpen(false);
+      setIsCobroDialogOpen(false);
       setSelectedPresupuesto(null);
       setIsDetailDialogOpen(false);
     },
@@ -374,10 +405,12 @@ export default function Presupuestos() {
     });
   };
 
-  const handleAceptarPresupuesto = () => {
+  const handleAceptarPresupuesto = (pagos, generaIVA) => {
     cambiarEstadoMutation.mutate({
       presupuestoId: selectedPresupuesto.id,
-      nuevoEstado: "ACEPTADO"
+      nuevoEstado: "ACEPTADO",
+      pagos,
+      generaIVA
     });
   };
 
@@ -568,11 +601,11 @@ export default function Presupuestos() {
                           className="bg-green-600 hover:bg-green-700"
                           onClick={() => {
                             setSelectedPresupuesto(presupuesto);
-                            setIsConfirmAceptarOpen(true);
+                            setIsCobroDialogOpen(true);
                           }}
                         >
                           <CheckCircle2 className="h-4 w-4 mr-1" />
-                          Aceptar
+                          Aceptar y Cobrar
                         </Button>
                       )}
                       {presupuesto.estado === "ENVIADO" && (
@@ -973,49 +1006,17 @@ export default function Presupuestos() {
         </DialogContent>
       </Dialog>
 
-      {/* Alert Dialog Aceptar */}
-      <AlertDialog open={isConfirmAceptarOpen} onOpenChange={setIsConfirmAceptarOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              Aceptar Presupuesto
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              <div className="space-y-3 mt-2">
-                <p>
-                  ¿Confirmas la aceptación del presupuesto <strong>{selectedPresupuesto?.numero_presupuesto}</strong>?
-                </p>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-900">
-                  <p className="font-semibold mb-2">Se ejecutarán automáticamente:</p>
-                  <ul className="space-y-1 text-xs">
-                    <li>✓ Crear venta por ${(selectedPresupuesto?.total_presupuesto || 0).toLocaleString()}</li>
-                    <li>✓ Registrar deuda en cuenta corriente del cliente</li>
-                    <li>✓ Crear proyecto PMS asociado</li>
-                  </ul>
-                </div>
-                <p className="text-xs text-amber-700 bg-amber-50 p-2 rounded border border-amber-200">
-                  ⚠️ Esta acción no se puede deshacer
-                </p>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setIsConfirmAceptarOpen(false);
-              setSelectedPresupuesto(null);
-            }}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-green-600 hover:bg-green-700"
-              onClick={handleAceptarPresupuesto}
-            >
-              Confirmar Aceptación
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Dialog Cobro de Presupuesto */}
+      <CobroPresupuestoDialog
+        isOpen={isCobroDialogOpen}
+        onClose={() => {
+          setIsCobroDialogOpen(false);
+          setSelectedPresupuesto(null);
+        }}
+        total={selectedPresupuesto?.total_presupuesto || 0}
+        presupuesto={selectedPresupuesto}
+        onConfirm={handleAceptarPresupuesto}
+      />
     </div>
   );
 }
