@@ -48,6 +48,7 @@ import { format, addDays } from "date-fns";
 import { es } from "date-fns/locale";
 import PresupuestoPDF from "../components/presupuestos/PresupuestoPDF";
 import CobroPresupuestoDialog from "../components/presupuestos/CobroPresupuestoDialog";
+import CancelacionPresupuestoDialog from "../components/presupuestos/CancelacionPresupuestoDialog";
 
 export default function Presupuestos() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -69,6 +70,7 @@ export default function Presupuestos() {
   const [activeTab, setActiveTab] = useState("products");
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const [isCobroDialogOpen, setIsCobroDialogOpen] = useState(false);
+  const [isCancelacionDialogOpen, setIsCancelacionDialogOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -418,6 +420,152 @@ export default function Presupuestos() {
     cambiarEstadoMutation.mutate({ presupuestoId, nuevoEstado });
   };
 
+  const cancelarPresupuestoMutation = useMutation({
+    mutationFn: async ({ presupuestoId, tipoCancelacion, motivo, devoluciones }) => {
+      const presupuesto = presupuestos.find(p => p.id === presupuestoId);
+      
+      if (!presupuesto) {
+        throw new Error("Presupuesto no encontrado");
+      }
+
+      if (presupuesto.estado !== "ACEPTADO") {
+        throw new Error("Solo se pueden cancelar presupuestos aceptados");
+      }
+
+      // 1) Crear registro de cancelación
+      const cancelacion = await base44.entities.CancelacionPresupuesto.create({
+        presupuesto_id: presupuestoId,
+        presupuesto_numero: presupuesto.numero_presupuesto,
+        venta_id: presupuesto.venta_id,
+        proyecto_id: presupuesto.proyecto_id,
+        fecha: new Date().toISOString(),
+        motivo,
+        tipo_cancelacion: tipoCancelacion,
+        usuario_email: user.email,
+        usuario_nombre: user.full_name,
+        total_original: presupuesto.total_presupuesto,
+        total_devuelto: tipoCancelacion === "CON_DEVOLUCION" ? presupuesto.total_presupuesto : 0,
+        genero_iva: presupuesto.genera_iva || false,
+        iva_revertido: presupuesto.genera_iva ? presupuesto.iva_21 || 0 : 0,
+        estado: "CONFIRMADA"
+      });
+
+      // 2) Procesar devoluciones si aplica
+      if (tipoCancelacion === "CON_DEVOLUCION") {
+        for (const dev of devoluciones) {
+          // Registrar devolución
+          await base44.entities.DevolucionCobro.create({
+            cancelacion_id: cancelacion.id,
+            presupuesto_id: presupuestoId,
+            medio_pago_id: dev.medio_pago_id,
+            medio_pago_nombre: dev.medio_pago_nombre,
+            importe: dev.importe,
+            banco_id: dev.banco_id,
+            banco_nombre: dev.banco_nombre,
+            caja_id: dev.caja_id,
+            caja_nombre: dev.caja_nombre,
+            fecha: new Date().toISOString()
+          });
+
+          // Generar movimiento de tesorería (EGRESO)
+          await base44.entities.MovimientoTesoreria.create({
+            fecha: format(new Date(), 'yyyy-MM-dd'),
+            tipo: "EGRESO",
+            medio_pago_id: dev.medio_pago_id,
+            medio_pago_nombre: dev.medio_pago_nombre,
+            banco_id: dev.banco_id,
+            banco_nombre: dev.banco_nombre,
+            caja_id: dev.caja_id,
+            caja_nombre: dev.caja_nombre,
+            importe: dev.importe,
+            referencia_tipo: "cancelacion_presupuesto",
+            referencia_id: cancelacion.id,
+            observaciones: `Devolución cancelación ${presupuesto.numero_presupuesto} - ${presupuesto.cliente_name}`
+          });
+
+          // Actualizar saldos (restar)
+          if (dev.banco_id) {
+            const banco = bancos.find(b => b.id === dev.banco_id);
+            await base44.entities.Banco.update(dev.banco_id, {
+              saldo_actual: (banco?.saldo_actual || 0) - dev.importe
+            });
+          }
+          if (dev.caja_id) {
+            const caja = cajas.find(c => c.id === dev.caja_id);
+            await base44.entities.Caja.update(dev.caja_id, {
+              saldo_actual: (caja?.saldo_actual || 0) - dev.importe
+            });
+          }
+        }
+      }
+
+      // 3) Revertir IVA si corresponde
+      if (presupuesto.genera_iva) {
+        const netoGravado = presupuesto.neto_gravado || (presupuesto.total_presupuesto / 1.21);
+        const iva21 = presupuesto.iva_21 || (presupuesto.total_presupuesto - netoGravado);
+
+        await base44.entities.IVAVenta.create({
+          venta_id: presupuesto.venta_id,
+          fecha: format(new Date(), 'yyyy-MM-dd'),
+          tipo_comprobante: "NC",
+          numero_comprobante: `NC-${presupuesto.venta_id?.slice(0, 8)}`,
+          cliente_nombre: presupuesto.cliente_name,
+          cliente_tipo_iva: presupuesto.cliente_tipo_iva,
+          neto_gravado: -netoGravado,
+          iva_21: -iva21,
+          total: -presupuesto.total_presupuesto,
+          periodo: format(new Date(), 'yyyy-MM')
+        });
+      }
+
+      // 4) Anular venta
+      if (presupuesto.venta_id) {
+        await base44.entities.Sale.update(presupuesto.venta_id, {
+          estado: "ANULADA",
+          notes: `${presupuesto.notes || ''}\n\n[ANULADA] ${motivo}`
+        });
+      }
+
+      // 5) Cancelar proyecto
+      if (presupuesto.proyecto_id) {
+        await base44.entities.Project.update(presupuesto.proyecto_id, {
+          status: "cancelado",
+          description: `${presupuesto.observaciones || ''}\n\n[CANCELADO] ${motivo}`
+        });
+      }
+
+      // 6) Actualizar presupuesto
+      await base44.entities.Presupuesto.update(presupuestoId, {
+        estado: "CANCELADO"
+      });
+
+      return cancelacion;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['presupuestos'] });
+      queryClient.invalidateQueries({ queryKey: ['sales'] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
+      queryClient.invalidateQueries({ queryKey: ['bancos'] });
+      queryClient.invalidateQueries({ queryKey: ['cajas'] });
+      queryClient.invalidateQueries({ queryKey: ['ivaVentas'] });
+      queryClient.invalidateQueries({ queryKey: ['cancelaciones'] });
+      setIsCancelacionDialogOpen(false);
+      setSelectedPresupuesto(null);
+      setIsDetailDialogOpen(false);
+    },
+    onError: (error) => {
+      alert(error.message);
+    }
+  });
+
+  const handleCancelarPresupuesto = (datos) => {
+    cancelarPresupuestoMutation.mutate({
+      presupuestoId: selectedPresupuesto.id,
+      ...datos
+    });
+  };
+
   const filteredProducts = products.filter(p => 
     p.name?.toLowerCase().includes(productSearch.toLowerCase()) ||
     p.barcode?.includes(productSearch)
@@ -439,7 +587,8 @@ export default function Presupuestos() {
     ENVIADO: { color: "bg-blue-100 text-blue-700", icon: Send },
     ACEPTADO: { color: "bg-green-100 text-green-700", icon: CheckCircle2 },
     RECHAZADO: { color: "bg-red-100 text-red-700", icon: XCircle },
-    VENCIDO: { color: "bg-amber-100 text-amber-700", icon: Clock }
+    VENCIDO: { color: "bg-amber-100 text-amber-700", icon: Clock },
+    CANCELADO: { color: "bg-red-100 text-red-700", icon: Ban }
   };
 
   // Estadísticas
@@ -531,6 +680,7 @@ export default function Presupuestos() {
                 <SelectItem value="ACEPTADO">Aceptados</SelectItem>
                 <SelectItem value="RECHAZADO">Rechazados</SelectItem>
                 <SelectItem value="VENCIDO">Vencidos</SelectItem>
+                <SelectItem value="CANCELADO">Cancelados</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -914,6 +1064,13 @@ export default function Presupuestos() {
                 </div>
               )}
 
+              {selectedPresupuesto.estado === "CANCELADO" && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm font-semibold text-red-900 mb-2">✗ Presupuesto Cancelado</p>
+                  <p className="text-xs text-red-700">Este presupuesto fue cancelado. La venta fue anulada y el proyecto cancelado.</p>
+                </div>
+              )}
+
               <div>
                 <p className="font-semibold mb-3">Detalle de Items</p>
                 <Table>
@@ -983,6 +1140,17 @@ export default function Presupuestos() {
                   Enviar a Cliente
                 </Button>
               )}
+              {selectedPresupuesto.estado === "ACEPTADO" && user?.role === "admin" && (
+                <Button
+                  className="bg-red-600 hover:bg-red-700"
+                  onClick={() => {
+                    setIsCancelacionDialogOpen(true);
+                  }}
+                >
+                  <Ban className="h-4 w-4 mr-2" />
+                  Cancelar Presupuesto
+                </Button>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -1016,6 +1184,18 @@ export default function Presupuestos() {
         total={selectedPresupuesto?.total_presupuesto || 0}
         presupuesto={selectedPresupuesto}
         onConfirm={handleAceptarPresupuesto}
+      />
+
+      {/* Dialog Cancelación de Presupuesto */}
+      <CancelacionPresupuestoDialog
+        isOpen={isCancelacionDialogOpen}
+        onClose={() => {
+          setIsCancelacionDialogOpen(false);
+          setSelectedPresupuesto(null);
+        }}
+        presupuesto={selectedPresupuesto}
+        user={user}
+        onConfirm={handleCancelarPresupuesto}
       />
     </div>
   );
