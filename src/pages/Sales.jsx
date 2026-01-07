@@ -66,6 +66,7 @@ export default function Sales() {
     client_tipo_iva: "",
     tipo_lista: "MINORISTA",
     genera_iva: false,
+    genera_iibb: false,
     discount: 0,
     notes: ""
   });
@@ -174,14 +175,29 @@ export default function Sales() {
     queryFn: () => base44.entities.PeriodoIVA.list('-anio,-mes', 12)
   });
 
+  const { data: periodosIIBB = [] } = useQuery({
+    queryKey: ['periodosIIBB'],
+    queryFn: () => base44.entities.PeriodoIIBB.list('-anio,-mes', 12)
+  });
+
+  const { data: configuracionIIBB = [] } = useQuery({
+    queryKey: ['configuracionIIBB'],
+    queryFn: () => base44.entities.ConfiguracionIIBB.list()
+  });
+
   const createSaleMutation = useMutation({
     mutationFn: async ({ saleData, pagos, tipoVenta }) => {
       // PROTECCIÓN FISCAL: Verificar que el período no esté cerrado
       const periodoVenta = format(new Date(), 'yyyy-MM');
-      const periodoCerrado = periodosIVA.find(p => p.periodo === periodoVenta && p.estado === "CERRADO");
+      const periodoCerradoIVA = periodosIVA.find(p => p.periodo === periodoVenta && p.estado === "CERRADO");
+      const periodoCerradoIIBB = periodosIIBB.find(p => p.periodo === periodoVenta && p.estado === "CERRADO");
       
-      if (periodoCerrado) {
-        throw new Error(`⚠️ NO SE PUEDE VENDER: El período fiscal ${periodoVenta} está CERRADO. No se pueden registrar más ventas en este período.`);
+      if (periodoCerradoIVA) {
+        throw new Error(`⚠️ NO SE PUEDE VENDER: El período IVA ${periodoVenta} está CERRADO. No se pueden registrar más ventas en este período.`);
+      }
+      
+      if (saleData.genera_iibb && periodoCerradoIIBB) {
+        throw new Error(`⚠️ NO SE PUEDE VENDER: El período IIBB ${periodoVenta} está CERRADO. No se pueden registrar ventas con IIBB en este período.`);
       }
 
       // Validar márgenes antes de crear la venta
@@ -268,6 +284,26 @@ export default function Sales() {
         });
       }
 
+      // Generar IIBB Ventas si corresponde
+      if (saleData.genera_iibb) {
+        const configIIBB = configuracionIIBB[0];
+        if (configIIBB) {
+          const netoGravadoIIBB = saleData.genera_iva ? saleData.neto_gravado : saleData.total;
+          const importeIIBB = netoGravadoIIBB * configIIBB.alicuota_iibb;
+
+          await base44.entities.IIBBVenta.create({
+            venta_id: sale.id,
+            fecha: format(new Date(), 'yyyy-MM-dd'),
+            periodo: format(new Date(), 'yyyy-MM'),
+            cliente_nombre: saleData.client_name,
+            neto_gravado: netoGravadoIIBB,
+            alicuota: configIIBB.alicuota_iibb,
+            importe_iibb: importeIIBB,
+            numero_comprobante: numeroComprobante
+          });
+        }
+      }
+
       // Procesar cada pago
       for (const pago of pagos) {
         // Guardar registro de pago
@@ -351,6 +387,7 @@ export default function Sales() {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       queryClient.invalidateQueries({ queryKey: ['tiposComprobante'] });
       queryClient.invalidateQueries({ queryKey: ['ivaVentas'] });
+      queryClient.invalidateQueries({ queryKey: ['iibbVentas'] });
       setIsPagosDialogOpen(false);
       setVentaConfirmada(sale);
       setPagosConfirmados(variables.pagos);
@@ -369,6 +406,7 @@ export default function Sales() {
       client_tipo_iva: "",
       tipo_lista: "MINORISTA",
       genera_iva: false,
+      genera_iibb: false,
       discount: 0,
       notes: ""
     });
@@ -509,6 +547,7 @@ export default function Sales() {
         subtotal: subtotal,
         discount: currentSale.discount || 0,
         genera_iva: currentSale.genera_iva,
+        genera_iibb: currentSale.genera_iibb,
         neto_gravado: neto_gravado,
         iva_21: iva_21,
         total: total_final,
@@ -899,6 +938,27 @@ export default function Sales() {
                         className="sr-only peer"
                       />
                       <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Toggle IIBB */}
+                <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-semibold text-purple-900">Generar IIBB</Label>
+                      <p className="text-xs text-purple-700 mt-1">
+                        {currentSale.genera_iibb ? "Aplica Ingresos Brutos" : "Sin IIBB"}
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={currentSale.genera_iibb}
+                        onChange={(e) => setCurrentSale({ ...currentSale, genera_iibb: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-600"></div>
                     </label>
                   </div>
                 </div>
