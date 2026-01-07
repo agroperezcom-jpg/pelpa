@@ -27,6 +27,8 @@ export default function Analytics() {
   const [dateRange, setDateRange] = useState("month");
   const [startDate, setStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [filtroCategoria, setFiltroCategoria] = useState("todas");
+  const [filtroEmpleado, setFiltroEmpleado] = useState("todos");
 
   // Cargar todos los datos necesarios
   const { data: sales = [] } = useQuery({
@@ -69,14 +71,32 @@ export default function Analytics() {
   const prevStartDate = format(subDays(new Date(startDate), daysDiff + 1), 'yyyy-MM-dd');
   const prevEndDate = format(subDays(new Date(startDate), 1), 'yyyy-MM-dd');
 
-  // Filtrar ventas confirmadas por período
+  // Filtrar ventas confirmadas por período y filtros adicionales
   const filteredSales = sales.filter(sale => {
     if (!sale.created_date || sale.estado !== "CONFIRMADA") return false;
     const saleDate = new Date(sale.created_date);
-    return isWithinInterval(saleDate, {
+    const dentroRango = isWithinInterval(saleDate, {
       start: new Date(startDate),
       end: new Date(endDate + 'T23:59:59')
     });
+    
+    if (!dentroRango) return false;
+    
+    // Filtro por categoría
+    if (filtroCategoria !== "todas") {
+      const tieneCategoria = sale.items?.some(item => {
+        const producto = products.find(p => p.id === item.item_id);
+        return producto?.category === filtroCategoria;
+      });
+      if (!tieneCategoria) return false;
+    }
+    
+    // Filtro por empleado
+    if (filtroEmpleado !== "todos" && sale.employee_email !== filtroEmpleado) {
+      return false;
+    }
+    
+    return true;
   });
 
   const prevSales = sales.filter(sale => {
@@ -455,6 +475,41 @@ export default function Analytics() {
                 onChange={(e) => { setEndDate(e.target.value); setDateRange('custom'); }}
               />
             </div>
+            <div className="space-y-2">
+              <Label>Categoría</Label>
+              <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas</SelectItem>
+                  {[...new Set(products.map(p => p.category))].filter(Boolean).map(cat => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Empleado</Label>
+              <Select value={filtroEmpleado} onValueChange={setFiltroEmpleado}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {[...new Set(sales.map(s => s.employee_email))].filter(Boolean).map(email => {
+                    const venta = sales.find(s => s.employee_email === email);
+                    return (
+                      <SelectItem key={email} value={email}>
+                        {venta?.employee_name || email}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -535,6 +590,7 @@ export default function Analytics() {
           <TabsTrigger value="operativos">KPI Operativos</TabsTrigger>
           <TabsTrigger value="rankings">Rankings</TabsTrigger>
           <TabsTrigger value="tendencias">Tendencias</TabsTrigger>
+          <TabsTrigger value="comparacion">Comparación</TabsTrigger>
         </TabsList>
 
         {/* KPI COMERCIALES */}
@@ -782,7 +838,7 @@ export default function Analytics() {
 
           <Card className="border-0 shadow-sm overflow-hidden">
             <CardHeader>
-              <CardTitle className="text-base">Top 10 Clientes</CardTitle>
+              <CardTitle className="text-base">Top 10 Clientes con CLV (Customer Lifetime Value)</CardTitle>
             </CardHeader>
             <Table>
               <TableHeader>
@@ -791,30 +847,92 @@ export default function Analytics() {
                   <TableHead>Cliente</TableHead>
                   <TableHead className="text-center">Compras</TableHead>
                   <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Promedio</TableHead>
+                  <TableHead className="text-right">Frecuencia</TableHead>
+                  <TableHead className="text-right">CLV Estimado</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {topClientes.map((cliente, idx) => (
-                  <TableRow key={cliente.id}>
-                    <TableCell>
-                      <Badge className={idx < 3 ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}>
-                        {idx + 1}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">{cliente.nombre}</TableCell>
-                    <TableCell className="text-center">{cliente.compras}</TableCell>
-                    <TableCell className="text-right font-bold text-emerald-600">
-                      ${cliente.total.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right text-slate-500">
-                      ${Math.round(cliente.total / cliente.compras).toLocaleString()}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {topClientes.map((cliente, idx) => {
+                  const diasDesdeUltima = differenceInDays(new Date(), new Date(cliente.ultimaCompra));
+                  const frecuenciaDias = diasDesdeUltima / cliente.compras;
+                  const comprasAnualesEstimadas = frecuenciaDias > 0 ? 365 / frecuenciaDias : 0;
+                  const promedioCompra = cliente.total / cliente.compras;
+                  const clvAnual = comprasAnualesEstimadas * promedioCompra;
+                  const clv3Anios = clvAnual * 3; // Proyección 3 años
+                  
+                  return (
+                    <TableRow key={cliente.id}>
+                      <TableCell>
+                        <Badge className={idx < 3 ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}>
+                          {idx + 1}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-medium">{cliente.nombre}</TableCell>
+                      <TableCell className="text-center">{cliente.compras}</TableCell>
+                      <TableCell className="text-right font-bold text-emerald-600">
+                        ${cliente.total.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right text-slate-500 text-xs">
+                        {comprasAnualesEstimadas.toFixed(1)}/año
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div>
+                          <p className="font-bold text-purple-600">${clv3Anios.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                          <p className="text-xs text-slate-500">3 años</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </Card>
+
+          <div className="grid lg:grid-cols-3 gap-4">
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-6">
+                <p className="text-sm font-medium text-slate-500 mb-2">CLV Promedio Total</p>
+                <p className="text-3xl font-bold text-purple-600">
+                  ${(() => {
+                    const clvTotal = topClientes.reduce((acc, cliente) => {
+                      const diasDesdeUltima = differenceInDays(new Date(), new Date(cliente.ultimaCompra));
+                      const frecuenciaDias = diasDesdeUltima / cliente.compras;
+                      const comprasAnuales = frecuenciaDias > 0 ? 365 / frecuenciaDias : 0;
+                      const promedio = cliente.total / cliente.compras;
+                      return acc + (comprasAnuales * promedio * 3);
+                    }, 0);
+                    return (clvTotal / topClientes.length).toLocaleString(undefined, { maximumFractionDigits: 0 });
+                  })()}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">Valor proyectado 3 años</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-6">
+                <p className="text-sm font-medium text-slate-500 mb-2">Clientes Inactivos</p>
+                <p className="text-3xl font-bold text-amber-600">
+                  {(() => {
+                    return Object.values(clientesConCompras).filter(c => {
+                      const diasSinCompra = differenceInDays(new Date(), new Date(c.ultimaCompra));
+                      return diasSinCompra > 90;
+                    }).length;
+                  })()}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">Más de 90 días sin compra</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-6">
+                <p className="text-sm font-medium text-slate-500 mb-2">Valor Total Clientes</p>
+                <p className="text-3xl font-bold text-blue-600">
+                  ${Object.values(clientesConCompras).reduce((acc, c) => acc + c.total, 0).toLocaleString()}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">Histórico total</p>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* KPI OPERATIVOS */}
@@ -1320,6 +1438,219 @@ export default function Analytics() {
                 })()}
               </TableBody>
             </Table>
+          </Card>
+        </TabsContent>
+
+        {/* COMPARACIÓN PERÍODOS */}
+        <TabsContent value="comparacion" className="space-y-4">
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Comparación de Períodos</CardTitle>
+              <p className="text-sm text-slate-500">
+                Actual: {startDate} a {endDate} vs Anterior: {prevStartDate} a {prevEndDate}
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { 
+                    titulo: 'Ventas', 
+                    actual: totalVentas, 
+                    anterior: prevTotalVentas,
+                    formato: 'moneda'
+                  },
+                  { 
+                    titulo: 'Número Ventas', 
+                    actual: filteredSales.length, 
+                    anterior: prevSales.length,
+                    formato: 'numero'
+                  },
+                  { 
+                    titulo: 'Ticket Promedio', 
+                    actual: ticketPromedio, 
+                    anterior: prevTicketPromedio,
+                    formato: 'moneda'
+                  },
+                  { 
+                    titulo: 'Gastos', 
+                    actual: totalGastos, 
+                    anterior: prevTotalGastos,
+                    formato: 'moneda'
+                  },
+                ].map((metrica, idx) => {
+                  const variacion = metrica.anterior > 0 
+                    ? ((metrica.actual - metrica.anterior) / metrica.anterior) * 100 
+                    : 0;
+                  
+                  return (
+                    <div key={idx} className="p-4 border rounded-lg">
+                      <p className="text-xs font-medium text-slate-500 uppercase mb-3">{metrica.titulo}</p>
+                      <div className="space-y-2">
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-xs text-slate-500">Actual</span>
+                          <span className="text-lg font-bold text-blue-600">
+                            {metrica.formato === 'moneda' && '$'}
+                            {metrica.actual.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                          </span>
+                        </div>
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-xs text-slate-500">Anterior</span>
+                          <span className="text-lg font-medium text-slate-600">
+                            {metrica.formato === 'moneda' && '$'}
+                            {metrica.anterior.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                          </span>
+                        </div>
+                        <div className="pt-2 border-t">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-slate-500">Variación</span>
+                            <div className="flex items-center gap-1">
+                              {variacion > 0 ? (
+                                <ArrowUp className="h-4 w-4 text-green-600" />
+                              ) : variacion < 0 ? (
+                                <ArrowDown className="h-4 w-4 text-red-600" />
+                              ) : null}
+                              <span className={`text-sm font-bold ${
+                                variacion > 0 ? 'text-green-600' : 
+                                variacion < 0 ? 'text-red-600' : 
+                                'text-slate-600'
+                              }`}>
+                                {variacion > 0 && '+'}{variacion.toFixed(1)}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Comparación Visual - Ventas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={[
+                      { periodo: 'Anterior', ventas: prevTotalVentas, margen: prevTotalVentas * (porcentajeMargen / 100) },
+                      { periodo: 'Actual', ventas: totalVentas, margen: margenBrutoTotal }
+                    ]}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis dataKey="periodo" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
+                      <Legend />
+                      <Bar dataKey="ventas" fill="#3b82f6" name="Ventas Totales" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="margen" fill="#10b981" name="Margen Bruto" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Comparación Visual - Clientes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={[
+                      { periodo: 'Anterior', clientes: prevClientesActivos, promedio: prevTicketPromedio },
+                      { periodo: 'Actual', clientes: clientesActivos, promedio: ticketPromedio }
+                    ]}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis dataKey="periodo" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="clientes" fill="#8b5cf6" name="Clientes Activos" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="promedio" fill="#06b6d4" name="Ticket Promedio" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Análisis de Mejora/Deterioro</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {(() => {
+                  const analisis = [
+                    {
+                      metrica: 'Ventas Totales',
+                      variacion: variacionVentas,
+                      impacto: Math.abs(totalVentas - prevTotalVentas)
+                    },
+                    {
+                      metrica: 'Ticket Promedio',
+                      variacion: variacionTicket,
+                      impacto: Math.abs(ticketPromedio - prevTicketPromedio)
+                    },
+                    {
+                      metrica: 'Número de Transacciones',
+                      variacion: prevSales.length > 0 ? ((filteredSales.length - prevSales.length) / prevSales.length) * 100 : 0,
+                      impacto: Math.abs(filteredSales.length - prevSales.length)
+                    },
+                    {
+                      metrica: 'Clientes Activos',
+                      variacion: prevClientesActivos > 0 ? ((clientesActivos - prevClientesActivos) / prevClientesActivos) * 100 : 0,
+                      impacto: Math.abs(clientesActivos - prevClientesActivos)
+                    }
+                  ];
+
+                  return analisis
+                    .sort((a, b) => Math.abs(b.variacion) - Math.abs(a.variacion))
+                    .map((item, idx) => (
+                      <div key={idx} className={`p-4 rounded-lg border-l-4 ${
+                        item.variacion > 5 ? 'bg-green-50 border-green-500' :
+                        item.variacion < -5 ? 'bg-red-50 border-red-500' :
+                        'bg-slate-50 border-slate-300'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-slate-800">{item.metrica}</p>
+                            <p className="text-sm text-slate-600 mt-1">
+                              Impacto: {item.impacto.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <div className="flex items-center gap-2">
+                              {item.variacion > 0 ? (
+                                <ArrowUp className="h-5 w-5 text-green-600" />
+                              ) : item.variacion < 0 ? (
+                                <ArrowDown className="h-5 w-5 text-red-600" />
+                              ) : null}
+                              <span className={`text-2xl font-bold ${
+                                item.variacion > 0 ? 'text-green-600' : 
+                                item.variacion < 0 ? 'text-red-600' : 
+                                'text-slate-600'
+                              }`}>
+                                {item.variacion > 0 && '+'}{item.variacion.toFixed(1)}%
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 mt-1">
+                              {item.variacion > 10 ? '🚀 Excelente mejora' :
+                               item.variacion > 5 ? '✓ Mejora positiva' :
+                               item.variacion > -5 ? '≈ Estable' :
+                               item.variacion > -10 ? '⚠ Requiere atención' :
+                               '🔴 Deterioro significativo'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ));
+                })()}
+              </div>
+            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
