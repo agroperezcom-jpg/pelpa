@@ -134,7 +134,37 @@ export default function Proveedores() {
         throw new Error("El pago no puede ser mayor al saldo deudor");
       }
 
-      const pago = await base44.entities.PagoProveedor.create(pagoData);
+      // Buscar último número
+      const pagosPrevios = await base44.entities.PagoProveedorCabecera.list();
+      const ultimoNumero = pagosPrevios.reduce((max, p) => {
+        const num = parseInt(p.numero_pago?.replace(/\D/g, '') || '0');
+        return Math.max(max, num);
+      }, 0);
+      const nuevoNumero = `PP-${String(ultimoNumero + 1).padStart(5, '0')}`;
+
+      const pago = await base44.entities.PagoProveedorCabecera.create({
+        fecha: pagoData.fecha,
+        proveedor_id: pagoData.proveedor_id,
+        proveedor_nombre: pagoData.proveedor_nombre,
+        numero_pago: nuevoNumero,
+        total_pago: pagoData.importe,
+        estado: "CONFIRMADO",
+        usuario_email: pagoData.usuario_email,
+        usuario_nombre: pagoData.usuario_nombre,
+        observaciones: pagoData.observaciones,
+        fecha_confirmacion: new Date().toISOString()
+      });
+
+      await base44.entities.PagoProveedorMedio.create({
+        pago_cabecera_id: pago.id,
+        medio_pago_id: pagoData.medio_pago_id,
+        medio_pago_nombre: pagoData.medio_pago_nombre,
+        importe: pagoData.importe,
+        banco_id: pagoData.banco_id,
+        banco_nombre: pagoData.banco_nombre,
+        caja_id: pagoData.caja_id,
+        caja_nombre: pagoData.caja_nombre
+      });
 
       await base44.entities.MovimientoTesoreria.create({
         fecha: pagoData.fecha,
@@ -148,7 +178,7 @@ export default function Proveedores() {
         importe: pagoData.importe,
         referencia_tipo: "pago_proveedor",
         referencia_id: pago.id,
-        observaciones: `Pago a proveedor ${pagoData.proveedor_nombre}`
+        observaciones: `Pago ${nuevoNumero} a ${pagoData.proveedor_nombre}`
       });
 
       if (pagoData.banco_id) {
@@ -171,7 +201,7 @@ export default function Proveedores() {
         entidad_id: pagoData.proveedor_id,
         entidad_nombre: pagoData.proveedor_nombre,
         fecha: pagoData.fecha,
-        concepto: `Pago - ${pagoData.observaciones || "Sin concepto"}`,
+        concepto: `Pago ${nuevoNumero} - ${pagoData.observaciones || "Sin concepto"}`,
         debe: 0,
         haber: pagoData.importe,
         saldo: nuevoSaldo,
@@ -192,6 +222,7 @@ export default function Proveedores() {
       queryClient.invalidateQueries({ queryKey: ['bancos'] });
       queryClient.invalidateQueries({ queryKey: ['cajas'] });
       handleClosePagoDialog();
+      alert("✅ Pago registrado exitosamente");
     },
     onError: (error) => {
       alert(error.message);
@@ -274,6 +305,11 @@ export default function Proveedores() {
   };
 
   const handleConfirmarPago = () => {
+    if (!user) {
+      alert("Usuario no autenticado");
+      return;
+    }
+
     const medio = mediosPago.find(m => m.id === nuevoPago.medio_pago_id);
     const banco = bancos.find(b => b.id === nuevoPago.banco_id);
     const caja = cajas.find(c => c.id === nuevoPago.caja_id);
@@ -300,7 +336,9 @@ export default function Proveedores() {
         banco_nombre: banco?.nombre || "",
         caja_id: nuevoPago.caja_id || null,
         caja_nombre: caja?.nombre || "",
-        observaciones: nuevoPago.observaciones
+        observaciones: nuevoPago.observaciones,
+        usuario_email: user.email,
+        usuario_nombre: user.full_name
       }
     });
   };

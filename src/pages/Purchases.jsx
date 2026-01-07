@@ -133,7 +133,8 @@ export default function Purchases() {
         neto_gravado,
         iva_21,
         total_compra,
-        estado: "CONFIRMADA"
+        saldo_pendiente: saldoPendiente,
+        estado: saldoPendiente > 0.01 ? "PENDIENTE" : "PAGADA"
       });
 
       for (const detalle of detallesData) {
@@ -201,10 +202,11 @@ export default function Purchases() {
         }
       }
 
-      if (saldoPendiente > 0.01) {
-        const proveedor = proveedores.find(p => p.id === compraData.proveedor_id);
-        const nuevoSaldo = (proveedor.saldo_cc || 0) + saldoPendiente;
+      // Generar movimiento CC si hay deuda pendiente
+      const proveedor = proveedores.find(p => p.id === compraData.proveedor_id);
+      const nuevoSaldo = (proveedor.saldo_cc || 0) + saldoPendiente;
 
+      if (saldoPendiente > 0.01) {
         await base44.entities.MovimientoCC.create({
           tipo_entidad: "PROVEEDOR",
           entidad_id: compraData.proveedor_id,
@@ -217,11 +219,11 @@ export default function Purchases() {
           referencia_tipo: "compra",
           referencia_id: compra.id
         });
-
-        await base44.entities.Proveedor.update(compraData.proveedor_id, {
-          saldo_cc: nuevoSaldo
-        });
       }
+
+      await base44.entities.Proveedor.update(compraData.proveedor_id, {
+        saldo_cc: nuevoSaldo
+      });
 
       return compra;
     },
@@ -532,7 +534,12 @@ export default function Purchases() {
                       ${compra.total_compra?.toLocaleString()}
                     </TableCell>
                     <TableCell>
-                      <Badge className={compra.estado === "CONFIRMADA" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"}>
+                      <Badge className={
+                        compra.estado === "PAGADA" ? "bg-green-100 text-green-700" :
+                        compra.estado === "PENDIENTE" ? "bg-red-100 text-red-700" :
+                        compra.estado === "PARCIAL" ? "bg-amber-100 text-amber-700" :
+                        "bg-slate-100 text-slate-700"
+                      }>
                         {compra.estado}
                       </Badge>
                     </TableCell>
