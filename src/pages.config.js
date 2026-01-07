@@ -2,10 +2,13 @@ import Analytics from './pages/Analytics';
 import Calendar from './pages/Calendar';
 import Clients from './pages/Clients';
 import Dashboard from './pages/Dashboard';
+import DashboardEjecutivo from './pages/DashboardEjecutivo';
 import Expenses from './pages/Expenses';
 import Finance from './pages/Finance';
+import IVAMensual from './pages/IVAMensual';
 import Inventory from './pages/Inventory';
 import Marketing from './pages/Marketing';
+import Presupuestos from './pages/Presupuestos';
 import Products from './pages/Products';
 import Projects from './pages/Projects';
 import Purchases from './pages/Purchases';
@@ -15,9 +18,6 @@ import Settings from './pages/Settings';
 import TesoreriaV2 from './pages/TesoreriaV2';
 import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
-import IVAMensual from './pages/IVAMensual';
-import DashboardEjecutivo from './pages/DashboardEjecutivo';
-import Presupuestos from './pages/Presupuestos';
 import __Layout from './Layout.jsx';
 
 
@@ -26,10 +26,13 @@ export const PAGES = {
     "Calendar": Calendar,
     "Clients": Clients,
     "Dashboard": Dashboard,
+    "DashboardEjecutivo": DashboardEjecutivo,
     "Expenses": Expenses,
     "Finance": Finance,
+    "IVAMensual": IVAMensual,
     "Inventory": Inventory,
     "Marketing": Marketing,
+    "Presupuestos": Presupuestos,
     "Products": Products,
     "Projects": Projects,
     "Purchases": Purchases,
@@ -39,9 +42,6 @@ export const PAGES = {
     "TesoreriaV2": TesoreriaV2,
     "TiposArticulo": TiposArticulo,
     "Treasury": Treasury,
-    "IVAMensual": IVAMensual,
-    "DashboardEjecutivo": DashboardEjecutivo,
-    "Presupuestos": Presupuestos,
 }
 
 export const pagesConfig = {

@@ -42,10 +42,11 @@ import {
 import {
   FileText, Plus, Search, Trash2, Eye, Send, CheckCircle2,
   XCircle, Clock, AlertTriangle, Package, Briefcase, Download,
-  Edit, Ban
+  Edit, Ban, Printer, X
 } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { es } from "date-fns/locale";
+import PresupuestoPDF from "../components/presupuestos/PresupuestoPDF";
 
 export default function Presupuestos() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -65,6 +66,7 @@ export default function Presupuestos() {
   });
   const [productSearch, setProductSearch] = useState("");
   const [activeTab, setActiveTab] = useState("products");
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -164,6 +166,10 @@ export default function Presupuestos() {
         // CONVERSIÓN AUTOMÁTICA
         
         // 1) Crear VENTA
+        const generaIVA = presupuesto.cliente_tipo_iva === "RESP_INSCRIPTO" || presupuesto.cliente_tipo_iva === "MONOTRIBUTO";
+        const netoGravado = generaIVA ? presupuesto.total_presupuesto / 1.21 : presupuesto.total_presupuesto;
+        const ivaCalculado = generaIVA ? presupuesto.total_presupuesto - netoGravado : 0;
+        
         const venta = await base44.entities.Sale.create({
           client_id: presupuesto.cliente_id,
           client_name: presupuesto.cliente_name,
@@ -175,15 +181,16 @@ export default function Presupuestos() {
           tipo_lista: "MINORISTA",
           tipo_venta: "CTA_CTE",
           estado: "CONFIRMADA",
-          genera_iva: presupuesto.cliente_tipo_iva === "RESP_INSCRIPTO" || presupuesto.cliente_tipo_iva === "MONOTRIBUTO",
-          tipo_comprobante: (presupuesto.cliente_tipo_iva === "RESP_INSCRIPTO" || presupuesto.cliente_tipo_iva === "MONOTRIBUTO") ? "B" : "X",
+          genera_iva: generaIVA,
+          tipo_comprobante: generaIVA ? "B" : "X",
           items: presupuesto.items,
           subtotal: presupuesto.subtotal,
           discount: presupuesto.descuento || 0,
-          neto_gravado: presupuesto.total_presupuesto / 1.21,
-          iva_21: presupuesto.total_presupuesto - (presupuesto.total_presupuesto / 1.21),
+          neto_gravado: netoGravado,
+          iva_21: ivaCalculado,
           total: presupuesto.total_presupuesto,
-          notes: `Generada automáticamente desde presupuesto ${presupuesto.numero_presupuesto}`
+          notes: `Generada automáticamente desde presupuesto ${presupuesto.numero_presupuesto}`,
+          project_id: null
         });
 
         // Generar IVA Ventas si corresponde
@@ -237,6 +244,11 @@ export default function Presupuestos() {
           responsible_name: user.full_name,
           estimated_budget: presupuesto.total_presupuesto,
           actual_budget: 0
+        });
+
+        // Actualizar venta con proyecto_id
+        await base44.entities.Sale.update(venta.id, {
+          project_id: proyecto.id
         });
 
         // Actualizar presupuesto
@@ -299,7 +311,7 @@ export default function Presupuestos() {
       newCart[existingIndex].subtotal = newCart[existingIndex].precio_unitario * newCart[existingIndex].cantidad;
       setCart(newCart);
     } else {
-      const precio = type === 'product' ? item.precio_lista_minorista : item.price;
+      const precio = type === 'product' ? (item.precio_lista_minorista || 0) : (item.price || 0);
       setCart([...cart, {
         type,
         item_id: item.id,
@@ -457,7 +469,7 @@ export default function Presupuestos() {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs font-medium text-slate-500 uppercase">Monto Aceptado</p>
-            <p className="text-2xl font-bold text-emerald-600 mt-1">${montoAceptado.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-emerald-600 mt-1">${(montoAceptado || 0).toLocaleString()}</p>
           </CardContent>
         </Card>
       </div>
@@ -536,7 +548,7 @@ export default function Presupuestos() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-bold text-blue-600">
-                    ${presupuesto.total_presupuesto?.toLocaleString()}
+                    ${(presupuesto.total_presupuesto || 0).toLocaleString()}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-center gap-2">
@@ -643,7 +655,7 @@ export default function Presupuestos() {
                       <p className="text-xs text-slate-500">Stock: {product.stock}</p>
                     </div>
                     <p className="font-bold text-blue-600 text-sm">
-                      ${product.precio_lista_minorista?.toFixed(2)}
+                     ${(product.precio_lista_minorista || 0).toFixed(2)}
                     </p>
                   </div>
                 ))}
@@ -753,7 +765,7 @@ export default function Presupuestos() {
                           <div>
                             <Label className="text-xs">Subtotal</Label>
                             <Input
-                              value={`$${item.subtotal.toFixed(2)}`}
+                              value={`$${(item.subtotal || 0).toFixed(2)}`}
                               disabled
                               className="h-8 text-sm font-bold"
                             />
@@ -769,7 +781,7 @@ export default function Presupuestos() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm text-slate-600">Subtotal:</span>
-                    <span className="font-bold">${subtotal.toFixed(2)}</span>
+                    <span className="font-bold">${(subtotal || 0).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <Label className="text-sm">Descuento:</Label>
@@ -784,7 +796,7 @@ export default function Presupuestos() {
                   </div>
                   <div className="flex justify-between pt-2 border-t">
                     <span className="font-bold text-lg">Total:</span>
-                    <span className="font-bold text-2xl text-blue-600">${total.toFixed(2)}</span>
+                    <span className="font-bold text-2xl text-blue-600">${(total || 0).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -835,7 +847,7 @@ export default function Presupuestos() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-medium text-slate-600">Total</p>
-                  <p className="text-2xl font-bold text-blue-600">${selectedPresupuesto.total_presupuesto?.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-blue-600">${(selectedPresupuesto.total_presupuesto || 0).toLocaleString()}</p>
                 </div>
               </div>
 
@@ -889,15 +901,15 @@ export default function Presupuestos() {
                             <p className="text-xs text-slate-500">{item.descripcion}</p>
                           )}
                         </TableCell>
-                        <TableCell className="text-center">{item.cantidad}</TableCell>
-                        <TableCell className="text-right">${item.precio_unitario?.toFixed(2)}</TableCell>
-                        <TableCell className="text-right font-bold">${item.subtotal?.toFixed(2)}</TableCell>
+                        <TableCell className="text-center">{item.cantidad || 0}</TableCell>
+                        <TableCell className="text-right">${(item.precio_unitario || 0).toFixed(2)}</TableCell>
+                        <TableCell className="text-right font-bold">${(item.subtotal || 0).toFixed(2)}</TableCell>
                       </TableRow>
                     ))}
                     <TableRow className="bg-slate-50 border-t-2">
                       <TableCell colSpan={3} className="font-semibold">TOTAL</TableCell>
                       <TableCell className="text-right font-bold text-lg text-blue-600">
-                        ${selectedPresupuesto.total_presupuesto?.toFixed(2)}
+                        ${(selectedPresupuesto.total_presupuesto || 0).toFixed(2)}
                       </TableCell>
                     </TableRow>
                   </TableBody>
@@ -915,6 +927,15 @@ export default function Presupuestos() {
             </div>
 
             <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsPrintDialogOpen(true);
+                }}
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Imprimir/PDF
+              </Button>
               <Button variant="outline" onClick={() => setIsDetailDialogOpen(false)}>
                 Cerrar
               </Button>
@@ -934,6 +955,24 @@ export default function Presupuestos() {
         </Dialog>
       )}
 
+      {/* Dialog Imprimir PDF */}
+      <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Printer className="h-5 w-5 text-blue-600" />
+                Imprimir Presupuesto
+              </span>
+              <Button variant="ghost" size="icon" onClick={() => setIsPrintDialogOpen(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          <PresupuestoPDF presupuesto={selectedPresupuesto} />
+        </DialogContent>
+      </Dialog>
+
       {/* Alert Dialog Aceptar */}
       <AlertDialog open={isConfirmAceptarOpen} onOpenChange={setIsConfirmAceptarOpen}>
         <AlertDialogContent>
@@ -950,7 +989,7 @@ export default function Presupuestos() {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-900">
                   <p className="font-semibold mb-2">Se ejecutarán automáticamente:</p>
                   <ul className="space-y-1 text-xs">
-                    <li>✓ Crear venta por ${selectedPresupuesto?.total_presupuesto?.toLocaleString()}</li>
+                    <li>✓ Crear venta por ${(selectedPresupuesto?.total_presupuesto || 0).toLocaleString()}</li>
                     <li>✓ Registrar deuda en cuenta corriente del cliente</li>
                     <li>✓ Crear proyecto PMS asociado</li>
                   </ul>
