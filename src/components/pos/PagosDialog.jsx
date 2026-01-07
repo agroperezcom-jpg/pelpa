@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import { Plus, Trash2, CreditCard, AlertCircle, CheckCircle } from "lucide-react";
+import { Plus, Trash2, CreditCard, AlertCircle, CheckCircle, Banknote, Receipt as ReceiptIcon, Smartphone } from "lucide-react";
 
 export default function PagosDialog({ isOpen, onClose, total, onConfirm, clienteId }) {
   const [pagos, setPagos] = useState([]);
@@ -37,6 +37,7 @@ export default function PagosDialog({ isOpen, onClose, total, onConfirm, cliente
     banco_id: "",
     caja_id: ""
   });
+  const importeRef = useRef(null);
 
   const { data: mediosPago = [] } = useQuery({
     queryKey: ['mediosPago'],
@@ -58,8 +59,69 @@ export default function PagosDialog({ isOpen, onClose, total, onConfirm, cliente
   const saldoPendiente = total - totalPagado;
   const pagoCompleto = Math.abs(saldoPendiente) < 0.01;
 
+  // Autocompletar importe con saldo pendiente cuando se selecciona medio
+  useEffect(() => {
+    if (nuevoPago.medio_pago_id && !nuevoPago.importe && saldoPendiente > 0) {
+      setNuevoPago(prev => ({ ...prev, importe: saldoPendiente.toFixed(2) }));
+      setTimeout(() => importeRef.current?.select(), 100);
+    }
+  }, [nuevoPago.medio_pago_id, saldoPendiente]);
+
+  // Preseleccionar caja activa si medio lo requiere
+  useEffect(() => {
+    if (medioSeleccionado?.requiere_caja && !nuevoPago.caja_id && cajas.length > 0) {
+      const cajaActiva = cajas.find(c => c.is_active) || cajas[0];
+      setNuevoPago(prev => ({ ...prev, caja_id: cajaActiva.id }));
+    }
+  }, [medioSeleccionado, cajas]);
+
+  // Atajos de teclado
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+
+      if (e.key === "Enter" && !e.shiftKey && nuevoPago.medio_pago_id && nuevoPago.importe) {
+        e.preventDefault();
+        agregarPago();
+        return;
+      }
+
+      // F2 = Efectivo, F3 = Débito, F4 = Crédito, F5 = Transferencia
+      const atajosMedias = {
+        "F2": "Efectivo",
+        "F3": "Débito",
+        "F4": "Crédito",
+        "F5": "Transferencia"
+      };
+
+      if (atajosMedias[e.key]) {
+        e.preventDefault();
+        const medio = mediosPago.find(m => m.nombre === atajosMedias[e.key]);
+        if (medio) {
+          setNuevoPago(prev => ({ ...prev, medio_pago_id: medio.id, banco_id: "", caja_id: "" }));
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, nuevoPago, mediosPago, onClose]);
+
   const agregarPago = () => {
     if (!nuevoPago.medio_pago_id || !nuevoPago.importe || parseFloat(nuevoPago.importe) <= 0) {
+      return;
+    }
+
+    const importePago = parseFloat(nuevoPago.importe);
+
+    // REGLA UX: No permitir pagar más del saldo pendiente
+    if (importePago > saldoPendiente + 0.01) {
+      alert(`No se puede pagar más del saldo pendiente ($${saldoPendiente.toFixed(2)})`);
       return;
     }
 
@@ -81,7 +143,7 @@ export default function PagosDialog({ isOpen, onClose, total, onConfirm, cliente
     setPagos([...pagos, {
       medio_pago_id: nuevoPago.medio_pago_id,
       medio_pago_nombre: medio.nombre,
-      importe: parseFloat(nuevoPago.importe),
+      importe: importePago,
       banco_id: nuevoPago.banco_id || null,
       banco_nombre: banco?.nombre || "",
       caja_id: nuevoPago.caja_id || null,
@@ -101,7 +163,35 @@ export default function PagosDialog({ isOpen, onClose, total, onConfirm, cliente
   };
 
   const handleConfirmar = () => {
-    if (!pagoCompleto) {
+    // Si hay saldo pendiente y hay cliente, preguntar si lo deja en CC
+    if (saldoPendiente > 0.01 && clienteId) {
+      const confirmar = window.confirm(
+        `Saldo pendiente: $${saldoPendiente.toFixed(2)}\n\n¿Desea dejar el saldo en cuenta corriente del cliente?`
+      );
+      
+      if (confirmar) {
+        // Agregar pago automático en cuenta corriente
+        const medioCuentaCorriente = mediosPago.find(m => m.nombre === "Cuenta Corriente");
+        if (medioCuentaCorriente) {
+          const nuevosPagos = [...pagos, {
+            medio_pago_id: medioCuentaCorriente.id,
+            medio_pago_nombre: "Cuenta Corriente",
+            importe: saldoPendiente,
+            banco_id: null,
+            banco_nombre: "",
+            caja_id: null,
+            caja_nombre: ""
+          }];
+          
+          onConfirm(nuevosPagos, "MIXTA");
+          return;
+        }
+      } else {
+        return;
+      }
+    }
+
+    if (!pagoCompleto && !clienteId) {
       alert("El total de pagos debe ser igual al total de la venta");
       return;
     }
@@ -140,99 +230,118 @@ export default function PagosDialog({ isOpen, onClose, total, onConfirm, cliente
 
         <div className="space-y-4">
           {/* Resumen */}
-          <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 rounded-lg">
+          <div className="grid grid-cols-3 gap-4 p-6 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border-2 border-slate-200">
             <div>
-              <p className="text-xs text-slate-500">Total Venta</p>
-              <p className="text-xl font-bold">${total.toFixed(2)}</p>
+              <p className="text-xs font-medium text-slate-500 uppercase">Total Venta</p>
+              <p className="text-3xl font-bold text-slate-800 mt-1">${total.toFixed(2)}</p>
             </div>
             <div>
-              <p className="text-xs text-slate-500">Total Pagado</p>
-              <p className="text-xl font-bold text-emerald-600">${totalPagado.toFixed(2)}</p>
+              <p className="text-xs font-medium text-slate-500 uppercase">Pagado</p>
+              <p className="text-3xl font-bold text-emerald-600 mt-1">${totalPagado.toFixed(2)}</p>
             </div>
             <div>
-              <p className="text-xs text-slate-500">Saldo Pendiente</p>
-              <p className={`text-xl font-bold ${saldoPendiente > 0 ? 'text-red-600' : 'text-green-600'}`}>
+              <p className="text-xs font-medium text-slate-500 uppercase">Pendiente</p>
+              <p className={`text-3xl font-bold mt-1 ${saldoPendiente > 0.01 ? 'text-red-600' : 'text-green-600'}`}>
                 ${Math.abs(saldoPendiente).toFixed(2)}
               </p>
             </div>
           </div>
 
-          {/* Agregar Pago */}
-          <div className="border rounded-lg p-4 space-y-3">
-            <h4 className="font-medium text-sm">Agregar Pago</h4>
-            <div className="grid grid-cols-12 gap-2">
-              <div className="col-span-4">
-                <Label className="text-xs">Medio de Pago *</Label>
-                <Select 
-                  value={nuevoPago.medio_pago_id} 
-                  onValueChange={(v) => setNuevoPago({ ...nuevoPago, medio_pago_id: v, banco_id: "", caja_id: "" })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mediosPago.filter(m => !clienteId || m.nombre !== "Cuenta Corriente" ? true : clienteId).map(m => (
-                      <SelectItem key={m.id} value={m.id}>{m.nombre}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="col-span-3">
-                <Label className="text-xs">Importe *</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={nuevoPago.importe}
-                  onChange={(e) => setNuevoPago({ ...nuevoPago, importe: e.target.value })}
-                  placeholder="0.00"
-                />
-              </div>
-
-              {medioSeleccionado?.requiere_banco && (
-                <div className="col-span-3">
-                  <Label className="text-xs">Banco *</Label>
-                  <Select value={nuevoPago.banco_id} onValueChange={(v) => setNuevoPago({ ...nuevoPago, banco_id: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Banco" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {bancos.map(b => (
-                        <SelectItem key={b.id} value={b.id}>{b.nombre}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {medioSeleccionado?.requiere_caja && (
-                <div className="col-span-3">
-                  <Label className="text-xs">Caja *</Label>
-                  <Select value={nuevoPago.caja_id} onValueChange={(v) => setNuevoPago({ ...nuevoPago, caja_id: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Caja" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {cajas.map(c => (
-                        <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div className="col-span-2 flex items-end gap-1">
-                <Button onClick={agregarPago} size="sm" className="w-full bg-emerald-600 hover:bg-emerald-700">
-                  <Plus className="h-4 w-4" />
-                </Button>
-                {saldoPendiente > 0 && (
-                  <Button onClick={calcularSugerencia} size="sm" variant="outline" title="Completar saldo">
-                    $
+          {/* Botones Rápidos */}
+          <div>
+            <Label className="text-xs font-medium mb-2 block">Medios de Pago Rápidos</Label>
+            <div className="grid grid-cols-5 gap-2">
+              {mediosPago.filter(m => ["Efectivo", "Débito", "Crédito", "Transferencia", "Cuenta Corriente"].includes(m.nombre)).map(medio => {
+                const iconMap = {
+                  "Efectivo": Banknote,
+                  "Débito": CreditCard,
+                  "Crédito": CreditCard,
+                  "Transferencia": Smartphone,
+                  "Cuenta Corriente": ReceiptIcon
+                };
+                const Icon = iconMap[medio.nombre] || CreditCard;
+                const disabled = medio.nombre === "Cuenta Corriente" && !clienteId;
+                
+                return (
+                  <Button
+                    key={medio.id}
+                    variant={nuevoPago.medio_pago_id === medio.id ? "default" : "outline"}
+                    className={`h-16 flex flex-col gap-1 ${nuevoPago.medio_pago_id === medio.id ? 'bg-emerald-600' : ''}`}
+                    onClick={() => !disabled && setNuevoPago({ ...nuevoPago, medio_pago_id: medio.id, banco_id: "", caja_id: "" })}
+                    disabled={disabled}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span className="text-xs">{medio.nombre.split(' ')[0]}</span>
                   </Button>
-                )}
-              </div>
+                );
+              })}
             </div>
           </div>
+
+          {/* Agregar Pago */}
+          {nuevoPago.medio_pago_id && (
+            <div className="border-2 border-emerald-200 bg-emerald-50 rounded-lg p-4 space-y-3">
+              <h4 className="font-medium text-sm text-emerald-900">Detalle del Pago</h4>
+              <div className="grid grid-cols-12 gap-3">
+                <div className="col-span-5">
+                  <Label className="text-xs font-medium">Importe *</Label>
+                  <Input
+                    ref={importeRef}
+                    type="number"
+                    step="0.01"
+                    value={nuevoPago.importe}
+                    onChange={(e) => setNuevoPago({ ...nuevoPago, importe: e.target.value })}
+                    placeholder="0.00"
+                    className="text-lg font-bold h-12"
+                    autoFocus
+                  />
+                  <p className="text-xs text-emerald-700 mt-1">Presiona ENTER para agregar</p>
+                </div>
+
+                {medioSeleccionado?.requiere_banco && (
+                  <div className="col-span-5">
+                    <Label className="text-xs font-medium">Banco *</Label>
+                    <Select value={nuevoPago.banco_id} onValueChange={(v) => setNuevoPago({ ...nuevoPago, banco_id: v })}>
+                      <SelectTrigger className="h-12">
+                        <SelectValue placeholder="Seleccionar banco" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bancos.map(b => (
+                          <SelectItem key={b.id} value={b.id}>{b.nombre}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {medioSeleccionado?.requiere_caja && (
+                  <div className="col-span-5">
+                    <Label className="text-xs font-medium">Caja *</Label>
+                    <Select value={nuevoPago.caja_id} onValueChange={(v) => setNuevoPago({ ...nuevoPago, caja_id: v })}>
+                      <SelectTrigger className="h-12">
+                        <SelectValue placeholder="Seleccionar caja" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cajas.map(c => (
+                          <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <div className="col-span-2 flex items-end">
+                  <Button 
+                    onClick={agregarPago} 
+                    className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 font-medium"
+                  >
+                    <Plus className="h-5 w-5 mr-1" />
+                    Agregar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Lista de Pagos */}
           {pagos.length > 0 && (
@@ -269,38 +378,62 @@ export default function PagosDialog({ isOpen, onClose, total, onConfirm, cliente
           )}
 
           {/* Estado de Validación */}
-          <div className={`flex items-center gap-2 p-3 rounded-lg ${
-            pagoCompleto ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'
+          <div className={`flex items-center justify-between gap-2 p-4 rounded-lg ${
+            pagoCompleto ? 'bg-green-50 border-2 border-green-300' : 'bg-amber-50 border-2 border-amber-300'
           }`}>
-            {pagoCompleto ? (
-              <>
-                <CheckCircle className="h-5 w-5 text-green-600" />
-                <span className="text-sm text-green-800 font-medium">Pago completo - Listo para confirmar</span>
-              </>
-            ) : (
-              <>
-                <AlertCircle className="h-5 w-5 text-amber-600" />
-                <span className="text-sm text-amber-800">
-                  {pagos.length === 0 
-                    ? "Agregue al menos un pago" 
-                    : `Falta pagar $${saldoPendiente.toFixed(2)}`
-                  }
-                </span>
-              </>
+            <div className="flex items-center gap-2">
+              {pagoCompleto ? (
+                <>
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                  <span className="text-base text-green-900 font-semibold">✓ Pago completo</span>
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="h-6 w-6 text-amber-600" />
+                  <div>
+                    <span className="text-base text-amber-900 font-semibold block">
+                      {pagos.length === 0 ? "Seleccione un medio de pago" : "Falta completar el pago"}
+                    </span>
+                    {saldoPendiente > 0.01 && (
+                      <span className="text-sm text-amber-700">
+                        Pendiente: ${saldoPendiente.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+            {!pagoCompleto && saldoPendiente > 0 && clienteId && (
+              <Badge className="bg-blue-100 text-blue-700 text-xs">
+                Puede confirmar con CC
+              </Badge>
             )}
+          </div>
+
+          {/* Atajos de Teclado */}
+          <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg">
+            <p className="font-medium mb-1">Atajos de teclado:</p>
+            <div className="grid grid-cols-2 gap-1">
+              <span>• F2: Efectivo</span>
+              <span>• F3: Débito</span>
+              <span>• F4: Crédito</span>
+              <span>• F5: Transferencia</span>
+              <span>• ENTER: Agregar pago</span>
+              <span>• ESC: Cancelar</span>
+            </div>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancelar
+          <Button variant="outline" onClick={onClose} size="lg">
+            Cancelar (ESC)
           </Button>
           <Button 
             onClick={handleConfirmar}
-            disabled={!pagoCompleto}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            disabled={pagos.length === 0 && !clienteId}
+            className="bg-emerald-600 hover:bg-emerald-700 text-lg h-12 px-8 font-semibold"
           >
-            Confirmar Venta
+            {pagoCompleto ? "✓ Confirmar Venta" : (clienteId && saldoPendiente > 0 ? "Confirmar (con CC)" : "Falta completar pago")}
           </Button>
         </DialogFooter>
       </DialogContent>
