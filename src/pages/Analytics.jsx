@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BarChart3, TrendingUp, TrendingDown, DollarSign, Users, Package, ShoppingCart,
   AlertTriangle, Award, ArrowUp, ArrowDown, Download, Zap, Target, Activity,
-  Clock, Percent, RefreshCw, Bell, Calendar as CalendarIcon, Brain, Star, CheckCircle
+  Clock, Percent, RefreshCw, Bell, Calendar as CalendarIcon, Brain, Star, CheckCircle, AlertCircle
 } from "lucide-react";
 import { format, subDays, startOfMonth, endOfMonth, isWithinInterval, differenceInDays, addDays, getMonth, getDay } from "date-fns";
 import { es } from "date-fns/locale";
