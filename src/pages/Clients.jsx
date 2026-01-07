@@ -63,6 +63,8 @@ export default function Clients() {
     email: "",
     phone: "",
     address: "",
+    tipo_iva: "CONSUMIDOR_FINAL",
+    cuit_cuil: "",
     preferences: "",
     notes: ""
   });
@@ -110,6 +112,8 @@ export default function Clients() {
         email: client.email || "",
         phone: client.phone || "",
         address: client.address || "",
+        tipo_iva: client.tipo_iva || "CONSUMIDOR_FINAL",
+        cuit_cuil: client.cuit_cuil || "",
         preferences: client.preferences || "",
         notes: client.notes || ""
       });
@@ -120,6 +124,8 @@ export default function Clients() {
         email: "",
         phone: "",
         address: "",
+        tipo_iva: "CONSUMIDOR_FINAL",
+        cuit_cuil: "",
         preferences: "",
         notes: ""
       });
@@ -183,11 +189,13 @@ export default function Clients() {
   });
 
   const exportToCSV = () => {
-    const headers = ["Nombre", "Email", "Teléfono", "Dirección", "Total Compras", "Último Contacto"];
+    const headers = ["Nombre", "Email", "Teléfono", "Tipo IVA", "CUIT/CUIL", "Dirección", "Total Compras", "Último Contacto"];
     const rows = filteredClients.map(c => [
       c.name,
       c.email,
       c.phone,
+      c.tipo_iva,
+      c.cuit_cuil,
       c.address,
       getClientTotalPurchases(c.id),
       c.last_contact
@@ -262,6 +270,7 @@ export default function Clients() {
               <TableRow className="bg-slate-50">
                 <TableHead>Cliente</TableHead>
                 <TableHead className="hidden md:table-cell">Contacto</TableHead>
+                <TableHead className="hidden md:table-cell">Tipo IVA</TableHead>
                 <TableHead className="hidden lg:table-cell">Total Compras</TableHead>
                 <TableHead className="hidden sm:table-cell">Último Contacto</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
@@ -301,6 +310,16 @@ export default function Clients() {
                         </div>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <Badge className={
+                      client.tipo_iva === "RESP_INSCRIPTO" ? "bg-blue-100 text-blue-700" :
+                      client.tipo_iva === "MONOTRIBUTO" ? "bg-emerald-100 text-emerald-700" :
+                      client.tipo_iva === "EXENTO" ? "bg-purple-100 text-purple-700" :
+                      "bg-slate-100 text-slate-600"
+                    }>
+                      {client.tipo_iva?.replace(/_/g, ' ') || 'CONSUMIDOR FINAL'}
+                    </Badge>
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
                     <div className="flex items-center gap-1 font-medium text-slate-700">
@@ -343,7 +362,7 @@ export default function Clients() {
               ))}
               {filteredClients.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-slate-500">
+                  <TableCell colSpan={6} className="text-center py-8 text-slate-500">
                     No se encontraron clientes
                   </TableCell>
                 </TableRow>
@@ -393,6 +412,46 @@ export default function Clients() {
                 />
               </div>
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="tipo_iva">Condición IVA *</Label>
+                <Select value={formData.tipo_iva} onValueChange={(v) => setFormData({ ...formData, tipo_iva: v })}>
+                  <SelectTrigger id="tipo_iva">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CONSUMIDOR_FINAL">Consumidor Final</SelectItem>
+                    <SelectItem value="RESP_INSCRIPTO">Responsable Inscripto</SelectItem>
+                    <SelectItem value="MONOTRIBUTO">Monotributo</SelectItem>
+                    <SelectItem value="EXENTO">Exento</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cuit_cuil">
+                  CUIT/CUIL
+                  {(formData.tipo_iva === "RESP_INSCRIPTO" || formData.tipo_iva === "MONOTRIBUTO") && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
+                </Label>
+                <Input
+                  id="cuit_cuil"
+                  value={formData.cuit_cuil}
+                  onChange={(e) => setFormData({ ...formData, cuit_cuil: e.target.value })}
+                  placeholder="20-12345678-9"
+                  required={formData.tipo_iva === "RESP_INSCRIPTO" || formData.tipo_iva === "MONOTRIBUTO"}
+                />
+              </div>
+            </div>
+
+            {(formData.tipo_iva === "RESP_INSCRIPTO" || formData.tipo_iva === "MONOTRIBUTO") && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs text-blue-700">
+                  ℹ️ Este cliente podrá recibir Facturas B con IVA discriminado
+                </p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="address">Dirección</Label>
               <Input

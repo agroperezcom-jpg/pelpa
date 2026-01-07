@@ -212,6 +212,7 @@ export default function SettingsPage() {
         <TabsList className="bg-white border shadow-sm">
           <TabsTrigger value="users">Usuarios</TabsTrigger>
           <TabsTrigger value="sessions">Registro de Sesiones</TabsTrigger>
+          <TabsTrigger value="fiscal">Configuración Fiscal</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users">
@@ -305,6 +306,152 @@ export default function SettingsPage() {
               </TableBody>
             </Table>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="fiscal">
+          <div className="space-y-6">
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Datos Fiscales de la Empresa</CardTitle>
+                <p className="text-xs text-slate-500 mt-1">
+                  Información para comprobantes y reportes
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Razón Social</Label>
+                    <Input defaultValue="Librería Papelería SRL" placeholder="Razón Social" disabled />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>CUIT</Label>
+                    <Input defaultValue="20-12345678-9" placeholder="CUIT" disabled />
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label>Domicilio Fiscal</Label>
+                    <Input defaultValue="Av. Principal 1234, CABA" placeholder="Dirección" disabled />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Condición IVA</Label>
+                    <Select defaultValue="RESP_INSCRIPTO" disabled>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="RESP_INSCRIPTO">Responsable Inscripto</SelectItem>
+                        <SelectItem value="MONOTRIBUTO">Monotributo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Inicio Actividades</Label>
+                    <Input type="date" defaultValue="2020-01-01" disabled />
+                  </div>
+                </div>
+                <div className="p-3 bg-slate-50 border rounded-lg">
+                  <p className="text-xs text-slate-600">
+                    ℹ️ Para modificar estos datos, contacta al soporte técnico
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Configuración de IVA Ventas</CardTitle>
+                <p className="text-xs text-slate-500 mt-1">
+                  Reglas automáticas para generación de Facturas B
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 className="font-semibold text-blue-900 mb-2">Generación Automática</h4>
+                    <div className="space-y-2 text-sm text-blue-800">
+                      <div className="flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 mt-0.5 text-blue-600" />
+                        <span>Cliente con tipo IVA: <strong>Responsable Inscripto</strong> o <strong>Monotributo</strong></span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 mt-0.5 text-blue-600" />
+                        <span>Venta mayor a <strong>$50.000</strong> (umbral configurable)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Monto Mínimo para IVA Automático</Label>
+                    <Input 
+                      type="number" 
+                      defaultValue="50000" 
+                      placeholder="50000"
+                      disabled
+                    />
+                    <p className="text-xs text-slate-500">
+                      Ventas superiores a este monto generarán automáticamente Factura B
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center justify-between">
+                      <span>Medios de Pago sin IVA</span>
+                      <Badge className="bg-slate-100 text-slate-600">Solo Efectivo</Badge>
+                    </Label>
+                    <p className="text-xs text-slate-500">
+                      Pagos en efectivo por debajo del umbral pueden no generar IVA
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center justify-between">
+                      <span>Override Manual Habilitado</span>
+                      <Badge className="bg-green-100 text-green-700">Sí</Badge>
+                    </Label>
+                    <p className="text-xs text-slate-500">
+                      Los usuarios pueden activar/desactivar IVA manualmente desde el POS
+                    </p>
+                  </div>
+
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-xs text-amber-800">
+                      ⚠️ <strong>Importante:</strong> El IVA se decide ANTES de confirmar la venta. Una vez confirmada, no puede modificarse.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Tipos de Comprobante Habilitados</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                    <div>
+                      <p className="font-medium">Ticket X - Sin IVA</p>
+                      <p className="text-xs text-slate-500">Para consumidores finales y ventas sin discriminar IVA</p>
+                    </div>
+                    <Badge className="bg-green-100 text-green-700">Activo</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                    <div>
+                      <p className="font-medium">Factura B - Con IVA</p>
+                      <p className="text-xs text-slate-500">Para Responsables Inscriptos y Monotributistas</p>
+                    </div>
+                    <Badge className="bg-green-100 text-green-700">Activo</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg opacity-50">
+                    <div>
+                      <p className="font-medium">Factura A</p>
+                      <p className="text-xs text-slate-500">No implementada</p>
+                    </div>
+                    <Badge className="bg-slate-100 text-slate-600">Inactivo</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
 
