@@ -1129,7 +1129,6 @@ export default function Purchases() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      </Tabs>
     </div>
   );
 }
