@@ -187,9 +187,34 @@ export default function Presupuestos() {
 
         // CONVERSIÓN AUTOMÁTICA CON COBRO
         
-        // 1) Crear VENTA
+        // 1) Crear VENTA con número de comprobante
         const netoGravado = generaIVA ? presupuesto.total_presupuesto / 1.21 : presupuesto.total_presupuesto;
         const ivaCalculado = generaIVA ? presupuesto.total_presupuesto - netoGravado : 0;
+        
+        const tipoComprobante = generaIVA ? "B" : "X";
+        
+        // Buscar o crear tipo de comprobante
+        let tipoComprobanteRecord = tiposComprobante.find(tc => tc.codigo === tipoComprobante);
+        
+        if (!tipoComprobanteRecord) {
+          tipoComprobanteRecord = await base44.entities.TipoComprobante.create({
+            codigo: tipoComprobante,
+            descripcion: tipoComprobante === "B" ? "Factura B - Con IVA" : "Ticket X - Sin IVA",
+            prefijo: tipoComprobante,
+            longitud_numero: 4,
+            ultimo_numero: 0,
+            is_active: true
+          });
+        }
+
+        // Incrementar número
+        const nuevoNumero = tipoComprobanteRecord.ultimo_numero + 1;
+        const numeroFormateado = String(nuevoNumero).padStart(tipoComprobanteRecord.longitud_numero, '0');
+        const numeroComprobante = `${tipoComprobanteRecord.prefijo}-${numeroFormateado}`;
+
+        await base44.entities.TipoComprobante.update(tipoComprobanteRecord.id, {
+          ultimo_numero: nuevoNumero
+        });
         
         const venta = await base44.entities.Sale.create({
           client_id: presupuesto.cliente_id,
@@ -203,7 +228,8 @@ export default function Presupuestos() {
           tipo_venta: "CONTADO",
           estado: "CONFIRMADA",
           genera_iva: generaIVA,
-          tipo_comprobante: generaIVA ? "B" : "X",
+          tipo_comprobante: tipoComprobante,
+          numero_comprobante: numeroComprobante,
           items: presupuesto.items,
           subtotal: presupuesto.subtotal,
           discount: presupuesto.descuento || 0,
@@ -219,8 +245,8 @@ export default function Presupuestos() {
           await base44.entities.IVAVenta.create({
             venta_id: venta.id,
             fecha: format(new Date(), 'yyyy-MM-dd'),
-            tipo_comprobante: "B",
-            numero_comprobante: `B-${venta.id.slice(0, 8)}`,
+            tipo_comprobante: tipoComprobante,
+            numero_comprobante: numeroComprobante,
             cliente_nombre: venta.client_name,
             cliente_tipo_iva: venta.client_tipo_iva,
             neto_gravado: netoGravado,
