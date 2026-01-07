@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import ArqueoDialog from "./ArqueoDialog";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,8 @@ import { es } from "date-fns/locale";
 export default function ReportesDialog({ isOpen, onClose, user }) {
   const [generandoReporte, setGenerandoReporte] = useState(false);
   const [reporteGenerado, setReporteGenerado] = useState(null);
+  const [isArqueoDialogOpen, setIsArqueoDialogOpen] = useState(false);
+  const [requiereArqueo, setRequiereArqueo] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -75,10 +78,28 @@ export default function ReportesDialog({ isOpen, onClose, user }) {
     }
   });
 
+  const { data: arqueoTurno } = useQuery({
+    queryKey: ['arqueoTurno', turnoActual?.id],
+    queryFn: async () => {
+      if (!turnoActual?.id) return null;
+      const arqueos = await base44.entities.ArqueoCaja.filter({ 
+        turno_pos_id: turnoActual.id,
+        estado: "CERRADO"
+      });
+      return arqueos[0] || null;
+    },
+    enabled: isOpen && !!turnoActual
+  });
+
   const generarReporteMutation = useMutation({
     mutationFn: async (tipo) => {
       if (tipo === "Z" && !turnoActual) {
         throw new Error("No hay turno abierto para generar Reporte Z");
+      }
+
+      // Validar arqueo para Reporte Z
+      if (tipo === "Z" && !arqueoTurno) {
+        throw new Error("Debe realizar el arqueo de caja antes de cerrar el turno");
       }
 
       // Calcular totales por medio de pago
@@ -138,9 +159,29 @@ export default function ReportesDialog({ isOpen, onClose, user }) {
   });
 
   const handleGenerarReporte = async (tipo) => {
+    // Si es Reporte Z y no hay arqueo, abrir diálogo de arqueo
+    if (tipo === "Z" && !arqueoTurno) {
+      setRequiereArqueo(true);
+      setIsArqueoDialogOpen(true);
+      return;
+    }
+
     setGenerandoReporte(true);
     await generarReporteMutation.mutateAsync(tipo);
     setGenerandoReporte(false);
+  };
+
+  const handleArqueoCompleted = async () => {
+    setIsArqueoDialogOpen(false);
+    queryClient.invalidateQueries({ queryKey: ['arqueoTurno'] });
+    
+    // Después del arqueo, generar el reporte Z
+    if (requiereArqueo) {
+      setRequiereArqueo(false);
+      setGenerandoReporte(true);
+      await generarReporteMutation.mutateAsync("Z");
+      setGenerandoReporte(false);
+    }
   };
 
   const handleImprimir = () => {
@@ -176,14 +217,25 @@ export default function ReportesDialog({ isOpen, onClose, user }) {
               <div>
                 <p className="text-sm font-medium">Estado del Turno</p>
                 {turnoActual ? (
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge className="bg-green-100 text-green-700">
-                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                      Turno Abierto
-                    </Badge>
-                    <span className="text-xs text-slate-600">
-                      desde {format(new Date(turnoActual.fecha_apertura), "HH:mm", { locale: es })}
-                    </span>
+                  <div className="space-y-2 mt-1">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-green-100 text-green-700">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Turno Abierto
+                      </Badge>
+                      <span className="text-xs text-slate-600">
+                        desde {format(new Date(turnoActual.fecha_apertura), "HH:mm", { locale: es })}
+                      </span>
+                    </div>
+                    {arqueoTurno ? (
+                      <Badge className="bg-purple-100 text-purple-700">
+                        ✓ Arqueo Realizado
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-amber-100 text-amber-700">
+                        ⚠ Arqueo Pendiente
+                      </Badge>
+                    )}
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 mt-1">
@@ -357,7 +409,7 @@ export default function ReportesDialog({ isOpen, onClose, user }) {
                 disabled={generandoReporte || ventas.length === 0 || !turnoActual}
                 className="bg-red-600 hover:bg-red-700"
               >
-                Generar Reporte Z
+                {!arqueoTurno ? "Arquear y Cerrar (Z)" : "Generar Reporte Z"}
               </Button>
             </>
           ) : (
