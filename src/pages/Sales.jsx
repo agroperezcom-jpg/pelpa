@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import PagosDialog from "../components/pos/PagosDialog";
 import {
   Dialog,
   DialogContent,
@@ -48,11 +49,11 @@ import { es } from "date-fns/locale";
 export default function Sales() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isPagosDialogOpen, setIsPagosDialogOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [cart, setCart] = useState([]);
   const [selectedClient, setSelectedClient] = useState("");
   const [tipoLista, setTipoLista] = useState("MINORISTA");
-  const [paymentMethod, setPaymentMethod] = useState("EFECTIVO");
   const [productSearch, setProductSearch] = useState("");
   const [activeTab, setActiveTab] = useState("products");
 
@@ -104,7 +105,6 @@ export default function Sales() {
 
   const calcularPrecioYMargen = (product, quantity) => {
     if (!product.tipo_articulo_id) {
-      // Para productos sin tipo (legacy), usar precio original
       return {
         precio_lista: product.price || 0,
         precio_venta: product.price || 0,
@@ -116,7 +116,6 @@ export default function Sales() {
     const tipo = tiposArticulo.find(t => t.id === product.tipo_articulo_id);
     if (!tipo) return { precio_lista: 0, precio_venta: 0, margen_real: 0, valido: false };
 
-    // Determinar precio según lista y forma de pago
     let precio_lista, precio_minimo;
     
     if (tipoLista === "MINORISTA") {
@@ -127,16 +126,8 @@ export default function Sales() {
       precio_minimo = product.precio_minimo_mayorista;
     }
 
-    // Calcular precio de venta
-    let precio_venta = precio_lista;
-    if (paymentMethod === "EFECTIVO") {
-      precio_venta = precio_lista * (1 - tipo.descuento_efectivo);
-    }
-
-    // Calcular margen real
+    const precio_venta = precio_lista;
     const margen_real = (precio_venta - product.costo_unitario) / product.costo_unitario;
-
-    // Validar que no rompa el precio mínimo
     const valido = precio_venta >= precio_minimo;
 
     return {
@@ -149,7 +140,7 @@ export default function Sales() {
   };
 
   const createSaleMutation = useMutation({
-    mutationFn: async (saleData) => {
+    mutationFn: async ({ saleData, pagos, tipoVenta }) => {
       // Validar márgenes antes de crear la venta
       for (const item of saleData.items.filter(i => i.type === 'product')) {
         const product = products.find(p => p.id === item.item_id);
@@ -160,9 +151,6 @@ export default function Sales() {
           }
         }
       }
-
-      const medio = mediosPago.find(m => m.nombre === saleData.payment_method);
-      const esCuentaCorriente = medio?.nombre === "Cuenta Corriente";
 
       // Update product stock
       for (const item of saleData.items.filter(i => i.type === 'product')) {
@@ -184,69 +172,81 @@ export default function Sales() {
         }
       }
 
-      // Crear venta
-      const sale = await base44.entities.Sale.create(saleData);
+      // Crear venta con tipo y estado
+      const sale = await base44.entities.Sale.create({
+        ...saleData,
+        tipo_venta: tipoVenta,
+        estado: "CONFIRMADA"
+      });
 
-      // Integración con Tesorería
-      if (esCuentaCorriente && saleData.client_id) {
-        // CUENTA CORRIENTE: Solo movimiento CC (NO Tesorería)
-        const client = clients.find(c => c.id === saleData.client_id);
-        const nuevoSaldo = (client?.saldo_cc || 0) + saleData.total;
-
-        await base44.entities.MovimientoCC.create({
-          tipo_entidad: "CLIENTE",
-          entidad_id: saleData.client_id,
-          entidad_nombre: saleData.client_name,
-          fecha: new Date().toISOString().split('T')[0],
-          concepto: `Venta #${sale.id}`,
-          debe: saleData.total,
-          haber: 0,
-          saldo: nuevoSaldo,
-          referencia_tipo: "venta",
-          referencia_id: sale.id
+      // Procesar cada pago
+      for (const pago of pagos) {
+        // Guardar registro de pago
+        await base44.entities.PagoVenta.create({
+          venta_id: sale.id,
+          ...pago
         });
 
+        // Generar movimientos según tipo de pago
+        if (pago.medio_pago_nombre === "Cuenta Corriente") {
+          // Movimiento CC
+          const client = clients.find(c => c.id === saleData.client_id);
+          const nuevoSaldo = (client?.saldo_cc || 0) + pago.importe;
+
+          await base44.entities.MovimientoCC.create({
+            tipo_entidad: "CLIENTE",
+            entidad_id: saleData.client_id,
+            entidad_nombre: saleData.client_name,
+            fecha: new Date().toISOString().split('T')[0],
+            concepto: `Venta #${sale.id}`,
+            debe: pago.importe,
+            haber: 0,
+            saldo: nuevoSaldo,
+            referencia_tipo: "venta",
+            referencia_id: sale.id
+          });
+
+          await base44.entities.Client.update(saleData.client_id, {
+            saldo_cc: nuevoSaldo
+          });
+        } else {
+          // Movimiento Tesorería
+          await base44.entities.MovimientoTesoreria.create({
+            fecha: new Date().toISOString().split('T')[0],
+            tipo: "INGRESO",
+            medio_pago_id: pago.medio_pago_id,
+            medio_pago_nombre: pago.medio_pago_nombre,
+            banco_id: pago.banco_id,
+            banco_nombre: pago.banco_nombre,
+            caja_id: pago.caja_id,
+            caja_nombre: pago.caja_nombre,
+            importe: pago.importe,
+            referencia_tipo: "venta",
+            referencia_id: sale.id,
+            observaciones: `Venta #${sale.id} - ${saleData.client_name}`
+          });
+
+          // Actualizar saldos
+          if (pago.banco_id) {
+            const banco = bancos.find(b => b.id === pago.banco_id);
+            await base44.entities.Banco.update(pago.banco_id, {
+              saldo_actual: banco.saldo_actual + pago.importe
+            });
+          }
+          if (pago.caja_id) {
+            const caja = cajas.find(c => c.id === pago.caja_id);
+            await base44.entities.Caja.update(pago.caja_id, {
+              saldo_actual: caja.saldo_actual + pago.importe
+            });
+          }
+        }
+      }
+
+      // Actualizar último contacto
+      if (saleData.client_id) {
         await base44.entities.Client.update(saleData.client_id, {
-          saldo_cc: nuevoSaldo,
           last_contact: new Date().toISOString().split('T')[0]
         });
-      } else if (medio) {
-        // PAGO CONTADO: Generar movimiento de Tesorería
-        const caja = cajas.find(c => c.is_active);
-        const banco = bancos.find(b => b.is_active);
-
-        const movimiento = await base44.entities.MovimientoTesoreria.create({
-          fecha: new Date().toISOString().split('T')[0],
-          tipo: "INGRESO",
-          medio_pago_id: medio.id,
-          medio_pago_nombre: medio.nombre,
-          banco_id: medio.requiere_banco ? banco?.id : null,
-          banco_nombre: medio.requiere_banco ? banco?.nombre : "",
-          caja_id: medio.requiere_caja ? caja?.id : null,
-          caja_nombre: medio.requiere_caja ? caja?.nombre : "",
-          importe: saleData.total,
-          referencia_tipo: "venta",
-          referencia_id: sale.id,
-          observaciones: `Venta #${sale.id} - ${saleData.client_name}`
-        });
-
-        // Actualizar saldos
-        if (medio.requiere_banco && banco) {
-          await base44.entities.Banco.update(banco.id, {
-            saldo_actual: banco.saldo_actual + saleData.total
-          });
-        }
-        if (medio.requiere_caja && caja) {
-          await base44.entities.Caja.update(caja.id, {
-            saldo_actual: caja.saldo_actual + saleData.total
-          });
-        }
-
-        if (saleData.client_id) {
-          await base44.entities.Client.update(saleData.client_id, {
-            last_contact: new Date().toISOString().split('T')[0]
-          });
-        }
       }
 
       return sale;
@@ -260,6 +260,7 @@ export default function Sales() {
       queryClient.invalidateQueries({ queryKey: ['cajas'] });
       queryClient.invalidateQueries({ queryKey: ['bancos'] });
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+      setIsPagosDialogOpen(false);
       handleCloseDialog();
     },
     onError: (error) => {
@@ -271,7 +272,6 @@ export default function Sales() {
     setCart([]);
     setSelectedClient("");
     setTipoLista("MINORISTA");
-    setPaymentMethod(mediosPago[0]?.nombre || "Efectivo");
     setProductSearch("");
     setIsDialogOpen(true);
   };
@@ -326,12 +326,12 @@ export default function Sales() {
     }
   };
 
-  // Recalcular precios cuando cambia tipo de lista o método de pago
+  // Recalcular precios cuando cambia tipo de lista
   useEffect(() => {
     const newCart = [...cart];
     newCart.forEach(item => updateCartItemPricing(item));
     setCart(newCart);
-  }, [tipoLista, paymentMethod]);
+  }, [tipoLista]);
 
   const updateCartQuantity = (index, quantity) => {
     if (quantity <= 0) {
@@ -369,19 +369,26 @@ export default function Sales() {
       return;
     }
 
+    setIsPagosDialogOpen(true);
+  };
+
+  const handleConfirmarPagos = (pagos, tipoVenta) => {
     const client = clients.find(c => c.id === selectedClient);
 
     createSaleMutation.mutate({
-      client_id: selectedClient || null,
-      client_name: client?.name || "Cliente general",
-      employee_email: user?.email,
-      employee_name: user?.full_name,
-      tipo_lista: tipoLista,
-      payment_method: paymentMethod,
-      items: cart,
-      subtotal: getSubtotal(),
-      discount: 0,
-      total: getTotal()
+      saleData: {
+        client_id: selectedClient || null,
+        client_name: client?.name || "Cliente general",
+        employee_email: user?.email,
+        employee_name: user?.full_name,
+        tipo_lista: tipoLista,
+        items: cart,
+        subtotal: getSubtotal(),
+        discount: 0,
+        total: getTotal()
+      },
+      pagos,
+      tipoVenta
     });
   };
 
@@ -680,32 +687,17 @@ export default function Sales() {
               </div>
 
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Lista de Precios</Label>
-                    <Select value={tipoLista} onValueChange={setTipoLista}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="MINORISTA">Minorista</SelectItem>
-                        <SelectItem value="MAYORISTA">Mayorista</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Forma de Pago</Label>
-                    <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {mediosPago.map(m => (
-                          <SelectItem key={m.id} value={m.nombre}>{m.nombre}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Lista de Precios</Label>
+                  <Select value={tipoLista} onValueChange={setTipoLista}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MINORISTA">Minorista</SelectItem>
+                      <SelectItem value="MAYORISTA">Mayorista</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-1">
@@ -743,11 +735,19 @@ export default function Sales() {
               disabled={cart.length === 0 || tieneItemsInvalidos}
             >
               <DollarSign className="h-4 w-4 mr-2" />
-              Confirmar Venta
+              Siguiente: Pagos
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PagosDialog
+        isOpen={isPagosDialogOpen}
+        onClose={() => setIsPagosDialogOpen(false)}
+        total={getTotal()}
+        onConfirm={handleConfirmarPagos}
+        clienteId={selectedClient}
+      />
     </div>
   );
 }
