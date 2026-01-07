@@ -17,6 +17,7 @@ import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
 import IVAMensual from './pages/IVAMensual';
 import DashboardEjecutivo from './pages/DashboardEjecutivo';
+import Presupuestos from './pages/Presupuestos';
 import __Layout from './Layout.jsx';
 
 
@@ -40,6 +41,7 @@ export const PAGES = {
     "Treasury": Treasury,
     "IVAMensual": IVAMensual,
     "DashboardEjecutivo": DashboardEjecutivo,
+    "Presupuestos": Presupuestos,
 }
 
 export const pagesConfig = {
