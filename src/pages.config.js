@@ -21,6 +21,7 @@ import Treasury from './pages/Treasury';
 import Proveedores from './pages/Proveedores';
 import PagosProveedores from './pages/PagosProveedores';
 import IngresosBrutos from './pages/IngresosBrutos';
+import TableroFiscal from './pages/TableroFiscal';
 import __Layout from './Layout.jsx';
 
 
@@ -48,6 +49,7 @@ export const PAGES = {
     "Proveedores": Proveedores,
     "PagosProveedores": PagosProveedores,
     "IngresosBrutos": IngresosBrutos,
+    "TableroFiscal": TableroFiscal,
 }
 
 export const pagesConfig = {
