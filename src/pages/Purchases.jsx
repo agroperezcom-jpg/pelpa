@@ -31,8 +31,9 @@ import {
 } from "@/components/ui/table";
 import {
   ShoppingBag, Plus, Search, Trash2, X, CheckCircle, AlertTriangle, 
-  Package, DollarSign, Receipt, TrendingUp, FileText
+  Package, DollarSign, Receipt, TrendingUp, FileText, BarChart3, Download
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -392,6 +393,9 @@ export default function Purchases() {
   const comprasHoy = compras.filter(c => c.fecha === today && c.estado === "CONFIRMADA");
   const totalHoy = comprasHoy.reduce((acc, c) => acc + (c.total_compra || 0), 0);
 
+  const [activeTab, setActiveTab] = useState("compras");
+  const [fechaReporte, setFechaReporte] = useState(format(new Date(), 'yyyy-MM'));
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -405,10 +409,36 @@ export default function Purchases() {
             Hoy: ${totalHoy.toLocaleString()} ({comprasHoy.length} compras)
           </p>
         </div>
-        <Button onClick={handleOpenDialog} className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Compra
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => {
+            const data = compras.filter(c => c.estado === "CONFIRMADA").map(c => ({
+              fecha: c.fecha,
+              proveedor: c.proveedor_nombre,
+              comprobante: `${c.tipo_comprobante}-${c.numero_comprobante_proveedor}`,
+              neto: c.neto_gravado,
+              iva: c.iva_21,
+              total: c.total_compra,
+              tipo: c.tipo_compra
+            }));
+            const csv = [
+              ['Fecha', 'Proveedor', 'Comprobante', 'Neto', 'IVA', 'Total', 'Tipo'],
+              ...data.map(d => [d.fecha, d.proveedor, d.comprobante, d.neto, d.iva, d.total, d.tipo])
+            ].map(row => row.join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `compras_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+            a.click();
+          }}>
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
+          <Button onClick={handleOpenDialog} className="bg-blue-600 hover:bg-blue-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Nueva Compra
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -441,24 +471,31 @@ export default function Purchases() {
         </Card>
       </div>
 
-      {/* Search */}
-      <Card className="border-0 shadow-sm">
-        <CardContent className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input
-              placeholder="Buscar por proveedor o número de comprobante..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="bg-white border shadow-sm">
+          <TabsTrigger value="compras">Compras</TabsTrigger>
+          <TabsTrigger value="reportes">Reportes</TabsTrigger>
+        </TabsList>
 
-      {/* Compras Table */}
-      <Card className="border-0 shadow-sm overflow-hidden">
-        <Table>
+        <TabsContent value="compras" className="space-y-4">
+          {/* Search */}
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Buscar por proveedor o número de comprobante..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Compras Table */}
+          <Card className="border-0 shadow-sm overflow-hidden">
+            <Table>
           <TableHeader>
             <TableRow className="bg-slate-50">
               <TableHead>Fecha</TableHead>
