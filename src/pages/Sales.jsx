@@ -467,6 +467,17 @@ export default function Sales() {
       return;
     }
 
+    // Validación IVA: no permitir Factura B sin cliente con tipo IVA válido
+    if (currentSale.genera_iva && !currentSale.client_id) {
+      alert("Para emitir Factura B con IVA debe seleccionar un cliente con CUIT/CUIL válido.");
+      return;
+    }
+
+    if (currentSale.genera_iva && currentSale.client_tipo_iva === "CONSUMIDOR_FINAL") {
+      alert("No se puede emitir Factura B a un Consumidor Final. Seleccione un cliente Responsable Inscripto o Monotributista.");
+      return;
+    }
+
     setIsPagosDialogOpen(true);
   };
 
