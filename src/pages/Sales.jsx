@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import PagosDialog from "../components/pos/PagosDialog";
+import ReportesDialog from "../components/pos/ReportesDialog";
 import {
   Dialog,
   DialogContent,
@@ -41,7 +42,8 @@ import {
   X,
   Minus,
   AlertTriangle,
-  TrendingUp
+  TrendingUp,
+  FileText
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -50,6 +52,7 @@ export default function Sales() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPagosDialogOpen, setIsPagosDialogOpen] = useState(false);
+  const [isReportesDialogOpen, setIsReportesDialogOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [cart, setCart] = useState([]);
   const [selectedClient, setSelectedClient] = useState("");
@@ -423,10 +426,16 @@ export default function Sales() {
             Hoy: ${todayTotal.toLocaleString()} ({todaySales.length} ventas)
           </p>
         </div>
-        <Button onClick={handleOpenDialog} className="bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Venta
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsReportesDialogOpen(true)} variant="outline">
+            <FileText className="h-4 w-4 mr-2" />
+            Reportes X/Z
+          </Button>
+          <Button onClick={handleOpenDialog} className="bg-emerald-600 hover:bg-emerald-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Nueva Venta
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -747,6 +756,12 @@ export default function Sales() {
         total={getTotal()}
         onConfirm={handleConfirmarPagos}
         clienteId={selectedClient}
+      />
+
+      <ReportesDialog
+        isOpen={isReportesDialogOpen}
+        onClose={() => setIsReportesDialogOpen(false)}
+        user={user}
       />
     </div>
   );
