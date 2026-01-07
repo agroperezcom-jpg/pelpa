@@ -124,6 +124,17 @@ export default function TicketPrint({ venta, pagos, isCopia = false }) {
                 Descuento: -${venta.discount?.toFixed(2)}
               </div>
             )}
+            {venta.genera_iva && venta.neto_gravado && (
+              <>
+                <div style={{ borderTop: '1px dashed #000', margin: '2mm 0' }}></div>
+                <div style={{ fontSize: '12px', fontWeight: 'normal', marginBottom: '1mm' }}>
+                  Neto Gravado: ${venta.neto_gravado?.toFixed(2)}
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '2mm', color: '#059669' }}>
+                  IVA 21%: ${venta.iva_21?.toFixed(2)}
+                </div>
+              </>
+            )}
             <div style={{ borderTop: '2px solid #000', paddingTop: '2mm' }}>
               TOTAL: ${venta.total?.toFixed(2)}
             </div>
