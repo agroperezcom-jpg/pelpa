@@ -11,9 +11,9 @@ import Projects from './pages/Projects';
 import Sales from './pages/Sales';
 import Services from './pages/Services';
 import Settings from './pages/Settings';
+import TesoreriaV2 from './pages/TesoreriaV2';
 import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
-import TesoreriaV2 from './pages/TesoreriaV2';
 import __Layout from './Layout.jsx';
 
 
@@ -31,9 +31,9 @@ export const PAGES = {
     "Sales": Sales,
     "Services": Services,
     "Settings": Settings,
+    "TesoreriaV2": TesoreriaV2,
     "TiposArticulo": TiposArticulo,
     "Treasury": Treasury,
-    "TesoreriaV2": TesoreriaV2,
 }
 
 export const pagesConfig = {

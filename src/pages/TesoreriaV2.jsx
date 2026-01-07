@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Landmark, Wallet, Building2, Users, Package, ArrowRightLeft, Settings } from "lucide-react";
 
 import ResumenTesoreria from "@/components/tesoreria/ResumenTesoreria";
+import TransferenciasDialog from "@/components/tesoreria/TransferenciasDialog";
 import CajasView from "@/components/tesoreria/CajasView";
 import BancosView from "@/components/tesoreria/BancosView";
 import MovimientosView from "@/components/tesoreria/MovimientosView";
@@ -13,6 +15,7 @@ import CuentaCorrienteView from "@/components/tesoreria/CuentaCorrienteView";
 import MediosPagoView from "@/components/tesoreria/MediosPagoView";
 
 export default function TesoreriaV2() {
+  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
   const { data: cajas = [] } = useQuery({
     queryKey: ['cajas'],
     queryFn: () => base44.entities.Caja.list()
@@ -56,6 +59,10 @@ export default function TesoreriaV2() {
             Control de ingresos, egresos, cajas y bancos
           </p>
         </div>
+        <Button onClick={() => setIsTransferDialogOpen(true)} className="bg-purple-600 hover:bg-purple-700">
+          <ArrowRightLeft className="h-4 w-4 mr-2" />
+          Transferir
+        </Button>
       </div>
 
       {/* Stats */}
@@ -111,6 +118,11 @@ export default function TesoreriaV2() {
           <MediosPagoView />
         </TabsContent>
       </Tabs>
+
+      <TransferenciasDialog 
+        isOpen={isTransferDialogOpen}
+        onClose={() => setIsTransferDialogOpen(false)}
+      />
     </div>
   );
 }

@@ -92,6 +92,16 @@ export default function MovimientosView() {
       const banco = bancos.find(b => b.id === data.banco_id);
       const caja = cajas.find(c => c.id === data.caja_id);
 
+      // Validar saldo suficiente para egresos
+      if (data.tipo === "EGRESO") {
+        if (data.banco_id && banco.saldo_actual < parseFloat(data.importe)) {
+          throw new Error(`Saldo insuficiente en ${banco.nombre}. Saldo disponible: $${banco.saldo_actual}`);
+        }
+        if (data.caja_id && caja.saldo_actual < parseFloat(data.importe)) {
+          throw new Error(`Saldo insuficiente en ${caja.nombre}. Saldo disponible: $${caja.saldo_actual}`);
+        }
+      }
+
       const movimiento = await base44.entities.MovimientoTesoreria.create({
         ...data,
         medio_pago_nombre: medio.nombre,
