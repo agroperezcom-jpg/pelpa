@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import PagosDialog from "../components/pos/PagosDialog";
 import ReportesDialog from "../components/pos/ReportesDialog";
+import TicketPrint from "../components/pos/TicketPrint";
 import {
   Dialog,
   DialogContent,
@@ -53,6 +54,9 @@ export default function Sales() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPagosDialogOpen, setIsPagosDialogOpen] = useState(false);
   const [isReportesDialogOpen, setIsReportesDialogOpen] = useState(false);
+  const [isTicketDialogOpen, setIsTicketDialogOpen] = useState(false);
+  const [ventaConfirmada, setVentaConfirmada] = useState(null);
+  const [pagosConfirmados, setPagosConfirmados] = useState([]);
   const [user, setUser] = useState(null);
   const [cart, setCart] = useState([]);
   const [selectedClient, setSelectedClient] = useState("");
@@ -141,6 +145,16 @@ export default function Sales() {
       precio_minimo
     };
   };
+
+  const { data: pagosPorVenta = [] } = useQuery({
+    queryKey: ['pagosPorVenta', ventaConfirmada?.id],
+    queryFn: async () => {
+      if (!ventaConfirmada?.id) return [];
+      const allPagos = await base44.entities.PagoVenta.list();
+      return allPagos.filter(p => p.venta_id === ventaConfirmada.id);
+    },
+    enabled: !!ventaConfirmada?.id
+  });
 
   const createSaleMutation = useMutation({
     mutationFn: async ({ saleData, pagos, tipoVenta }) => {
@@ -254,7 +268,7 @@ export default function Sales() {
 
       return sale;
     },
-    onSuccess: () => {
+    onSuccess: (sale, variables) => {
       queryClient.invalidateQueries({ queryKey: ['sales'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['movements'] });
@@ -264,7 +278,9 @@ export default function Sales() {
       queryClient.invalidateQueries({ queryKey: ['bancos'] });
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setIsPagosDialogOpen(false);
-      handleCloseDialog();
+      setVentaConfirmada(sale);
+      setPagosConfirmados(variables.pagos);
+      setIsTicketDialogOpen(true);
     },
     onError: (error) => {
       alert(error.message);
@@ -282,6 +298,16 @@ export default function Sales() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setCart([]);
+    setSelectedClient("");
+    setTipoLista("MINORISTA");
+    setProductSearch("");
+  };
+
+  const handleCloseTicket = () => {
+    setIsTicketDialogOpen(false);
+    setVentaConfirmada(null);
+    setPagosConfirmados([]);
+    handleCloseDialog();
   };
 
   const addToCart = (item, type) => {
@@ -762,7 +788,48 @@ export default function Sales() {
         isOpen={isReportesDialogOpen}
         onClose={() => setIsReportesDialogOpen(false)}
         user={user}
-      />
-    </div>
-  );
-}
+        />
+
+        {/* Ticket Dialog */}
+        <Dialog open={isTicketDialogOpen} onOpenChange={setIsTicketDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-green-600" />
+              Venta Confirmada
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-4">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-green-600 mb-2">
+              ¡Venta Confirmada!
+            </h3>
+            <p className="text-slate-600 mb-1">
+              Total: ${ventaConfirmada?.total?.toFixed(2)}
+            </p>
+            <p className="text-sm text-slate-500">
+              Cliente: {ventaConfirmada?.client_name}
+            </p>
+          </div>
+
+          {ventaConfirmada && (
+            <TicketPrint 
+              venta={ventaConfirmada} 
+              pagos={pagosConfirmados}
+            />
+          )}
+
+          <DialogFooter>
+            <Button onClick={handleCloseTicket} className="w-full bg-emerald-600 hover:bg-emerald-700">
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+        </Dialog>
+        </div>
+        );
+        }
