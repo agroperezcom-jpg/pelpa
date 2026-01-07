@@ -170,26 +170,19 @@ export default function Dashboard() {
       </div>
 
       {/* Notifications */}
-      {(unreadMessages.length > 0 || lowStockProducts.length > 0 || (() => {
+      {(() => {
         const mesActual = new Date().getMonth() + 1;
         const anioActual = new Date().getFullYear();
         const mesAnterior = mesActual === 1 ? 12 : mesActual - 1;
         const anioAnterior = mesActual === 1 ? anioActual - 1 : anioActual;
         const periodoAnterior = `${anioAnterior}-${String(mesAnterior).padStart(2, '0')}`;
         const periodoAnteriorRecord = periodosIVA.find(p => p.periodo === periodoAnterior);
-        return periodoAnteriorRecord && periodoAnteriorRecord.estado === "ABIERTO";
-      })()) && (
-        <div className="space-y-2">
-          {(() => {
-            const mesActual = new Date().getMonth() + 1;
-            const anioActual = new Date().getFullYear();
-            const mesAnterior = mesActual === 1 ? 12 : mesActual - 1;
-            const anioAnterior = mesActual === 1 ? anioActual - 1 : anioActual;
-            const periodoAnterior = `${anioAnterior}-${String(mesAnterior).padStart(2, '0')}`;
-            const periodoAnteriorRecord = periodosIVA.find(p => p.periodo === periodoAnterior);
-            
-            if (periodoAnteriorRecord && periodoAnteriorRecord.estado === "ABIERTO") {
-              return (
+        const tienePeriodoAbierto = periodoAnteriorRecord && periodoAnteriorRecord.estado === "ABIERTO";
+        
+        if (unreadMessages.length > 0 || lowStockProducts.length > 0 || tienePeriodoAbierto) {
+          return (
+            <div className="space-y-2">
+              {tienePeriodoAbierto && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
                   <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                     <AlertTriangle className="h-5 w-5 text-red-600" />
@@ -206,11 +199,8 @@ export default function Dashboard() {
                     </Button>
                   </Link>
                 </div>
-              );
-            }
-            return null;
-          })()}
-          {unreadMessages.length > 0 && (
+              )}
+              {unreadMessages.length > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
               <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                 <MessageSquare className="h-5 w-5 text-red-600" />
@@ -226,8 +216,8 @@ export default function Dashboard() {
                 </Button>
               </Link>
             </div>
-          )}
-          {lowStockProducts.length > 0 && (
+              )}
+              {lowStockProducts.length > 0 && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
               <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
                 <AlertTriangle className="h-5 w-5 text-amber-600" />
@@ -243,9 +233,12 @@ export default function Dashboard() {
                 </Button>
               </Link>
             </div>
-          )}
-        </div>
-      )}
+              )}
+            </div>
+          );
+        }
+        return null;
+      })()}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

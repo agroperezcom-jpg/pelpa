@@ -14,17 +14,7 @@ import {
   TableRow
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  Download,
-  Calculator,
-  PieChart as PieChartIcon,
-  ArrowUp,
-  ArrowDown,
-  Minus
-} from "lucide-react";
+
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 import {
