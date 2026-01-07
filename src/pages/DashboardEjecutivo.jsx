@@ -141,7 +141,14 @@ export default function DashboardEjecutivo() {
 
   const flujoMes = ingresosMes - egresosMes;
 
-  // 3️⃣ IVA
+  // 3️⃣ IVA e IIBB
+  const mesActual = new Date().getMonth() + 1;
+  const anioActual = new Date().getFullYear();
+  const periodoActual = `${anioActual}-${String(mesActual).padStart(2, '0')}`;
+  const periodoIVAActual = periodosIVA.find(p => p.periodo === periodoActual);
+  const periodoIIBBActual = periodosIIBB.find(p => p.periodo === periodoActual);
+  const proyeccionIIBBActual = proyeccionesIIBB.find(p => p.periodo === periodoActual);
+
   const ivaVentasMes = ivaVentas.filter(iv => 
     iv.fecha >= monthStart && iv.fecha <= monthEnd
   );
@@ -247,6 +254,30 @@ export default function DashboardEjecutivo() {
   }
 
   const stockCritico = products.filter(p => p.stock === 0 && p.is_active).length;
+  // 🆕 Alertas IIBB
+  if (periodoIIBBActual && periodoIIBBActual.saldo_iibb > 50000) {
+    alertas.push({
+      tipo: 'warning',
+      titulo: '⚠️ IIBB Elevado',
+      mensaje: `$${periodoIIBBActual.saldo_iibb.toLocaleString()} de IIBB a pagar este mes`,
+      accion: 'IngresosBrutos'
+    });
+  }
+
+  const mesAnteriorNum = mesActual === 1 ? 12 : mesActual - 1;
+  const anioAnteriorNum = mesActual === 1 ? anioActual - 1 : anioActual;
+  const periodoAnterior = `${anioAnteriorNum}-${String(mesAnteriorNum).padStart(2, '0')}`;
+  const periodoIIBBAnterior = periodosIIBB.find(p => p.periodo === periodoAnterior);
+  
+  if (periodoIIBBAnterior && periodoIIBBAnterior.estado === "ABIERTO") {
+    alertas.push({
+      tipo: 'error',
+      titulo: '🔴 Período IIBB Abierto',
+      mensaje: `El período ${periodoAnterior} de Ingresos Brutos debe cerrarse`,
+      accion: 'IngresosBrutos'
+    });
+  }
+
   if (stockCritico > 5) {
     alertas.push({
       tipo: 'warning',
@@ -573,6 +604,27 @@ export default function DashboardEjecutivo() {
                 </Badge>
               </div>
             </div>
+
+            {/* 🆕 Posición IIBB */}
+            {periodoIIBBActual && (
+              <div className={`p-4 rounded-lg border-2 ${
+                periodoIIBBActual.saldo_iibb > 0 ? 'bg-purple-50 border-purple-300' : 'bg-emerald-50 border-emerald-300'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-slate-700 uppercase mb-1">IIBB Actual</p>
+                    <p className={`text-2xl font-bold ${
+                      periodoIIBBActual.saldo_iibb > 0 ? 'text-purple-600' : 'text-emerald-600'
+                    }`}>
+                      ${Math.abs(periodoIIBBActual.saldo_iibb).toLocaleString()}
+                    </p>
+                  </div>
+                  <Badge className={periodoIIBBActual.saldo_iibb > 50000 ? 'bg-red-600' : 'bg-purple-600'}>
+                    {periodoIIBBActual.saldo_iibb > 0 ? 'A Pagar' : 'A Favor'}
+                  </Badge>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -814,51 +866,98 @@ export default function DashboardEjecutivo() {
         </CardContent>
       </Card>
 
-      {/* Estado de Períodos IVA */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-blue-600" />
-              Estado Períodos Fiscales
-            </span>
-            <Link to={createPageUrl("IVAMensual")}>
-              <Button size="sm" variant="outline">
-                Ver Detalle <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            </Link>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {periodosIVA.slice(0, 6).map((periodo) => (
-              <div
-                key={periodo.id}
-                className={`p-3 rounded-lg border-2 ${
-                  periodo.estado === "ABIERTO" ? 'bg-emerald-50 border-emerald-300' : 'bg-slate-50 border-slate-300'
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <p className="text-sm font-semibold">
-                    {format(new Date(periodo.anio, periodo.mes - 1), 'MMM yyyy', { locale: es })}
-                  </p>
-                  <Badge className={periodo.estado === "ABIERTO" ? "bg-emerald-600" : "bg-slate-600"}>
-                    {periodo.estado}
-                  </Badge>
-                </div>
-                <div className="space-y-1 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">Saldo:</span>
-                    <span className={`font-bold ${periodo.saldo_iva > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                      ${Math.abs(periodo.saldo_iva || 0).toLocaleString()}
-                    </span>
+      {/* Estado de Períodos Fiscales */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-blue-600" />
+                Períodos IVA
+              </span>
+              <Link to={createPageUrl("IVAMensual")}>
+                <Button size="sm" variant="outline">
+                  Ver Detalle <ArrowRight className="h-4 w-4 ml-1" />
+                </Button>
+              </Link>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {periodosIVA.slice(0, 4).map((periodo) => (
+                <div
+                  key={periodo.id}
+                  className={`p-3 rounded-lg border-2 ${
+                    periodo.estado === "ABIERTO" ? 'bg-emerald-50 border-emerald-300' : 'bg-slate-50 border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <p className="text-sm font-semibold">
+                      {format(new Date(periodo.anio, periodo.mes - 1), 'MMM yyyy', { locale: es })}
+                    </p>
+                    <Badge className={periodo.estado === "ABIERTO" ? "bg-emerald-600" : "bg-slate-600"}>
+                      {periodo.estado}
+                    </Badge>
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">Saldo:</span>
+                      <span className={`font-bold ${periodo.saldo_iva > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                        ${Math.abs(periodo.saldo_iva || 0).toLocaleString()}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Receipt className="h-5 w-5 text-purple-600" />
+                Períodos IIBB
+              </span>
+              <Link to={createPageUrl("IngresosBrutos")}>
+                <Button size="sm" variant="outline">
+                  Ver Detalle <ArrowRight className="h-4 w-4 ml-1" />
+                </Button>
+              </Link>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {periodosIIBB.slice(0, 4).map((periodo) => (
+                <div
+                  key={periodo.id}
+                  className={`p-3 rounded-lg border-2 ${
+                    periodo.estado === "ABIERTO" ? 'bg-purple-50 border-purple-300' : 'bg-slate-50 border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <p className="text-sm font-semibold">
+                      {format(new Date(periodo.anio, periodo.mes - 1), 'MMM yyyy', { locale: es })}
+                    </p>
+                    <Badge className={periodo.estado === "ABIERTO" ? "bg-purple-600" : "bg-slate-600"}>
+                      {periodo.estado}
+                    </Badge>
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">Saldo:</span>
+                      <span className={`font-bold ${periodo.saldo_iibb > 0 ? 'text-purple-600' : 'text-emerald-600'}`}>
+                        ${Math.abs(periodo.saldo_iibb || 0).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Footer Info */}
       <div className="text-center text-xs text-slate-500 pt-4 border-t">

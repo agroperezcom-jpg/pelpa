@@ -240,7 +240,7 @@ export default function IngresosBrutos() {
         throw new Error("No se pueden registrar retenciones en períodos cerrados");
       }
 
-      await base44.entities.RetencionIIBB.create({
+      const retencion = await base44.entities.RetencionIIBB.create({
         compra_id: retencionData.compra_id,
         proveedor_id: compra.proveedor_id,
         proveedor_nombre: compra.proveedor_nombre,
@@ -250,9 +250,28 @@ export default function IngresosBrutos() {
         importe_retenido: retencionData.importe_retenido,
         numero_comprobante: retencionData.numero_comprobante || ""
       });
+
+      // 🆕 AUTO-RECALCULAR PERÍODO
+      if (periodoIIBB && periodoIIBB.estado === "ABIERTO") {
+        const ventasIIBBPeriodo = iibbVentas.filter(iv => iv.periodo === periodo);
+        const retencionesIIBBPeriodo = retencionesIIBB.filter(r => r.periodo === periodo);
+        retencionesIIBBPeriodo.push(retencion);
+
+        const totalIIBBVentas = ventasIIBBPeriodo.reduce((acc, iv) => acc + (iv.importe_iibb || 0), 0);
+        const totalRetenciones = retencionesIIBBPeriodo.reduce((acc, r) => acc + (r.importe_retenido || 0), 0);
+
+        await base44.entities.PeriodoIIBB.update(periodoIIBB.id, {
+          iibb_ventas: totalIIBBVentas,
+          iibb_retenido: totalRetenciones,
+          saldo_iibb: totalIIBBVentas - totalRetenciones,
+          cantidad_ventas: ventasIIBBPeriodo.length,
+          cantidad_retenciones: retencionesIIBBPeriodo.length
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['retencionesIIBB'] });
+      queryClient.invalidateQueries({ queryKey: ['periodosIIBB'] });
       setIsRetencionDialogOpen(false);
       setNuevaRetencion({
         compra_id: "",
@@ -261,7 +280,7 @@ export default function IngresosBrutos() {
         importe_retenido: "",
         numero_comprobante: ""
       });
-      alert("✅ Retención registrada");
+      alert("✅ Retención registrada y período actualizado");
     },
     onError: (error) => {
       alert(error.message);
