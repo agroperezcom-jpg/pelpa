@@ -293,22 +293,71 @@ export default function Analytics() {
   const exportData = () => {
     const data = {
       periodo: `${startDate} a ${endDate}`,
-      kpis: {
+      resumen_ejecutivo: {
         ventas_totales: totalVentas,
-        margen_neto: porcentajeMargenNeto,
+        margen_neto_porcentaje: porcentajeMargenNeto,
+        margen_bruto_porcentaje: porcentajeMargen,
         rotacion_stock: rotacionStock,
         cash_flow: cashFlow,
-        tasa_retencion: tasaRetencion
+        tasa_retencion: tasaRetencion,
+        ticket_promedio: ticketPromedio,
+        clientes_activos: clientesActivos
       },
-      alertas
+      comparacion_periodo_anterior: {
+        variacion_ventas: variacionVentas,
+        variacion_ticket: variacionTicket
+      },
+      kpis_comerciales: {
+        numero_ventas: filteredSales.length,
+        unidades_por_ticket: unidadesPorTicket,
+        margen_por_categoria: margenCategoriaData
+      },
+      kpis_stock: {
+        dias_inventario: diasInventario,
+        productos_sin_movimiento: productosSinMovimiento,
+        quiebre_stock_porcentaje: quiebreStock,
+        valor_inventario: valorInventario
+      },
+      kpis_financieros: {
+        gastos_totales: totalGastos,
+        margen_neto_absoluto: margenNeto,
+        costo_operativo_sobre_ventas: costoOperativoSobreVentas
+      },
+      top_productos: topProductos.slice(0, 10),
+      top_clientes: topClientes.slice(0, 10),
+      alertas_activas: alertas,
+      fecha_generacion: new Date().toISOString()
     };
     
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `analisis_kpi_${startDate}_${endDate}.json`;
-    link.click();
+    // Exportar como JSON
+    const jsonBlob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const jsonUrl = URL.createObjectURL(jsonBlob);
+    const jsonLink = document.createElement('a');
+    jsonLink.href = jsonUrl;
+    jsonLink.download = `analisis_completo_${startDate}_${endDate}.json`;
+    jsonLink.click();
+
+    // Exportar como CSV resumido
+    const csvRows = [
+      ['Métrica', 'Valor'],
+      ['Período', `${startDate} a ${endDate}`],
+      ['Ventas Totales', totalVentas],
+      ['Número de Ventas', filteredSales.length],
+      ['Ticket Promedio', ticketPromedio.toFixed(2)],
+      ['Margen Bruto %', porcentajeMargen.toFixed(2)],
+      ['Margen Neto %', porcentajeMargenNeto.toFixed(2)],
+      ['Rotación Stock', rotacionStock.toFixed(2)],
+      ['Cash Flow', cashFlow],
+      ['Clientes Activos', clientesActivos],
+      ['Tasa Retención %', tasaRetencion.toFixed(2)]
+    ];
+    const csvContent = csvRows.map(row => row.join(',')).join('\n');
+    const csvBlob = new Blob([csvContent], { type: 'text/csv' });
+    const csvUrl = URL.createObjectURL(csvBlob);
+    const csvLink = document.createElement('a');
+    csvLink.href = csvUrl;
+    csvLink.download = `resumen_kpi_${startDate}_${endDate}.csv`;
+    csvLink.click();
   };
 
   const KPICard = ({ titulo, valor, formato = 'numero', variacion, icono: Icon, color }) => {
@@ -485,6 +534,7 @@ export default function Analytics() {
           <TabsTrigger value="clientes">KPI Clientes</TabsTrigger>
           <TabsTrigger value="operativos">KPI Operativos</TabsTrigger>
           <TabsTrigger value="rankings">Rankings</TabsTrigger>
+          <TabsTrigger value="tendencias">Tendencias</TabsTrigger>
         </TabsList>
 
         {/* KPI COMERCIALES */}
@@ -1041,6 +1091,229 @@ export default function Analytics() {
                           }>
                             {cat.rotacion.toFixed(2)}
                           </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ));
+                })()}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
+        {/* TENDENCIAS Y ANÁLISIS AVANZADO */}
+        <TabsContent value="tendencias" className="space-y-4">
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Evolución de Ventas y Margen</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={(() => {
+                    const ventasPorDia = {};
+                    filteredSales.forEach(sale => {
+                      const dia = sale.created_date?.split('T')[0];
+                      if (!ventasPorDia[dia]) {
+                        ventasPorDia[dia] = { ventas: 0, margen: 0 };
+                      }
+                      ventasPorDia[dia].ventas += sale.total;
+                      const costoItems = sale.items?.reduce((acc, item) => acc + item.costo_unitario * item.quantity, 0) || 0;
+                      ventasPorDia[dia].margen += (sale.total - costoItems);
+                    });
+                    return Object.entries(ventasPorDia)
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([fecha, data]) => ({
+                        fecha: format(new Date(fecha), 'dd/MM', { locale: es }),
+                        ventas: data.ventas,
+                        margen: data.margen
+                      }));
+                  })()}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="fecha" tick={{ fontSize: 11 }} stroke="#94a3b8" />
+                    <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                    <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
+                    <Legend />
+                    <Line type="monotone" dataKey="ventas" stroke="#3b82f6" strokeWidth={2} name="Ventas" dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="margen" stroke="#10b981" strokeWidth={2} name="Margen Bruto" dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Ventas por Tipo</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={(() => {
+                          const tipos = { 'CONTADO': 0, 'CTA_CTE': 0, 'MIXTA': 0 };
+                          filteredSales.forEach(s => {
+                            tipos[s.tipo_venta || 'CONTADO'] += s.total;
+                          });
+                          return Object.entries(tipos)
+                            .filter(([, v]) => v > 0)
+                            .map(([tipo, valor]) => ({
+                              name: tipo === 'CTA_CTE' ? 'Cuenta Corriente' : tipo.charAt(0) + tipo.slice(1).toLowerCase(),
+                              value: valor
+                            }));
+                        })()}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={90}
+                        paddingAngle={2}
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {[0, 1, 2].map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Clientes Nuevos vs Recurrentes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {(() => {
+                    const clientesNuevos = new Set();
+                    const clientesRecurrentes = new Set();
+                    
+                    filteredSales.forEach(sale => {
+                      if (!sale.client_id) return;
+                      const ventasAnteriores = sales.filter(s => 
+                        s.client_id === sale.client_id && 
+                        new Date(s.created_date) < new Date(sale.created_date)
+                      );
+                      if (ventasAnteriores.length === 0) {
+                        clientesNuevos.add(sale.client_id);
+                      } else {
+                        clientesRecurrentes.add(sale.client_id);
+                      }
+                    });
+
+                    const nuevos = clientesNuevos.size;
+                    const recurrentes = clientesRecurrentes.size;
+                    const total = nuevos + recurrentes;
+
+                    return (
+                      <>
+                        <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+                          <div>
+                            <p className="text-sm font-medium text-green-900">Clientes Nuevos</p>
+                            <p className="text-3xl font-bold text-green-600 mt-1">{nuevos}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-green-700">
+                              {total > 0 ? ((nuevos / total) * 100).toFixed(0) : 0}%
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                          <div>
+                            <p className="text-sm font-medium text-blue-900">Clientes Recurrentes</p>
+                            <p className="text-3xl font-bold text-blue-600 mt-1">{recurrentes}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-blue-700">
+                              {total > 0 ? ((recurrentes / total) * 100).toFixed(0) : 0}%
+                            </p>
+                          </div>
+                        </div>
+                        <div className="p-4 bg-slate-50 rounded-lg">
+                          <p className="text-sm text-slate-600">
+                            La tasa de recurrencia de <strong>{total > 0 ? ((recurrentes / total) * 100).toFixed(0) : 0}%</strong> indica 
+                            {recurrentes / total > 0.7 ? ' excelente fidelización' : 
+                             recurrentes / total > 0.5 ? ' buena fidelización' : 
+                             ' oportunidad de mejorar fidelización'}
+                          </p>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="border-0 shadow-sm overflow-hidden">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <TrendingDown className="h-5 w-5 text-red-600" />
+                Clientes con Caída de Consumo
+              </CardTitle>
+            </CardHeader>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead>Cliente</TableHead>
+                  <TableHead className="text-right">Período Anterior</TableHead>
+                  <TableHead className="text-right">Período Actual</TableHead>
+                  <TableHead className="text-right">Variación</TableHead>
+                  <TableHead className="text-right">Última Compra</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(() => {
+                  const clientesComparacion = {};
+                  
+                  // Calcular consumo período actual
+                  filteredSales.forEach(sale => {
+                    if (!sale.client_id) return;
+                    if (!clientesComparacion[sale.client_id]) {
+                      clientesComparacion[sale.client_id] = {
+                        nombre: sale.client_name,
+                        actual: 0,
+                        anterior: 0,
+                        ultimaCompra: sale.created_date
+                      };
+                    }
+                    clientesComparacion[sale.client_id].actual += sale.total;
+                    if (new Date(sale.created_date) > new Date(clientesComparacion[sale.client_id].ultimaCompra)) {
+                      clientesComparacion[sale.client_id].ultimaCompra = sale.created_date;
+                    }
+                  });
+
+                  // Calcular consumo período anterior
+                  prevSales.forEach(sale => {
+                    if (!sale.client_id || !clientesComparacion[sale.client_id]) return;
+                    clientesComparacion[sale.client_id].anterior += sale.total;
+                  });
+
+                  return Object.entries(clientesComparacion)
+                    .filter(([, data]) => data.anterior > 0 && data.actual < data.anterior)
+                    .map(([id, data]) => ({
+                      id,
+                      ...data,
+                      variacion: ((data.actual - data.anterior) / data.anterior) * 100
+                    }))
+                    .sort((a, b) => a.variacion - b.variacion)
+                    .slice(0, 10)
+                    .map((cliente) => (
+                      <TableRow key={cliente.id} className="bg-red-50">
+                        <TableCell className="font-medium">{cliente.nombre}</TableCell>
+                        <TableCell className="text-right">${cliente.anterior.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">${cliente.actual.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">
+                          <Badge className="bg-red-100 text-red-700">
+                            {cliente.variacion.toFixed(0)}%
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right text-sm text-slate-600">
+                          {format(new Date(cliente.ultimaCompra), 'dd/MM/yyyy', { locale: es })}
                         </TableCell>
                       </TableRow>
                     ));
