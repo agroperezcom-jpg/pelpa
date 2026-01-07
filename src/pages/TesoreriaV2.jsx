@@ -5,11 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Landmark, Wallet, Building2, Users, Package, ArrowRightLeft, Settings } from "lucide-react";
 
-import CajasView from "@/components/tesoreria/CajasView";
-import BancosView from "@/components/tesoreria/BancosView";
-import MovimientosView from "@/components/tesoreria/MovimientosView";
-import CuentaCorrienteView from "@/components/tesoreria/CuentaCorrienteView";
-import MediosPagoView from "@/components/tesoreria/MediosPagoView";
+import CajasView from "@/components/tesoreria/CajasView.js";
+import BancosView from "@/components/tesoreria/BancosView.js";
+import MovimientosView from "@/components/tesoreria/MovimientosView.js";
+import CuentaCorrienteView from "@/components/tesoreria/CuentaCorrienteView.js";
+import MediosPagoView from "@/components/tesoreria/MediosPagoView.js";
 
 export default function TesoreriaV2() {
   const { data: cajas = [] } = useQuery({
