@@ -1,0 +1,123 @@
+import React from "react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, isToday, isSameDay } from "date-fns";
+import { es } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+
+export default function WeekView({ currentDate, events, onEventClick }) {
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
+  const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+
+  const getEventsForDay = (day) => {
+    return events.filter(event => {
+      const eventDate = new Date(event.date || event.start_date || event.created_date);
+      return isSameDay(eventDate, day);
+    });
+  };
+
+  const getEventColor = (event) => {
+    if (event.type === "project") return "bg-purple-100 border-purple-300 text-purple-800";
+    if (event.type === "phase") return "bg-blue-100 border-blue-300 text-blue-800";
+    if (event.type === "task") return "bg-green-100 border-green-300 text-green-800";
+    if (event.type === "milestone") return "bg-amber-100 border-amber-300 text-amber-800";
+    if (event.type === "campaign") return "bg-pink-100 border-pink-300 text-pink-800";
+    return "bg-slate-100 border-slate-300 text-slate-800";
+  };
+
+  return (
+    <Card className="border-0 shadow-sm overflow-hidden">
+      <div className="overflow-x-auto">
+        <div className="min-w-[900px]">
+          {/* Header */}
+          <div className="bg-slate-50 border-b sticky top-0 z-10">
+            <div className="grid grid-cols-8">
+              <div className="p-3 border-r text-xs font-semibold text-slate-600">Hora</div>
+              {days.map(day => {
+                const isDayToday = isToday(day);
+                return (
+                  <div
+                    key={day.toString()}
+                    className={cn(
+                      "p-3 border-r last:border-r-0 text-center",
+                      isDayToday && "bg-blue-50"
+                    )}
+                  >
+                    <div className="text-xs font-semibold text-slate-600">
+                      {format(day, "EEE", { locale: es })}
+                    </div>
+                    <div className={cn(
+                      "text-lg font-bold mt-1",
+                      isDayToday ? "text-blue-600" : "text-slate-800"
+                    )}>
+                      {format(day, "d")}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Time grid */}
+          <div className="relative">
+            {hours.map(hour => (
+              <div key={hour} className="grid grid-cols-8 border-b">
+                <div className="p-2 border-r text-xs text-slate-500 text-right pr-3">
+                  {format(new Date().setHours(hour, 0), "HH:mm")}
+                </div>
+                {days.map(day => {
+                  const isDayToday = isToday(day);
+                  return (
+                    <div
+                      key={`${day}-${hour}`}
+                      className={cn(
+                        "min-h-[60px] border-r last:border-r-0 p-1",
+                        isDayToday && "bg-blue-50/30"
+                      )}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+
+            {/* Events overlay */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="grid grid-cols-8 h-full">
+                <div className="border-r" />
+                {days.map((day, dayIndex) => {
+                  const dayEvents = getEventsForDay(day);
+                  return (
+                    <div key={day.toString()} className="border-r last:border-r-0 relative">
+                      <div className="absolute inset-0 p-1 space-y-1 pointer-events-auto">
+                        {dayEvents.map((event, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => onEventClick(event)}
+                            className={cn(
+                              "border rounded px-2 py-1 text-xs cursor-pointer hover:shadow-md transition-shadow",
+                              getEventColor(event)
+                            )}
+                          >
+                            <div className="font-medium truncate">{event.name || event.title}</div>
+                            {event.type && (
+                              <Badge variant="outline" className="text-[9px] mt-1 h-4">
+                                {event.type}
+                              </Badge>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
