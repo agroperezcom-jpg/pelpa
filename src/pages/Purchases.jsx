@@ -66,6 +66,11 @@ export default function Purchases() {
 
   const queryClient = useQueryClient();
 
+  const { data: periodosIVA = [] } = useQuery({
+    queryKey: ['periodosIVA'],
+    queryFn: () => base44.entities.PeriodoIVA.list('-anio,-mes', 12)
+  });
+
   const { data: compras = [] } = useQuery({
     queryKey: ['compras'],
     queryFn: () => base44.entities.Compra.list('-created_date', 100)
@@ -98,6 +103,14 @@ export default function Purchases() {
 
   const createCompraMutation = useMutation({
     mutationFn: async ({ compraData, detallesData, pagosData, tipoCompra }) => {
+      // PROTECCIÓN FISCAL: Verificar que el período no esté cerrado
+      const periodoCompra = compraData.fecha.substring(0, 7); // YYYY-MM
+      const periodoCerrado = periodosIVA.find(p => p.periodo === periodoCompra && p.estado === "CERRADO");
+      
+      if (periodoCerrado) {
+        throw new Error(`⚠️ NO SE PUEDE REGISTRAR: El período fiscal ${periodoCompra} está CERRADO. No se pueden registrar más compras en este período.`);
+      }
+
       if (!compraData.proveedor_id) throw new Error("Debe seleccionar un proveedor");
       if (detallesData.length === 0) throw new Error("Debe agregar al menos un artículo");
       if (!compraData.tipo_comprobante) throw new Error("Debe seleccionar tipo de comprobante");

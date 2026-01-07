@@ -169,8 +169,21 @@ export default function Sales() {
     enabled: !!ventaConfirmada?.id
   });
 
+  const { data: periodosIVA = [] } = useQuery({
+    queryKey: ['periodosIVA'],
+    queryFn: () => base44.entities.PeriodoIVA.list('-anio,-mes', 12)
+  });
+
   const createSaleMutation = useMutation({
     mutationFn: async ({ saleData, pagos, tipoVenta }) => {
+      // PROTECCIÓN FISCAL: Verificar que el período no esté cerrado
+      const periodoVenta = format(new Date(), 'yyyy-MM');
+      const periodoCerrado = periodosIVA.find(p => p.periodo === periodoVenta && p.estado === "CERRADO");
+      
+      if (periodoCerrado) {
+        throw new Error(`⚠️ NO SE PUEDE VENDER: El período fiscal ${periodoVenta} está CERRADO. No se pueden registrar más ventas en este período.`);
+      }
+
       // Validar márgenes antes de crear la venta
       for (const item of saleData.items.filter(i => i.type === 'product')) {
         const product = products.find(p => p.id === item.item_id);
