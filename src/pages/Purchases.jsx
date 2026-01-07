@@ -1142,6 +1142,45 @@ export default function Purchases() {
                 )}
               </div>
             </div>
+
+            {/* Retención IIBB */}
+            <div className="border-2 border-purple-200 bg-purple-50 rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold text-purple-900">¿Sufrió Retención de IIBB?</Label>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={retencionIIBB.aplica}
+                    onChange={(e) => setRetencionIIBB({ ...retencionIIBB, aplica: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-14 h-7 bg-slate-200 peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+              </div>
+
+              {retencionIIBB.aplica && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Importe Retenido *</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={retencionIIBB.importe_retenido}
+                      onChange={(e) => setRetencionIIBB({ ...retencionIIBB, importe_retenido: parseFloat(e.target.value) || "" })}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">N° Comprobante</Label>
+                    <Input
+                      value={retencionIIBB.numero_comprobante}
+                      onChange={(e) => setRetencionIIBB({ ...retencionIIBB, numero_comprobante: e.target.value })}
+                      placeholder="Opcional"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <DialogFooter>
