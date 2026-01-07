@@ -418,6 +418,17 @@ export default function ReportesDialog({ isOpen, onClose, user }) {
             </Button>
           )}
         </DialogFooter>
+
+        <ArqueoDialog
+          isOpen={isArqueoDialogOpen}
+          onClose={() => {
+            setIsArqueoDialogOpen(false);
+            setRequiereArqueo(false);
+          }}
+          turnoActual={turnoActual}
+          user={user}
+          onArqueoCompleted={handleArqueoCompleted}
+        />
       </DialogContent>
     </Dialog>
   );
