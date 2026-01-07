@@ -1141,7 +1141,7 @@ export default function Analytics() {
                       <TableCell className="font-medium">{cliente.nombre}</TableCell>
                       <TableCell className="text-center">{cliente.compras}</TableCell>
                       <TableCell className="text-right font-bold text-emerald-600">
-                        ${cliente.total.toLocaleString()}
+                       ${(cliente.total || 0).toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right text-slate-500 text-xs">
                         {comprasAnualesEstimadas.toFixed(1)}/año
@@ -1251,10 +1251,10 @@ export default function Analytics() {
                       <TableCell className="font-medium">{data.nombre}</TableCell>
                       <TableCell className="text-center">{data.cantidad}</TableCell>
                       <TableCell className="text-right font-bold text-emerald-600">
-                        ${data.total.toLocaleString()}
+                        ${(data.total || 0).toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right text-slate-500">
-                        ${Math.round(data.total / data.cantidad).toLocaleString()}
+                        ${Math.round((data.total || 0) / (data.cantidad || 1)).toLocaleString()}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -1306,7 +1306,7 @@ export default function Analytics() {
                         <TableCell className="text-center">{prod.cantidad}</TableCell>
                         <TableCell className="text-right">${prod.total.toLocaleString()}</TableCell>
                         <TableCell className="text-right font-bold text-green-600">
-                          ${prod.margen.toLocaleString()}
+                        ${(prod.margen || 0).toLocaleString()}
                         </TableCell>
                         <TableCell className="text-right">
                           <Badge className={pctAcum <= 80 ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}>
@@ -1352,7 +1352,7 @@ export default function Analytics() {
                         <TableRow key={prod.id} className={pctMargen < 15 ? 'bg-red-50' : ''}>
                           <TableCell className="font-medium">{prod.nombre}</TableCell>
                           <TableCell className="text-right text-red-600">
-                            ${prod.margen.toLocaleString()}
+                          ${(prod.margen || 0).toLocaleString()}
                           </TableCell>
                           <TableCell className="text-right">
                             <Badge className={
@@ -1412,7 +1412,7 @@ export default function Analytics() {
                           <TableCell className="font-medium">{prov.proveedor}</TableCell>
                           <TableCell className="text-center">{prov.productos}</TableCell>
                           <TableCell className="text-right font-bold text-emerald-600">
-                            ${prov.ventas.toLocaleString()}
+                            ${(prov.ventas || 0).toLocaleString()}
                           </TableCell>
                         </TableRow>
                       ));
@@ -1694,8 +1694,8 @@ export default function Analytics() {
                     .map((cliente) => (
                       <TableRow key={cliente.id} className="bg-red-50">
                         <TableCell className="font-medium">{cliente.nombre}</TableCell>
-                        <TableCell className="text-right">${cliente.anterior.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">${cliente.actual.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">${(cliente.anterior || 0).toLocaleString()}</TableCell>
+                        <TableCell className="text-right">${(cliente.actual || 0).toLocaleString()}</TableCell>
                         <TableCell className="text-right">
                           <Badge className="bg-red-100 text-red-700">
                             {cliente.variacion.toFixed(0)}%
@@ -2426,7 +2426,7 @@ export default function Analytics() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right font-bold text-red-600">
-                          ${gasto.amount.toLocaleString()}
+                          ${(gasto.amount || 0).toLocaleString()}
                         </TableCell>
                       </TableRow>
                     ))}
