@@ -42,7 +42,7 @@ import {
   Settings
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { createPageUrl } from "./utils";
+import { createPageUrl } from "../utils";
 
 const CATEGORIES = [
   { value: "libros", label: "Libros" },

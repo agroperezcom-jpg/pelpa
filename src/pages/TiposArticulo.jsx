@@ -37,7 +37,7 @@ import {
   Info
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { createPageUrl } from "./utils";
+import { createPageUrl } from "../utils";
 
 export default function TiposArticulo() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
