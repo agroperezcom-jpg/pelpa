@@ -60,6 +60,11 @@ export default function Finance() {
     queryFn: () => base44.entities.Product.list()
   });
 
+  const { data: ivaVentas = [] } = useQuery({
+    queryKey: ['ivaVentas'],
+    queryFn: () => base44.entities.IVAVenta.list('-created_date', 500)
+  });
+
   // Calculate financial metrics for selected month
   const calculateMonthMetrics = (month) => {
     // Sales and revenue
@@ -318,6 +323,7 @@ export default function Finance() {
           <TabsTrigger value="statement">Estado de Resultados</TabsTrigger>
           <TabsTrigger value="trends">Tendencias</TabsTrigger>
           <TabsTrigger value="margins">Márgenes</TabsTrigger>
+          <TabsTrigger value="iva">Libro IVA Ventas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="statement" className="space-y-4">
@@ -537,6 +543,119 @@ export default function Finance() {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="iva" className="space-y-4">
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="border-b">
+              <CardTitle className="text-base flex items-center justify-between">
+                <span>Libro IVA Ventas - {format(new Date(monthFilter + '-01'), "MMMM yyyy", { locale: es })}</span>
+                <Button variant="outline" size="sm" onClick={() => {
+                  const ivaDelMes = ivaVentas.filter(iv => iv.fecha?.startsWith(monthFilter));
+                  const csv = [
+                    ['Fecha', 'Comprobante', 'Número', 'Cliente', 'Tipo IVA', 'Neto Gravado', 'IVA 21%', 'Total'],
+                    ...ivaDelMes.map(iv => [
+                      iv.fecha,
+                      iv.tipo_comprobante,
+                      iv.numero_comprobante,
+                      iv.cliente_nombre,
+                      iv.cliente_tipo_iva,
+                      iv.neto_gravado?.toFixed(2),
+                      iv.iva_21?.toFixed(2),
+                      iv.total?.toFixed(2)
+                    ])
+                  ].map(row => row.join(',')).join('\n');
+                  const blob = new Blob([csv], { type: 'text/csv' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `libro_iva_ventas_${monthFilter}.csv`;
+                  a.click();
+                }}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar CSV
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50">
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Comprobante</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Tipo IVA</TableHead>
+                    <TableHead className="text-right">Neto Gravado</TableHead>
+                    <TableHead className="text-right">IVA 21%</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {ivaVentas
+                    .filter(iv => iv.fecha?.startsWith(monthFilter))
+                    .map((iv) => (
+                      <TableRow key={iv.id}>
+                        <TableCell className="text-sm text-slate-600">
+                          {format(new Date(iv.fecha), "dd/MM/yyyy", { locale: es })}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="font-mono">
+                            {iv.tipo_comprobante} - {iv.numero_comprobante}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-medium">{iv.cliente_nombre}</TableCell>
+                        <TableCell>
+                          <Badge className={
+                            iv.cliente_tipo_iva === "RESP_INSCRIPTO" ? "bg-blue-100 text-blue-700" :
+                            iv.cliente_tipo_iva === "MONOTRIBUTO" ? "bg-emerald-100 text-emerald-700" :
+                            "bg-slate-100 text-slate-600"
+                          }>
+                            {iv.cliente_tipo_iva?.replace(/_/g, ' ')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">${iv.neto_gravado?.toFixed(2)}</TableCell>
+                        <TableCell className="text-right font-bold text-emerald-600">
+                          ${iv.iva_21?.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-blue-600">
+                          ${iv.total?.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  {ivaVentas.filter(iv => iv.fecha?.startsWith(monthFilter)).length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                        No hay operaciones con IVA en este período
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {ivaVentas.filter(iv => iv.fecha?.startsWith(monthFilter)).length > 0 && (
+                    <TableRow className="bg-emerald-50 border-t-2">
+                      <TableCell colSpan={4} className="font-bold">TOTALES DEL PERÍODO</TableCell>
+                      <TableCell className="text-right font-bold">
+                        ${ivaVentas
+                          .filter(iv => iv.fecha?.startsWith(monthFilter))
+                          .reduce((acc, iv) => acc + (iv.neto_gravado || 0), 0)
+                          .toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right font-bold text-emerald-600">
+                        ${ivaVentas
+                          .filter(iv => iv.fecha?.startsWith(monthFilter))
+                          .reduce((acc, iv) => acc + (iv.iva_21 || 0), 0)
+                          .toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right font-bold text-blue-600">
+                        ${ivaVentas
+                          .filter(iv => iv.fecha?.startsWith(monthFilter))
+                          .reduce((acc, iv) => acc + (iv.total || 0), 0)
+                          .toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
