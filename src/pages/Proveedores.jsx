@@ -53,6 +53,7 @@ export default function Proveedores() {
   const [isCCDialogOpen, setIsCCDialogOpen] = useState(false);
   const [editingProveedor, setEditingProveedor] = useState(null);
   const [proveedorSeleccionado, setProveedorSeleccionado] = useState(null);
+  const [user, setUser] = useState(null);
   const [currentProveedor, setCurrentProveedor] = useState({
     nombre: "",
     razon_social: "",
