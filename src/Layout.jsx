@@ -25,7 +25,8 @@ import {
   Landmark,
   ChevronLeft,
   ChevronRight,
-  ShoppingBag
+  ShoppingBag,
+  FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -105,6 +106,7 @@ export default function Layout({ children, currentPageName }) {
     { name: "Gastos", page: "Expenses", icon: Receipt },
     { name: "Tesorería", page: "TesoreriaV2", icon: Landmark },
     { name: "Finanzas", page: "Finance", icon: Calculator },
+    { name: "IVA Mensual", page: "IVAMensual", icon: FileText },
     { name: "Marketing", page: "Marketing", icon: Megaphone },
     { name: "Análisis", page: "Analytics", icon: BarChart3 },
     ...(isAdmin ? [{ name: "Configuración", page: "Settings", icon: Settings }] : [])
