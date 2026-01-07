@@ -809,7 +809,7 @@ export default function Analytics() {
                         </Badge>
                         <span className="text-sm font-medium truncate">{producto.nombre}</span>
                       </div>
-                      <span className="text-sm font-bold text-emerald-600">${producto.total.toLocaleString()}</span>
+                      <span className="text-sm font-bold text-emerald-600">${(producto.total || 0).toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
@@ -830,7 +830,7 @@ export default function Analytics() {
                         </Badge>
                         <span className="text-sm font-medium truncate">{cliente.nombre}</span>
                       </div>
-                      <span className="text-sm font-bold text-blue-600">${cliente.total.toLocaleString()}</span>
+                      <span className="text-sm font-bold text-blue-600">${(cliente.total || 0).toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
