@@ -30,8 +30,8 @@ import {
   TableRow
 } from "@/components/ui/table";
 import {
-  ShoppingBag, Plus, Search, Trash2, X, CheckCircle, AlertTriangle, 
-  Package, DollarSign, Receipt, TrendingUp, FileText, BarChart3, Download
+  ShoppingBag, Plus, Search, Trash2, CheckCircle, AlertTriangle, 
+  DollarSign, Receipt, TrendingUp, FileText, BarChart3, Download
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
@@ -61,6 +61,8 @@ export default function Purchases() {
     banco_id: "",
     caja_id: ""
   });
+  const [activeTab, setActiveTab] = useState("compras");
+  const [fechaReporte, setFechaReporte] = useState(format(new Date(), 'yyyy-MM'));
 
   const queryClient = useQueryClient();
 
@@ -96,18 +98,15 @@ export default function Purchases() {
 
   const createCompraMutation = useMutation({
     mutationFn: async ({ compraData, detallesData, pagosData, tipoCompra }) => {
-      // Validaciones
       if (!compraData.proveedor_id) throw new Error("Debe seleccionar un proveedor");
       if (detallesData.length === 0) throw new Error("Debe agregar al menos un artículo");
       if (!compraData.tipo_comprobante) throw new Error("Debe seleccionar tipo de comprobante");
       if (!compraData.numero_comprobante_proveedor) throw new Error("Debe ingresar número de comprobante");
 
-      // Calcular totales
       const neto_gravado = detallesData.reduce((acc, d) => acc + d.subtotal, 0);
       const iva_21 = neto_gravado * 0.21;
       const total_compra = neto_gravado + iva_21;
 
-      // Validar pagos
       const totalPagado = pagosData.reduce((acc, p) => acc + p.importe, 0);
       const saldoPendiente = total_compra - totalPagado;
 
@@ -115,7 +114,6 @@ export default function Purchases() {
         throw new Error("En compra CONTADO el total pagado debe ser igual al total");
       }
 
-      // Crear compra
       const compra = await base44.entities.Compra.create({
         ...compraData,
         tipo_compra: tipoCompra,
@@ -125,7 +123,6 @@ export default function Purchases() {
         estado: "CONFIRMADA"
       });
 
-      // Crear detalles y actualizar stock/costos
       for (const detalle of detallesData) {
         await base44.entities.CompraDetalle.create({
           ...detalle,
@@ -135,7 +132,6 @@ export default function Purchases() {
         const producto = products.find(p => p.id === detalle.producto_id);
         const nuevoStock = producto.stock + detalle.cantidad;
         
-        // Costo promedio ponderado
         const costoPromedio = producto.stock > 0
           ? ((producto.stock * producto.costo_unitario) + (detalle.cantidad * detalle.costo_unitario)) / nuevoStock
           : detalle.costo_unitario;
@@ -145,7 +141,6 @@ export default function Purchases() {
           costo_unitario: costoPromedio
         });
 
-        // Movimiento de stock
         await base44.entities.InventoryMovement.create({
           product_id: producto.id,
           product_name: producto.name,
@@ -158,14 +153,12 @@ export default function Purchases() {
         });
       }
 
-      // Procesar pagos
       for (const pago of pagosData) {
         await base44.entities.PagoCompra.create({
           compra_id: compra.id,
           ...pago
         });
 
-        // Movimiento Tesorería (EGRESO)
         await base44.entities.MovimientoTesoreria.create({
           fecha: compraData.fecha,
           tipo: "EGRESO",
@@ -181,7 +174,6 @@ export default function Purchases() {
           observaciones: `Compra ${compraData.numero_comprobante_proveedor} - ${compraData.proveedor_nombre}`
         });
 
-        // Actualizar saldos
         if (pago.banco_id) {
           const banco = bancos.find(b => b.id === pago.banco_id);
           await base44.entities.Banco.update(pago.banco_id, {
@@ -196,7 +188,6 @@ export default function Purchases() {
         }
       }
 
-      // Cuenta Corriente proveedor (si hay saldo pendiente)
       if (saldoPendiente > 0.01) {
         const proveedor = proveedores.find(p => p.id === compraData.proveedor_id);
         const nuevoSaldo = (proveedor.saldo_cc || 0) + saldoPendiente;
@@ -393,12 +384,8 @@ export default function Purchases() {
   const comprasHoy = compras.filter(c => c.fecha === today && c.estado === "CONFIRMADA");
   const totalHoy = comprasHoy.reduce((acc, c) => acc + (c.total_compra || 0), 0);
 
-  const [activeTab, setActiveTab] = useState("compras");
-  const [fechaReporte, setFechaReporte] = useState(format(new Date(), 'yyyy-MM'));
-
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -441,7 +428,6 @@ export default function Purchases() {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
@@ -478,7 +464,6 @@ export default function Purchases() {
         </TabsList>
 
         <TabsContent value="compras" className="space-y-4">
-          {/* Search */}
           <Card className="border-0 shadow-sm">
             <CardContent className="p-4">
               <div className="relative">
@@ -493,64 +478,63 @@ export default function Purchases() {
             </CardContent>
           </Card>
 
-          {/* Compras Table */}
           <Card className="border-0 shadow-sm overflow-hidden">
             <Table>
-          <TableHeader>
-            <TableRow className="bg-slate-50">
-              <TableHead>Fecha</TableHead>
-              <TableHead>Proveedor</TableHead>
-              <TableHead>Comprobante</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead className="text-right">Neto</TableHead>
-              <TableHead className="text-right">IVA</TableHead>
-              <TableHead className="text-right">Total</TableHead>
-              <TableHead>Estado</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredCompras.map((compra) => (
-              <TableRow key={compra.id} className="hover:bg-slate-50">
-                <TableCell className="text-slate-600 text-sm">
-                  {format(new Date(compra.fecha), "d MMM yyyy", { locale: es })}
-                </TableCell>
-                <TableCell className="font-medium">{compra.proveedor_nombre}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">
-                    {compra.tipo_comprobante} - {compra.numero_comprobante_proveedor}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge className={
-                    compra.tipo_compra === "CONTADO" ? "bg-green-100 text-green-700" :
-                    compra.tipo_compra === "CTA_CTE" ? "bg-red-100 text-red-700" :
-                    "bg-amber-100 text-amber-700"
-                  }>
-                    {compra.tipo_compra}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">${compra.neto_gravado?.toLocaleString()}</TableCell>
-                <TableCell className="text-right text-emerald-600">${compra.iva_21?.toLocaleString()}</TableCell>
-                <TableCell className="text-right font-bold text-blue-600">
-                  ${compra.total_compra?.toLocaleString()}
-                </TableCell>
-                <TableCell>
-                  <Badge className={compra.estado === "CONFIRMADA" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"}>
-                    {compra.estado}
-                  </Badge>
-                </TableCell>
-              </TableRow>
-            ))}
-            {filteredCompras.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-slate-500">
-                  No hay compras registradas
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </Card>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Proveedor</TableHead>
+                  <TableHead>Comprobante</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead className="text-right">Neto</TableHead>
+                  <TableHead className="text-right">IVA</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead>Estado</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredCompras.map((compra) => (
+                  <TableRow key={compra.id} className="hover:bg-slate-50">
+                    <TableCell className="text-slate-600 text-sm">
+                      {format(new Date(compra.fecha), "d MMM yyyy", { locale: es })}
+                    </TableCell>
+                    <TableCell className="font-medium">{compra.proveedor_nombre}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {compra.tipo_comprobante} - {compra.numero_comprobante_proveedor}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={
+                        compra.tipo_compra === "CONTADO" ? "bg-green-100 text-green-700" :
+                        compra.tipo_compra === "CTA_CTE" ? "bg-red-100 text-red-700" :
+                        "bg-amber-100 text-amber-700"
+                      }>
+                        {compra.tipo_compra}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">${compra.neto_gravado?.toLocaleString()}</TableCell>
+                    <TableCell className="text-right text-emerald-600">${compra.iva_21?.toLocaleString()}</TableCell>
+                    <TableCell className="text-right font-bold text-blue-600">
+                      ${compra.total_compra?.toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={compra.estado === "CONFIRMADA" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"}>
+                        {compra.estado}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filteredCompras.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-slate-500">
+                      No hay compras registradas
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Card>
         </TabsContent>
 
         <TabsContent value="reportes" className="space-y-4">
@@ -761,7 +745,6 @@ export default function Purchases() {
         </TabsContent>
       </Tabs>
 
-      {/* Dialog Nueva Compra */}
       <Dialog open={isDialogOpen && !isPagosDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -772,7 +755,6 @@ export default function Purchases() {
           </DialogHeader>
 
           <div className="space-y-6">
-            {/* Datos de la Compra */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Fecha *</Label>
@@ -830,7 +812,6 @@ export default function Purchases() {
               </div>
             </div>
 
-            {/* Agregar Artículos */}
             <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
               <h4 className="font-medium text-sm text-blue-900">Agregar Artículo</h4>
               <div className="grid grid-cols-12 gap-3">
@@ -885,7 +866,6 @@ export default function Purchases() {
               </div>
             </div>
 
-            {/* Lista de Artículos */}
             {detalles.length > 0 && (
               <div className="border rounded-lg overflow-hidden">
                 <Table>
@@ -917,7 +897,6 @@ export default function Purchases() {
               </div>
             )}
 
-            {/* Totales */}
             <div className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg p-6 border-2">
               <div className="grid grid-cols-3 gap-6">
                 <div>
@@ -956,7 +935,6 @@ export default function Purchases() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog Pagos */}
       <Dialog open={isPagosDialogOpen} onOpenChange={setIsPagosDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -967,7 +945,6 @@ export default function Purchases() {
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Resumen */}
             <div className="grid grid-cols-3 gap-4 p-6 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border-2">
               <div>
                 <p className="text-xs font-medium text-slate-500 uppercase">Total Compra</p>
@@ -985,7 +962,6 @@ export default function Purchases() {
               </div>
             </div>
 
-            {/* Agregar Pago */}
             <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
               <h4 className="font-medium text-sm text-blue-900">Agregar Pago</h4>
               <div className="grid grid-cols-12 gap-3">
@@ -1055,7 +1031,6 @@ export default function Purchases() {
               </div>
             </div>
 
-            {/* Lista de Pagos */}
             {pagos.length > 0 && (
               <div className="border rounded-lg overflow-hidden">
                 <Table>
@@ -1089,7 +1064,6 @@ export default function Purchases() {
               </div>
             )}
 
-            {/* Estado Validación */}
             <div className={`flex items-center justify-between gap-2 p-4 rounded-lg ${
               pagoCompleto ? 'bg-green-50 border-2 border-green-300' : 'bg-amber-50 border-2 border-amber-300'
             }`}>
