@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,7 +38,9 @@ import {
   DollarSign,
   Receipt,
   X,
-  Minus
+  Minus,
+  AlertTriangle,
+  TrendingUp
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -49,8 +51,8 @@ export default function Sales() {
   const [user, setUser] = useState(null);
   const [cart, setCart] = useState([]);
   const [selectedClient, setSelectedClient] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("efectivo");
-  const [discount, setDiscount] = useState(0);
+  const [tipoLista, setTipoLista] = useState("MINORISTA");
+  const [paymentMethod, setPaymentMethod] = useState("EFECTIVO");
   const [productSearch, setProductSearch] = useState("");
   const [activeTab, setActiveTab] = useState("products");
 
@@ -80,8 +82,70 @@ export default function Sales() {
     queryFn: () => base44.entities.Client.list()
   });
 
+  const { data: tiposArticulo = [] } = useQuery({
+    queryKey: ['tiposArticulo'],
+    queryFn: () => base44.entities.TipoArticulo.list()
+  });
+
+  const calcularPrecioYMargen = (product, quantity) => {
+    if (!product.tipo_articulo_id) {
+      // Para productos sin tipo (legacy), usar precio original
+      return {
+        precio_lista: product.price || 0,
+        precio_venta: product.price || 0,
+        margen_real: 0,
+        valido: true
+      };
+    }
+
+    const tipo = tiposArticulo.find(t => t.id === product.tipo_articulo_id);
+    if (!tipo) return { precio_lista: 0, precio_venta: 0, margen_real: 0, valido: false };
+
+    // Determinar precio según lista y forma de pago
+    let precio_lista, precio_minimo;
+    
+    if (tipoLista === "MINORISTA") {
+      precio_lista = product.precio_lista_minorista;
+      precio_minimo = product.precio_minimo_minorista;
+    } else {
+      precio_lista = product.precio_lista_mayorista;
+      precio_minimo = product.precio_minimo_mayorista;
+    }
+
+    // Calcular precio de venta
+    let precio_venta = precio_lista;
+    if (paymentMethod === "EFECTIVO") {
+      precio_venta = precio_lista * (1 - tipo.descuento_efectivo);
+    }
+
+    // Calcular margen real
+    const margen_real = (precio_venta - product.costo_unitario) / product.costo_unitario;
+
+    // Validar que no rompa el precio mínimo
+    const valido = precio_venta >= precio_minimo;
+
+    return {
+      precio_lista,
+      precio_venta,
+      margen_real,
+      valido,
+      precio_minimo
+    };
+  };
+
   const createSaleMutation = useMutation({
     mutationFn: async (saleData) => {
+      // Validar márgenes antes de crear la venta
+      for (const item of saleData.items.filter(i => i.type === 'product')) {
+        const product = products.find(p => p.id === item.item_id);
+        if (product && product.tipo_articulo_id) {
+          const calc = calcularPrecioYMargen(product, item.quantity);
+          if (!calc.valido) {
+            throw new Error(`El artículo "${product.name}" rompe el margen mínimo. Precio mínimo: $${calc.precio_minimo.toFixed(2)}`);
+          }
+        }
+      }
+
       // Update product stock
       for (const item of saleData.items.filter(i => i.type === 'product')) {
         const product = products.find(p => p.id === item.item_id);
@@ -89,7 +153,6 @@ export default function Sales() {
           const newStock = product.stock - item.quantity;
           await base44.entities.Product.update(product.id, { stock: newStock });
           
-          // Create inventory movement
           await base44.entities.InventoryMovement.create({
             product_id: product.id,
             product_name: product.name,
@@ -103,7 +166,6 @@ export default function Sales() {
         }
       }
 
-      // Update client last contact
       if (saleData.client_id) {
         await base44.entities.Client.update(saleData.client_id, {
           last_contact: new Date().toISOString().split('T')[0]
@@ -117,14 +179,17 @@ export default function Sales() {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['movements'] });
       handleCloseDialog();
+    },
+    onError: (error) => {
+      alert(error.message);
     }
   });
 
   const handleOpenDialog = () => {
     setCart([]);
     setSelectedClient("");
-    setPaymentMethod("efectivo");
-    setDiscount(0);
+    setTipoLista("MINORISTA");
+    setPaymentMethod("EFECTIVO");
     setProductSearch("");
     setIsDialogOpen(true);
   };
@@ -140,19 +205,51 @@ export default function Sales() {
     if (existingIndex >= 0) {
       const newCart = [...cart];
       newCart[existingIndex].quantity += 1;
-      newCart[existingIndex].total = newCart[existingIndex].quantity * newCart[existingIndex].unit_price;
+      updateCartItemPricing(newCart[existingIndex]);
       setCart(newCart);
     } else {
-      setCart([...cart, {
+      const newItem = {
         type,
         item_id: item.id,
         name: item.name,
         quantity: 1,
-        unit_price: item.price,
-        total: item.price
-      }]);
+        costo_unitario: item.costo_unitario || 0
+      };
+      updateCartItemPricing(newItem);
+      setCart([...cart, newItem]);
     }
   };
+
+  const updateCartItemPricing = (cartItem) => {
+    if (cartItem.type === 'product') {
+      const product = products.find(p => p.id === cartItem.item_id);
+      if (product) {
+        const calc = calcularPrecioYMargen(product, cartItem.quantity);
+        cartItem.precio_lista = calc.precio_lista;
+        cartItem.precio_venta = calc.precio_venta;
+        cartItem.margen_real = calc.margen_real;
+        cartItem.valido = calc.valido;
+        cartItem.total = calc.precio_venta * cartItem.quantity;
+      }
+    } else {
+      // Servicios sin cálculo especial
+      const service = services.find(s => s.id === cartItem.item_id);
+      if (service) {
+        cartItem.precio_lista = service.price;
+        cartItem.precio_venta = service.price;
+        cartItem.margen_real = 0;
+        cartItem.valido = true;
+        cartItem.total = service.price * cartItem.quantity;
+      }
+    }
+  };
+
+  // Recalcular precios cuando cambia tipo de lista o método de pago
+  useEffect(() => {
+    const newCart = [...cart];
+    newCart.forEach(item => updateCartItemPricing(item));
+    setCart(newCart);
+  }, [tipoLista, paymentMethod]);
 
   const updateCartQuantity = (index, quantity) => {
     if (quantity <= 0) {
@@ -164,13 +261,13 @@ export default function Sales() {
     if (item.type === 'product') {
       const product = products.find(p => p.id === item.item_id);
       if (product && quantity > product.stock) {
-        return; // Can't exceed stock
+        return;
       }
     }
 
     const newCart = [...cart];
     newCart[index].quantity = quantity;
-    newCart[index].total = quantity * newCart[index].unit_price;
+    updateCartItemPricing(newCart[index]);
     setCart(newCart);
   };
 
@@ -179,10 +276,16 @@ export default function Sales() {
   };
 
   const getSubtotal = () => cart.reduce((acc, item) => acc + item.total, 0);
-  const getTotal = () => getSubtotal() - discount;
+  const getTotal = () => getSubtotal();
+
+  const tieneItemsInvalidos = cart.some(item => item.valido === false);
 
   const handleSubmit = () => {
     if (cart.length === 0) return;
+    if (tieneItemsInvalidos) {
+      alert("Hay artículos que rompen el margen mínimo. Por favor revisa el carrito.");
+      return;
+    }
 
     const client = clients.find(c => c.id === selectedClient);
 
@@ -191,11 +294,12 @@ export default function Sales() {
       client_name: client?.name || "Cliente general",
       employee_email: user?.email,
       employee_name: user?.full_name,
+      tipo_lista: tipoLista,
+      payment_method: paymentMethod,
       items: cart,
       subtotal: getSubtotal(),
-      discount,
-      total: getTotal(),
-      payment_method: paymentMethod
+      discount: 0,
+      total: getTotal()
     });
   };
 
@@ -213,7 +317,6 @@ export default function Sales() {
     sale.employee_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Today's stats
   const today = new Date().toISOString().split('T')[0];
   const todaySales = sales.filter(s => s.created_date?.startsWith(today));
   const todayTotal = todaySales.reduce((acc, s) => acc + (s.total || 0), 0);
@@ -289,6 +392,7 @@ export default function Sales() {
             <TableRow className="bg-slate-50">
               <TableHead>Fecha</TableHead>
               <TableHead>Cliente</TableHead>
+              <TableHead>Lista</TableHead>
               <TableHead>Empleado</TableHead>
               <TableHead>Items</TableHead>
               <TableHead>Método</TableHead>
@@ -302,6 +406,11 @@ export default function Sales() {
                   {format(new Date(sale.created_date), "d MMM yyyy HH:mm", { locale: es })}
                 </TableCell>
                 <TableCell className="font-medium">{sale.client_name || 'General'}</TableCell>
+                <TableCell>
+                  <Badge className={sale.tipo_lista === "MINORISTA" ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700"}>
+                    {sale.tipo_lista || "MINORISTA"}
+                  </Badge>
+                </TableCell>
                 <TableCell className="text-slate-600">{sale.employee_name}</TableCell>
                 <TableCell>
                   <Badge variant="secondary">{sale.items?.length || 0} items</Badge>
@@ -314,7 +423,7 @@ export default function Sales() {
             ))}
             {filteredSales.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={7} className="text-center py-8 text-slate-500">
                   No hay ventas registradas
                 </TableCell>
               </TableRow>
@@ -325,7 +434,7 @@ export default function Sales() {
 
       {/* New Sale Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5 text-emerald-600" />
@@ -366,24 +475,34 @@ export default function Sales() {
               </div>
 
               <div className="h-64 overflow-y-auto space-y-2 border rounded-lg p-2">
-                {activeTab === 'products' && filteredProducts.map((product) => (
-                  <div
-                    key={product.id}
-                    className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 cursor-pointer"
-                    onClick={() => product.stock > 0 && addToCart(product, 'product')}
-                  >
-                    <div>
-                      <p className="font-medium text-sm">{product.name}</p>
-                      <p className="text-xs text-slate-500">Stock: {product.stock}</p>
+                {activeTab === 'products' && filteredProducts.map((product) => {
+                  const calc = calcularPrecioYMargen(product, 1);
+                  return (
+                    <div
+                      key={product.id}
+                      className={`flex items-center justify-between p-3 rounded-lg hover:bg-slate-100 cursor-pointer ${
+                        product.stock === 0 ? 'opacity-50' : 'bg-slate-50'
+                      }`}
+                      onClick={() => product.stock > 0 && addToCart(product, 'product')}
+                    >
+                      <div>
+                        <p className="font-medium text-sm">{product.name}</p>
+                        <p className="text-xs text-slate-500">Stock: {product.stock}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-emerald-600 text-sm">
+                          ${calc.precio_venta?.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          Margen: {(calc.margen_real * 100).toFixed(0)}%
+                        </p>
+                        {product.stock === 0 && (
+                          <Badge className="bg-red-100 text-red-700 text-xs mt-1">Agotado</Badge>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-emerald-600">${product.price?.toLocaleString()}</p>
-                      {product.stock === 0 && (
-                        <Badge className="bg-red-100 text-red-700 text-xs">Agotado</Badge>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {activeTab === 'services' && filteredServices.map((service) => (
                   <div
                     key={service.id}
@@ -417,38 +536,60 @@ export default function Sales() {
                 ) : (
                   <div className="divide-y">
                     {cart.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between p-3">
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">{item.name}</p>
-                          <p className="text-xs text-slate-500">${item.unit_price} c/u</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => updateCartQuantity(index, item.quantity - 1)}
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <span className="w-8 text-center font-medium">{item.quantity}</span>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => updateCartQuantity(index, item.quantity + 1)}
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                          <span className="w-20 text-right font-bold">${item.total.toLocaleString()}</span>
+                      <div key={index} className={`p-3 ${!item.valido ? 'bg-red-50 border-l-4 border-red-500' : ''}`}>
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{item.name}</p>
+                            <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                              <span>${item.precio_venta?.toFixed(2)} c/u</span>
+                              {item.type === 'product' && (
+                                <>
+                                  <span className={`flex items-center gap-1 ${
+                                    item.margen_real < 0.2 ? 'text-red-600 font-medium' : 'text-emerald-600'
+                                  }`}>
+                                    <TrendingUp className="h-3 w-3" />
+                                    {(item.margen_real * 100).toFixed(0)}%
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                            {!item.valido && (
+                              <div className="flex items-center gap-1 text-xs text-red-600 font-medium mt-1">
+                                <AlertTriangle className="h-3 w-3" />
+                                Rompe margen mínimo
+                              </div>
+                            )}
+                          </div>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-red-500"
+                            className="h-6 w-6 text-red-500"
                             onClick={() => removeFromCart(index)}
                           >
                             <X className="h-4 w-4" />
                           </Button>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => updateCartQuantity(index, item.quantity - 1)}
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <span className="w-8 text-center font-medium text-sm">{item.quantity}</span>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => updateCartQuantity(index, item.quantity + 1)}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <span className="font-bold text-sm">${item.total?.toFixed(2)}</span>
                         </div>
                       </div>
                     ))}
@@ -459,59 +600,51 @@ export default function Sales() {
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label className="text-xs">Cliente</Label>
-                    <Select value={selectedClient} onValueChange={setSelectedClient}>
+                    <Label className="text-xs">Lista de Precios</Label>
+                    <Select value={tipoLista} onValueChange={setTipoLista}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Cliente general" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={null}>Cliente general</SelectItem>
-                        {clients.map(c => (
-                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                        ))}
+                        <SelectItem value="MINORISTA">Minorista</SelectItem>
+                        <SelectItem value="MAYORISTA">Mayorista</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Método de Pago</Label>
+                    <Label className="text-xs">Forma de Pago</Label>
                     <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="efectivo">Efectivo</SelectItem>
-                        <SelectItem value="tarjeta">Tarjeta</SelectItem>
-                        <SelectItem value="transferencia">Transferencia</SelectItem>
-                        <SelectItem value="otro">Otro</SelectItem>
+                        <SelectItem value="EFECTIVO">Efectivo</SelectItem>
+                        <SelectItem value="TARJETA">Tarjeta</SelectItem>
+                        <SelectItem value="CTA_CTE">Cuenta Corriente</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs">Descuento</Label>
-                  <Input
-                    type="number"
-                    value={discount}
-                    onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-                    placeholder="0"
-                  />
+                  <Label className="text-xs">Cliente</Label>
+                  <Select value={selectedClient} onValueChange={setSelectedClient}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Cliente general" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={null}>Cliente general</SelectItem>
+                      {clients.map(c => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="bg-slate-50 rounded-lg p-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Subtotal</span>
-                    <span>${getSubtotal().toLocaleString()}</span>
-                  </div>
-                  {discount > 0 && (
-                    <div className="flex justify-between text-sm text-red-600">
-                      <span>Descuento</span>
-                      <span>-${discount.toLocaleString()}</span>
-                    </div>
-                  )}
                   <div className="flex justify-between text-lg font-bold border-t pt-2">
                     <span>Total</span>
-                    <span className="text-emerald-600">${getTotal().toLocaleString()}</span>
+                    <span className="text-emerald-600">${getTotal().toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -525,7 +658,7 @@ export default function Sales() {
             <Button 
               onClick={handleSubmit} 
               className="bg-emerald-600 hover:bg-emerald-700"
-              disabled={cart.length === 0}
+              disabled={cart.length === 0 || tieneItemsInvalidos}
             >
               <DollarSign className="h-4 w-4 mr-2" />
               Confirmar Venta
