@@ -113,6 +113,7 @@ export default function Layout({ children, currentPageName }) {
     { name: "Tesorería", page: "TesoreriaV2", icon: Landmark },
     { name: "Finanzas", page: "Finance", icon: Calculator },
     { name: "IVA Mensual", page: "IVAMensual", icon: FileText },
+    { name: "Ingresos Brutos", page: "IngresosBrutos", icon: Receipt },
     { name: "Marketing", page: "Marketing", icon: Megaphone },
     { name: "Análisis", page: "Analytics", icon: BarChart3 },
     ...(isAdmin ? [{ name: "Configuración", page: "Settings", icon: Settings }] : [])

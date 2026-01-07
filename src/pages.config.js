@@ -20,6 +20,7 @@ import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
 import Proveedores from './pages/Proveedores';
 import PagosProveedores from './pages/PagosProveedores';
+import IngresosBrutos from './pages/IngresosBrutos';
 import __Layout from './Layout.jsx';
 
 
@@ -46,6 +47,7 @@ export const PAGES = {
     "Treasury": Treasury,
     "Proveedores": Proveedores,
     "PagosProveedores": PagosProveedores,
+    "IngresosBrutos": IngresosBrutos,
 }
 
 export const pagesConfig = {
