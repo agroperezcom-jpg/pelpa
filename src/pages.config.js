@@ -11,6 +11,7 @@ import Projects from './pages/Projects';
 import Sales from './pages/Sales';
 import Services from './pages/Services';
 import Settings from './pages/Settings';
+import TiposArticulo from './pages/TiposArticulo';
 import __Layout from './Layout.jsx';
 
 
@@ -28,6 +29,7 @@ export const PAGES = {
     "Sales": Sales,
     "Services": Services,
     "Settings": Settings,
+    "TiposArticulo": TiposArticulo,
 }
 
 export const pagesConfig = {

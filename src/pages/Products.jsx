@@ -38,8 +38,11 @@ import {
   AlertTriangle,
   Barcode,
   Grid3X3,
-  List
+  List,
+  Settings
 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "./utils";
 
 const CATEGORIES = [
   { value: "libros", label: "Libros" },
@@ -70,8 +73,8 @@ export default function Products() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    price: "",
-    cost: "",
+    tipo_articulo_id: "",
+    costo_unitario: "",
     category: "otros",
     supplier: "",
     stock: "",
@@ -82,9 +85,14 @@ export default function Products() {
 
   const queryClient = useQueryClient();
 
-  const { data: products = [], isLoading } = useQuery({
+  const { data: products = [] } = useQuery({
     queryKey: ['products'],
     queryFn: () => base44.entities.Product.list('-created_date')
+  });
+
+  const { data: tiposArticulo = [] } = useQuery({
+    queryKey: ['tiposArticulo'],
+    queryFn: () => base44.entities.TipoArticulo.filter({ is_active: true })
   });
 
   const createMutation = useMutation({
@@ -108,14 +116,36 @@ export default function Products() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] })
   });
 
+  const calculatePrices = (costoUnitario, tipoArticuloId) => {
+    const tipo = tiposArticulo.find(t => t.id === tipoArticuloId);
+    if (!tipo || !costoUnitario) return null;
+
+    const costo = parseFloat(costoUnitario);
+    
+    // Precios minorista
+    const precioMinimoMinorista = costo * (1 + tipo.margen_minorista);
+    const precioListaMinorista = precioMinimoMinorista / (1 - tipo.descuento_efectivo);
+    
+    // Precios mayorista
+    const precioMinimoMayorista = costo * (1 + tipo.margen_mayorista);
+    const precioListaMayorista = precioMinimoMayorista / (1 - tipo.descuento_efectivo);
+
+    return {
+      precio_minimo_minorista: precioMinimoMinorista,
+      precio_lista_minorista: precioListaMinorista,
+      precio_minimo_mayorista: precioMinimoMayorista,
+      precio_lista_mayorista: precioListaMayorista
+    };
+  };
+
   const handleOpenDialog = (product = null) => {
     if (product) {
       setEditingProduct(product);
       setFormData({
         name: product.name || "",
         description: product.description || "",
-        price: product.price?.toString() || "",
-        cost: product.cost?.toString() || "",
+        tipo_articulo_id: product.tipo_articulo_id || "",
+        costo_unitario: product.costo_unitario?.toString() || "",
         category: product.category || "otros",
         supplier: product.supplier || "",
         stock: product.stock?.toString() || "",
@@ -128,8 +158,8 @@ export default function Products() {
       setFormData({
         name: "",
         description: "",
-        price: "",
-        cost: "",
+        tipo_articulo_id: "",
+        costo_unitario: "",
         category: "otros",
         supplier: "",
         stock: "",
@@ -153,10 +183,20 @@ export default function Products() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    const tipo = tiposArticulo.find(t => t.id === formData.tipo_articulo_id);
+    const prices = calculatePrices(formData.costo_unitario, formData.tipo_articulo_id);
+    
+    if (!prices) {
+      alert("Debe seleccionar un tipo de artículo y un costo válido");
+      return;
+    }
+
     const data = {
       ...formData,
-      price: parseFloat(formData.price) || 0,
-      cost: parseFloat(formData.cost) || 0,
+      tipo_articulo_nombre: tipo.nombre,
+      costo_unitario: parseFloat(formData.costo_unitario),
+      ...prices,
       stock: parseInt(formData.stock) || 0,
       min_stock: parseInt(formData.min_stock) || 5,
       is_active: true
@@ -178,15 +218,16 @@ export default function Products() {
   });
 
   const exportToCSV = () => {
-    const headers = ["Nombre", "Categoría", "Precio", "Costo", "Stock", "Código de Barras", "Proveedor"];
+    const headers = ["Nombre", "Tipo", "Categoría", "Costo", "P.Lista Minorista", "P.Lista Mayorista", "Stock", "Código"];
     const rows = filteredProducts.map(p => [
       p.name,
+      p.tipo_articulo_nombre,
       p.category,
-      p.price,
-      p.cost,
+      p.costo_unitario,
+      p.precio_lista_minorista?.toFixed(2),
+      p.precio_lista_mayorista?.toFixed(2),
       p.stock,
-      p.barcode,
-      p.supplier
+      p.barcode
     ]);
 
     const csvContent = [headers, ...rows].map(row => row.join(",")).join("\n");
@@ -197,6 +238,9 @@ export default function Products() {
     link.download = "productos.csv";
     link.click();
   };
+
+  const calculatedPrices = formData.tipo_articulo_id && formData.costo_unitario ? 
+    calculatePrices(formData.costo_unitario, formData.tipo_articulo_id) : null;
 
   return (
     <div className="space-y-6">
@@ -212,6 +256,12 @@ export default function Products() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Link to={createPageUrl("TiposArticulo")}>
+            <Button variant="outline">
+              <Settings className="h-4 w-4 mr-2" />
+              Tipos de Artículo
+            </Button>
+          </Link>
           <Button variant="outline" onClick={exportToCSV}>
             <Download className="h-4 w-4 mr-2" />
             Exportar
@@ -309,9 +359,20 @@ export default function Products() {
                   {CATEGORIES.find(c => c.value === product.category)?.label || product.category}
                 </Badge>
                 <h3 className="font-semibold text-slate-800 truncate">{product.name}</h3>
-                <div className="flex items-center justify-between mt-2">
-                  <span className="text-lg font-bold text-emerald-600">${product.price?.toLocaleString()}</span>
-                  <span className="text-sm text-slate-500">Stock: {product.stock}</span>
+                <p className="text-xs text-slate-500 mb-2">{product.tipo_articulo_nombre}</p>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">Minorista:</span>
+                    <span className="font-bold text-blue-600">${product.precio_lista_minorista?.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">Mayorista:</span>
+                    <span className="font-bold text-emerald-600">${product.precio_lista_mayorista?.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs pt-1 border-t">
+                    <span className="text-slate-400">Stock:</span>
+                    <span>{product.stock}</span>
+                  </div>
                 </div>
                 {product.barcode && (
                   <div className="flex items-center gap-1 mt-2 text-xs text-slate-400">
@@ -324,16 +385,17 @@ export default function Products() {
           ))}
         </div>
       ) : (
-        <Card className="border-0 shadow-sm">
+        <Card className="border-0 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-50">
                 <tr>
                   <th className="text-left p-4 text-sm font-medium text-slate-600">Producto</th>
+                  <th className="text-left p-4 text-sm font-medium text-slate-600">Tipo</th>
                   <th className="text-left p-4 text-sm font-medium text-slate-600">Categoría</th>
-                  <th className="text-left p-4 text-sm font-medium text-slate-600">Precio</th>
-                  <th className="text-left p-4 text-sm font-medium text-slate-600">Stock</th>
-                  <th className="text-left p-4 text-sm font-medium text-slate-600">Código</th>
+                  <th className="text-right p-4 text-sm font-medium text-slate-600">P. Minorista</th>
+                  <th className="text-right p-4 text-sm font-medium text-slate-600">P. Mayorista</th>
+                  <th className="text-center p-4 text-sm font-medium text-slate-600">Stock</th>
                   <th className="text-right p-4 text-sm font-medium text-slate-600">Acciones</th>
                 </tr>
               </thead>
@@ -352,18 +414,23 @@ export default function Products() {
                         <span className="font-medium text-slate-800">{product.name}</span>
                       </div>
                     </td>
+                    <td className="p-4 text-sm text-slate-600">{product.tipo_articulo_nombre}</td>
                     <td className="p-4">
                       <Badge className={`${categoryColors[product.category]} text-xs`}>
                         {CATEGORIES.find(c => c.value === product.category)?.label}
                       </Badge>
                     </td>
-                    <td className="p-4 font-medium text-emerald-600">${product.price?.toLocaleString()}</td>
-                    <td className="p-4">
+                    <td className="p-4 text-right font-medium text-blue-600">
+                      ${product.precio_lista_minorista?.toFixed(2)}
+                    </td>
+                    <td className="p-4 text-right font-medium text-emerald-600">
+                      ${product.precio_lista_mayorista?.toFixed(2)}
+                    </td>
+                    <td className="p-4 text-center">
                       <span className={product.stock <= product.min_stock ? "text-red-600 font-medium" : ""}>
                         {product.stock}
                       </span>
                     </td>
-                    <td className="p-4 text-slate-500 text-sm">{product.barcode || "-"}</td>
                     <td className="p-4 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -399,7 +466,7 @@ export default function Products() {
 
       {/* Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingProduct ? 'Editar Producto' : 'Nuevo Producto'}
@@ -428,29 +495,50 @@ export default function Products() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="price">Precio *</Label>
+                <Label htmlFor="tipo_articulo">Tipo de Artículo *</Label>
+                <Select value={formData.tipo_articulo_id} onValueChange={(value) => setFormData({ ...formData, tipo_articulo_id: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tiposArticulo.map(tipo => (
+                      <SelectItem key={tipo.id} value={tipo.id}>{tipo.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="costo">Costo Unitario *</Label>
                 <Input
-                  id="price"
+                  id="costo"
                   type="number"
                   step="0.01"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  value={formData.costo_unitario}
+                  onChange={(e) => setFormData({ ...formData, costo_unitario: e.target.value })}
                   placeholder="0.00"
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="cost">Costo</Label>
-                <Input
-                  id="cost"
-                  type="number"
-                  step="0.01"
-                  value={formData.cost}
-                  onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
-                  placeholder="0.00"
-                />
-              </div>
             </div>
+
+            {calculatedPrices && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                <p className="text-xs font-semibold text-blue-900">Precios Calculados Automáticamente</p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-blue-700 font-medium">Minorista</p>
+                    <p className="text-xs text-blue-600">Mínimo: ${calculatedPrices.precio_minimo_minorista.toFixed(2)}</p>
+                    <p className="text-sm font-bold text-blue-900">Lista: ${calculatedPrices.precio_lista_minorista.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-emerald-700 font-medium">Mayorista</p>
+                    <p className="text-xs text-emerald-600">Mínimo: ${calculatedPrices.precio_minimo_mayorista.toFixed(2)}</p>
+                    <p className="text-sm font-bold text-emerald-900">Lista: ${calculatedPrices.precio_lista_mayorista.toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="category">Categoría *</Label>
