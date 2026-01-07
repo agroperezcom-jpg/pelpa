@@ -34,6 +34,7 @@ import {
 export default function CobroPresupuestoDialog({ isOpen, onClose, total, presupuesto, onConfirm }) {
   const [pagos, setPagos] = useState([]);
   const [generaIVA, setGeneraIVA] = useState(false);
+  const [generaIIBB, setGeneraIIBB] = useState(false);
   const [nuevoPago, setNuevoPago] = useState({
     medio_pago_id: "",
     importe: "",
@@ -106,14 +107,16 @@ export default function CobroPresupuestoDialog({ isOpen, onClose, total, presupu
       return;
     }
 
-    onConfirm(pagos, generaIVA);
+    onConfirm(pagos, generaIVA, generaIIBB);
     setPagos([]);
     setGeneraIVA(false);
+    setGeneraIIBB(false);
   };
 
   const handleClose = () => {
     setPagos([]);
     setGeneraIVA(false);
+    setGeneraIIBB(false);
     onClose();
   };
 

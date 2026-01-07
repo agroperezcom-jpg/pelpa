@@ -61,6 +61,11 @@ export default function Purchases() {
     banco_id: "",
     caja_id: ""
   });
+  const [retencionIIBB, setRetencionIIBB] = useState({
+    aplica: false,
+    importe_retenido: "",
+    numero_comprobante: ""
+  });
   const [activeTab, setActiveTab] = useState("compras");
   const [fechaReporte, setFechaReporte] = useState(format(new Date(), 'yyyy-MM'));
 
@@ -69,6 +74,11 @@ export default function Purchases() {
   const { data: periodosIVA = [] } = useQuery({
     queryKey: ['periodosIVA'],
     queryFn: () => base44.entities.PeriodoIVA.list('-anio,-mes', 12)
+  });
+
+  const { data: periodosIIBB = [] } = useQuery({
+    queryKey: ['periodosIIBB'],
+    queryFn: () => base44.entities.PeriodoIIBB.list('-anio,-mes', 12)
   });
 
   const { data: compras = [] } = useQuery({
@@ -102,13 +112,18 @@ export default function Purchases() {
   });
 
   const createCompraMutation = useMutation({
-    mutationFn: async ({ compraData, detallesData, pagosData, tipoCompra }) => {
+    mutationFn: async ({ compraData, detallesData, pagosData, tipoCompra, retencionIIBBData }) => {
       // PROTECCIÓN FISCAL: Verificar que el período no esté cerrado
       const periodoCompra = compraData.fecha.substring(0, 7); // YYYY-MM
-      const periodoCerrado = periodosIVA.find(p => p.periodo === periodoCompra && p.estado === "CERRADO");
+      const periodoCerradoIVA = periodosIVA.find(p => p.periodo === periodoCompra && p.estado === "CERRADO");
+      const periodoCerradoIIBB = periodosIIBB.find(p => p.periodo === periodoCompra && p.estado === "CERRADO");
       
-      if (periodoCerrado) {
-        throw new Error(`⚠️ NO SE PUEDE REGISTRAR: El período fiscal ${periodoCompra} está CERRADO. No se pueden registrar más compras en este período.`);
+      if (periodoCerradoIVA) {
+        throw new Error(`⚠️ NO SE PUEDE REGISTRAR: El período IVA ${periodoCompra} está CERRADO. No se pueden registrar más compras en este período.`);
+      }
+      
+      if (retencionIIBBData?.aplica && periodoCerradoIIBB) {
+        throw new Error(`⚠️ NO SE PUEDE REGISTRAR: El período IIBB ${periodoCompra} está CERRADO. No se pueden registrar retenciones en este período.`);
       }
 
       if (!compraData.proveedor_id) throw new Error("Debe seleccionar un proveedor");
@@ -218,14 +233,28 @@ export default function Purchases() {
           saldo: nuevoSaldo,
           referencia_tipo: "compra",
           referencia_id: compra.id
-        });
-      }
+          });
+          }
 
-      await base44.entities.Proveedor.update(compraData.proveedor_id, {
-        saldo_cc: nuevoSaldo
-      });
+          await base44.entities.Proveedor.update(compraData.proveedor_id, {
+          saldo_cc: nuevoSaldo
+          });
 
-      return compra;
+          // Registrar retención IIBB si aplica
+          if (retencionIIBBData?.aplica && retencionIIBBData.importe_retenido > 0) {
+          await base44.entities.RetencionIIBB.create({
+          compra_id: compra.id,
+          proveedor_id: compraData.proveedor_id,
+          proveedor_nombre: compraData.proveedor_nombre,
+          fecha: compraData.fecha,
+          periodo: periodoCompra,
+          neto_base: neto_gravado,
+          importe_retenido: retencionIIBBData.importe_retenido,
+          numero_comprobante: retencionIIBBData.numero_comprobante || ""
+          });
+          }
+
+          return compra;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['compras'] });
@@ -235,6 +264,7 @@ export default function Purchases() {
       queryClient.invalidateQueries({ queryKey: ['movimientosCC'] });
       queryClient.invalidateQueries({ queryKey: ['bancos'] });
       queryClient.invalidateQueries({ queryKey: ['cajas'] });
+      queryClient.invalidateQueries({ queryKey: ['retencionesIIBB'] });
       handleCloseDialog();
     },
     onError: (error) => {
@@ -254,6 +284,7 @@ export default function Purchases() {
     setPagos([]);
     setNuevoDetalle({ producto_id: "", cantidad: "", costo_unitario: "" });
     setNuevoPago({ medio_pago_id: "", importe: "", banco_id: "", caja_id: "" });
+    setRetencionIIBB({ aplica: false, importe_retenido: "", numero_comprobante: "" });
     setIsDialogOpen(true);
   };
 
@@ -384,7 +415,8 @@ export default function Purchases() {
       },
       detallesData: detalles,
       pagosData: pagos,
-      tipoCompra
+      tipoCompra,
+      retencionIIBBData: retencionIIBB
     });
   };
 

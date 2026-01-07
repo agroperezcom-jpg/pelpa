@@ -113,6 +113,11 @@ export default function Presupuestos() {
     queryFn: () => base44.entities.Caja.list()
   });
 
+  const { data: configuracionIIBB = [] } = useQuery({
+    queryKey: ['configuracionIIBB'],
+    queryFn: () => base44.entities.ConfiguracionIIBB.list()
+  });
+
   const createPresupuestoMutation = useMutation({
     mutationFn: async ({ presupuestoData, nuevoEstado }) => {
       const cliente = clients.find(c => c.id === presupuestoData.cliente_id);
@@ -162,7 +167,7 @@ export default function Presupuestos() {
   });
 
   const cambiarEstadoMutation = useMutation({
-    mutationFn: async ({ presupuestoId, nuevoEstado, pagos, generaIVA }) => {
+    mutationFn: async ({ presupuestoId, nuevoEstado, pagos, generaIVA, generaIIBB }) => {
       const presupuesto = presupuestos.find(p => p.id === presupuestoId);
       
       // Validaciones
@@ -256,6 +261,26 @@ export default function Presupuestos() {
           });
         }
 
+        // Generar IIBB Ventas si corresponde
+        if (generaIIBB) {
+          const configIIBB = configuracionIIBB[0];
+          if (configIIBB) {
+            const netoGravadoIIBB = generaIVA ? netoGravado : presupuesto.total_presupuesto;
+            const importeIIBB = netoGravadoIIBB * configIIBB.alicuota_iibb;
+
+            await base44.entities.IIBBVenta.create({
+              venta_id: venta.id,
+              fecha: format(new Date(), 'yyyy-MM-dd'),
+              periodo: format(new Date(), 'yyyy-MM'),
+              cliente_nombre: venta.client_name,
+              neto_gravado: netoGravadoIIBB,
+              alicuota: configIIBB.alicuota_iibb,
+              importe_iibb: importeIIBB,
+              numero_comprobante: numeroComprobante
+            });
+          }
+        }
+
         // 3) Registrar COBROS en TESORERÍA (NO cuenta corriente)
         for (const pago of pagos) {
           await base44.entities.MovimientoTesoreria.create({
@@ -317,6 +342,7 @@ export default function Presupuestos() {
           fecha_aceptacion: new Date().toISOString(),
           aceptado_por: user.email,
           genera_iva: generaIVA,
+          genera_iibb: generaIIBB,
           neto_gravado: netoGravado,
           iva_21: ivaCalculado
         });
@@ -436,12 +462,13 @@ export default function Presupuestos() {
     });
   };
 
-  const handleAceptarPresupuesto = (pagos, generaIVA) => {
+  const handleAceptarPresupuesto = (pagos, generaIVA, generaIIBB) => {
     cambiarEstadoMutation.mutate({
       presupuestoId: selectedPresupuesto.id,
       nuevoEstado: "ACEPTADO",
       pagos,
-      generaIVA
+      generaIVA,
+      generaIIBB
     });
   };
 
@@ -578,6 +605,7 @@ export default function Presupuestos() {
       queryClient.invalidateQueries({ queryKey: ['bancos'] });
       queryClient.invalidateQueries({ queryKey: ['cajas'] });
       queryClient.invalidateQueries({ queryKey: ['ivaVentas'] });
+      queryClient.invalidateQueries({ queryKey: ['iibbVentas'] });
       queryClient.invalidateQueries({ queryKey: ['cancelaciones'] });
       setIsCancelacionDialogOpen(false);
       setSelectedPresupuesto(null);

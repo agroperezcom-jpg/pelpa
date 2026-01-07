@@ -6,22 +6,22 @@ import DashboardEjecutivo from './pages/DashboardEjecutivo';
 import Expenses from './pages/Expenses';
 import Finance from './pages/Finance';
 import IVAMensual from './pages/IVAMensual';
+import IngresosBrutos from './pages/IngresosBrutos';
 import Inventory from './pages/Inventory';
 import Marketing from './pages/Marketing';
+import PagosProveedores from './pages/PagosProveedores';
 import Presupuestos from './pages/Presupuestos';
 import Products from './pages/Products';
 import Projects from './pages/Projects';
+import Proveedores from './pages/Proveedores';
 import Purchases from './pages/Purchases';
 import Sales from './pages/Sales';
 import Services from './pages/Services';
 import Settings from './pages/Settings';
+import TableroFiscal from './pages/TableroFiscal';
 import TesoreriaV2 from './pages/TesoreriaV2';
 import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
-import Proveedores from './pages/Proveedores';
-import PagosProveedores from './pages/PagosProveedores';
-import IngresosBrutos from './pages/IngresosBrutos';
-import TableroFiscal from './pages/TableroFiscal';
 import __Layout from './Layout.jsx';
 
 
@@ -34,22 +34,22 @@ export const PAGES = {
     "Expenses": Expenses,
     "Finance": Finance,
     "IVAMensual": IVAMensual,
+    "IngresosBrutos": IngresosBrutos,
     "Inventory": Inventory,
     "Marketing": Marketing,
+    "PagosProveedores": PagosProveedores,
     "Presupuestos": Presupuestos,
     "Products": Products,
     "Projects": Projects,
+    "Proveedores": Proveedores,
     "Purchases": Purchases,
     "Sales": Sales,
     "Services": Services,
     "Settings": Settings,
+    "TableroFiscal": TableroFiscal,
     "TesoreriaV2": TesoreriaV2,
     "TiposArticulo": TiposArticulo,
     "Treasury": Treasury,
-    "Proveedores": Proveedores,
-    "PagosProveedores": PagosProveedores,
-    "IngresosBrutos": IngresosBrutos,
-    "TableroFiscal": TableroFiscal,
 }
 
 export const pagesConfig = {
