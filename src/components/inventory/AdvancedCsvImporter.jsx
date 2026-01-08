@@ -99,13 +99,26 @@ export default function AdvancedCsvImporter({ isOpen, onClose, tiposArticulo, pr
 
       setCsvData({ headers, rows });
 
-      // Auto-mapeo
+      // Auto-mapeo con búsqueda flexible
       const autoMapping = {};
       headers.forEach(header => {
-        const matched = PRODUCT_FIELDS.find(f =>
-          f.label.toLowerCase().includes(header.toLowerCase()) ||
-          header.toLowerCase().includes(f.label.toLowerCase())
+        const headerLower = header.toLowerCase().trim();
+        
+        // Búsqueda exacta o parcial en el label
+        let matched = PRODUCT_FIELDS.find(f =>
+          f.label.toLowerCase() === headerLower ||
+          f.label.toLowerCase().includes(headerLower) ||
+          headerLower.includes(f.label.toLowerCase())
         );
+        
+        // Si no encuentra, buscar por key (más flexible)
+        if (!matched) {
+          matched = PRODUCT_FIELDS.find(f =>
+            f.key.toLowerCase().includes(headerLower) ||
+            headerLower.includes(f.key.toLowerCase())
+          );
+        }
+        
         if (matched) autoMapping[header] = matched.key;
       });
       setFieldMapping(autoMapping);
