@@ -989,15 +989,239 @@ export default function Sales() {
 
       {/* New Sale Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto p-4">
-          <DialogHeader className="pb-2">
-            <DialogTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-emerald-600" />
-              Nueva Venta
+        <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden p-0 flex flex-col">
+          <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-4 flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-3 text-white m-0">
+              <ShoppingCart className="h-6 w-6" />
+              <span className="text-lg font-semibold">Nueva Venta</span>
             </DialogTitle>
-          </DialogHeader>
-          
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+            <button onClick={() => setIsDialogOpen(false)} className="text-white hover:bg-emerald-500 rounded p-1">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="flex flex-1 overflow-hidden gap-0">
+            {/* Left: Products */}
+            <div className="flex-1 flex flex-col border-r border-slate-200 bg-white">
+              <div className="p-4 space-y-3 border-b border-slate-200">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input placeholder="Buscar..." value={productSearch} onChange={(e) => setProductSearch(e.target.value)} className="pl-10 h-10" />
+                </div>
+                <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
+                  <Button variant={activeTab === 'products' ? 'default' : 'ghost'} size="sm" onClick={() => setActiveTab('products')} className="flex-1 h-8 text-xs">
+                    <Package className="h-3 w-3 mr-1" />
+                    Productos
+                  </Button>
+                  <Button variant={activeTab === 'services' ? 'default' : 'ghost'} size="sm" onClick={() => setActiveTab('services')} className="flex-1 h-8 text-xs">
+                    <Briefcase className="h-3 w-3 mr-1" />
+                    Servicios
+                  </Button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-2 space-y-1">
+                  {activeTab === 'products' && filteredProducts.map((product) => {
+                    const calc = calcularPrecioYMargen(product, 1);
+                    return (
+                      <div key={product.id} onClick={() => product.stock > 0 && addToCart(product, 'product')} className={`p-3 rounded-lg cursor-pointer transition-colors ${product.stock === 0 ? 'opacity-40 bg-slate-100' : 'bg-slate-50 hover:bg-emerald-50 border border-slate-200'}`}>
+                        <div className="flex justify-between items-start mb-1">
+                          <p className="font-medium text-sm text-slate-800">{product.name}</p>
+                          <p className="text-emerald-600 font-bold text-sm">${calc.precio_venta?.toFixed(2)}</p>
+                        </div>
+                        <div className="flex justify-between items-center text-xs text-slate-500">
+                          <span>Stock: {product.stock}</span>
+                          <span className="text-emerald-600">{(calc.margen_real * 100).toFixed(0)}% margen</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {activeTab === 'services' && filteredServices.map((service) => (
+                    <div key={service.id} onClick={() => addToCart(service, 'service')} className="p-3 bg-slate-50 hover:bg-emerald-50 rounded-lg cursor-pointer transition-colors border border-slate-200">
+                      <div className="flex justify-between items-center">
+                        <p className="font-medium text-sm text-slate-800">{service.name}</p>
+                        <p className="text-emerald-600 font-bold text-sm">${service.price?.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Center: Cart */}
+            <div className="w-80 flex flex-col border-r border-slate-200 bg-gradient-to-b from-slate-50 to-white">
+              <div className="px-4 py-3 border-b border-slate-200 bg-white">
+                <h3 className="font-semibold text-sm flex items-center gap-2 text-slate-800">
+                  <Receipt className="h-4 w-4 text-emerald-600" />
+                  Carrito ({cart.length})
+                </h3>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {cart.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-slate-400 text-sm text-center px-4">
+                    Selecciona productos para comenzar
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {cart.map((item, index) => (
+                      <div key={index} className={`p-3 ${!item.valido ? 'bg-red-50' : 'bg-white hover:bg-slate-50'}`}>
+                        <div className="flex justify-between items-start gap-2 mb-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm text-slate-800 truncate">{item.name}</p>
+                            <p className="text-xs text-emerald-600 font-semibold">${item.precio_venta?.toFixed(2)}</p>
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500" onClick={() => removeFromCart(index)}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 bg-slate-100 rounded p-1">
+                            <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => updateCartQuantity(index, item.quantity - 1)}>
+                              <Minus className="h-2 w-2" />
+                            </Button>
+                            <span className="w-6 text-center font-bold text-xs">{item.quantity}</span>
+                            <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => updateCartQuantity(index, item.quantity + 1)}>
+                              <Plus className="h-2 w-2" />
+                            </Button>
+                          </div>
+                          <p className="font-bold text-sm text-slate-800">${item.total?.toFixed(2)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="border-t border-slate-200 bg-white p-3 space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-600">Subtotal</span>
+                  <span className="font-bold text-slate-800">${subtotal.toFixed(2)}</span>
+                </div>
+                {currentSale.genera_iva && (
+                  <>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-600">Neto</span>
+                      <span className="font-bold text-slate-800">${neto_gravado.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-600">IVA 21%</span>
+                      <span className="font-bold text-emerald-600">${iva_21.toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Right: Config & Summary */}
+            <div className="flex-1 flex flex-col bg-white overflow-y-auto">
+              <div className="p-4 space-y-4">
+                {/* Cliente */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-slate-700">Cliente</Label>
+                  <Select value={currentSale.client_id} onValueChange={(v) => {
+                    const cliente = clients.find(c => c.id === v);
+                    const shouldGenerateIVA = cliente?.tipo_iva === "RESP_INSCRIPTO" || cliente?.tipo_iva === "MONOTRIBUTO";
+                    setCurrentSale({...currentSale, client_id: v, client_name: cliente?.name || "", client_tipo_iva: cliente?.tipo_iva || "", genera_iva: shouldGenerateIVA});
+                  }}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Consumidor Final" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={null}>Consumidor Final</SelectItem>
+                      {clients.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                  <Button type="button" variant="outline" onClick={() => setIsClientDialogOpen(true)} className="w-full h-8 text-xs">
+                    <Plus className="h-3 w-3 mr-1" />
+                    Nuevo
+                  </Button>
+                </div>
+
+                {/* Configuración */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-slate-700">Lista</Label>
+                    <Select value={currentSale.tipo_lista} onValueChange={(v) => setCurrentSale({...currentSale, tipo_lista: v})}>
+                      <SelectTrigger className="h-9 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="MINORISTA">Minorista</SelectItem>
+                        <SelectItem value="MAYORISTA">Mayorista</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-slate-700">Talonario *</Label>
+                    <Select value={currentSale.talonario_id} onValueChange={(v) => setCurrentSale({...currentSale, talonario_id: v})}>
+                      <SelectTrigger className="h-9 text-xs">
+                        <SelectValue placeholder="Sel." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {talonarios.filter(t => {if (!t.activo) return false; if (!currentSale.genera_iva) return t.tipo_comprobante === "X"; if (currentSale.client_tipo_iva === "RESP_INSCRIPTO") return t.tipo_comprobante === "A"; return t.tipo_comprobante === "B";}).map(t => (<SelectItem key={t.id} value={t.id} className="text-xs">{t.nombre}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Toggles */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <span className="text-xs font-semibold text-blue-900">IVA Ventas</span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" checked={currentSale.genera_iva} onChange={(e) => setCurrentSale({...currentSale, genera_iva: e.target.checked})} className="sr-only peer" />
+                      <div className="w-10 h-6 bg-slate-300 peer-checked:bg-blue-600 rounded-full peer peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                    </label>
+                  </div>
+                  <div className="flex items-center justify-between bg-purple-50 border border-purple-200 rounded-lg p-3">
+                    <span className="text-xs font-semibold text-purple-900">IIBB</span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" checked={currentSale.genera_iibb} onChange={(e) => setCurrentSale({...currentSale, genera_iibb: e.target.checked})} className="sr-only peer" />
+                      <div className="w-10 h-6 bg-slate-300 peer-checked:bg-purple-600 rounded-full peer peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Notas */}
+                <textarea value={currentSale.notes || ""} onChange={(e) => setCurrentSale({...currentSale, notes: e.target.value})} placeholder="Notas..." className="w-full h-16 px-3 py-2 text-xs border border-slate-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+
+                {/* Total Summary */}
+                <div className="bg-emerald-600 rounded-xl p-4 space-y-3 text-white mt-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="opacity-90">Subtotal</span>
+                      <span className="font-semibold">${subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="opacity-90">Descuento</span>
+                      <Input type="number" step="0.01" value={currentSale.discount || ""} onChange={(e) => setCurrentSale({...currentSale, discount: parseFloat(e.target.value) || 0})} className="w-24 h-7 bg-emerald-700 text-right text-sm font-semibold text-white placeholder-emerald-300 border-0 rounded" placeholder="0.00" />
+                    </div>
+                    {currentSale.genera_iva && (
+                      <>
+                        <div className="border-t border-emerald-400 pt-2">
+                          <div className="flex justify-between text-sm mb-1">
+                            <span className="opacity-90">Neto Gravado</span>
+                            <span className="font-semibold">${neto_gravado.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="opacity-90">IVA 21%</span>
+                            <span className="font-semibold">${iva_21.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <div className="border-t border-emerald-400 pt-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-bold">TOTAL</span>
+                      <Input type="number" step="0.01" value={currentSale.total_manual || total_final.toFixed(2)} onChange={(e) => setCurrentSale({...currentSale, total_manual: parseFloat(e.target.value) || total_final})} className="w-32 h-10 bg-emerald-700 text-right text-2xl font-bold text-white border-0 rounded placeholder-emerald-300" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-200 bg-white px-6 py-3 flex justify-end gap-3">
             {/* Products/Services Selection */}
             <div className="space-y-3">
               <div className="relative">
@@ -1075,187 +1299,13 @@ export default function Sales() {
               </div>
             </div>
 
-            {/* Cart */}
-            <div className="space-y-3">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
-                <Receipt className="h-4 w-4" />
-                Carrito ({cart.length})
-              </h3>
-
-              <div className="h-72 overflow-y-auto border rounded-lg bg-slate-50">
-                {cart.length === 0 ? (
-                   <div className="flex items-center justify-center h-full text-slate-400 text-xs">
-                     Agregar al carrito
-                   </div>
-                 ) : (
-                   <div className="divide-y divide-slate-200">
-                     {cart.map((item, index) => (
-                       <div key={index} className={`p-2 text-xs ${!item.valido ? 'bg-red-50' : ''}`}>
-                         <div className="flex items-start justify-between gap-2 mb-1">
-                           <div className="flex-1 min-w-0">
-                             <p className="font-medium truncate">{item.name}</p>
-                             <p className="text-slate-500">${item.precio_venta?.toFixed(2)}</p>
-                           </div>
-                           <Button
-                             variant="ghost"
-                             size="icon"
-                             className="h-5 w-5 text-red-500 flex-shrink-0"
-                             onClick={() => removeFromCart(index)}
-                           >
-                             <X className="h-3 w-3" />
-                           </Button>
-                         </div>
-                         <div className="flex items-center justify-between gap-1">
-                           <div className="flex items-center gap-1">
-                             <Button variant="outline" size="icon" className="h-5 w-5" onClick={() => updateCartQuantity(index, item.quantity - 1)}>
-                               <Minus className="h-2 w-2" />
-                             </Button>
-                             <span className="w-6 text-center font-medium">{item.quantity}</span>
-                             <Button variant="outline" size="icon" className="h-5 w-5" onClick={() => updateCartQuantity(index, item.quantity + 1)}>
-                               <Plus className="h-2 w-2" />
-                             </Button>
-                           </div>
-                           <span className="font-bold">${item.total?.toFixed(2)}</span>
-                         </div>
-                       </div>
-                     ))}
-                   </div>
-                 )}
-              </div>
-
-            {/* Sale Config */}
-            <div className="space-y-3 xl:col-span-1">
-              <div className="space-y-2 text-xs">
-                <Label>Cliente</Label>
-                <Select 
-                  value={currentSale.client_id} 
-                  onValueChange={(v) => {
-                    const cliente = clients.find(c => c.id === v);
-                    const shouldGenerateIVA = cliente?.tipo_iva === "RESP_INSCRIPTO" || cliente?.tipo_iva === "MONOTRIBUTO";
-                    setCurrentSale({ 
-                      ...currentSale, 
-                      client_id: v,
-                      client_name: cliente?.name || "",
-                      client_tipo_iva: cliente?.tipo_iva || "",
-                      genera_iva: shouldGenerateIVA
-                    });
-                  }}
-                >
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Consumidor Final" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={null}>Consumidor Final</SelectItem>
-                    {clients.map(c => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsClientDialogOpen(true)}
-                  className="w-full h-8 text-xs"
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Nuevo Cliente
-                </Button>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <Label>Lista de Precios</Label>
-                <Select value={currentSale.tipo_lista} onValueChange={(v) => setCurrentSale({ ...currentSale, tipo_lista: v })}>
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="MINORISTA">Minorista</SelectItem>
-                    <SelectItem value="MAYORISTA">Mayorista</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <Label>Talonario *</Label>
-                <Select value={currentSale.talonario_id} onValueChange={(v) => setCurrentSale({ ...currentSale, talonario_id: v })}>
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {talonarios
-                      .filter(t => {
-                        if (!t.activo) return false;
-                        if (!currentSale.genera_iva) return t.tipo_comprobante === "X";
-                        if (currentSale.client_tipo_iva === "RESP_INSCRIPTO") return t.tipo_comprobante === "A";
-                        return t.tipo_comprobante === "B";
-                      })
-                      .map(t => (
-                        <SelectItem key={t.id} value={t.id} className="text-xs">
-                          {t.nombre}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-blue-900">IVA Ventas</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" checked={currentSale.genera_iva} onChange={(e) => setCurrentSale({ ...currentSale, genera_iva: e.target.checked })} className="sr-only peer" />
-                    <div className="w-11 h-6 bg-slate-300 peer-checked:bg-blue-600 rounded-full peer peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                  </label>
-                </div>
-                <p className="text-xs text-blue-700">{currentSale.genera_iva ? "Factura con IVA" : "Ticket sin IVA"}</p>
-              </div>
-
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-purple-900">IIBB</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" checked={currentSale.genera_iibb} onChange={(e) => setCurrentSale({ ...currentSale, genera_iibb: e.target.checked })} className="sr-only peer" />
-                    <div className="w-11 h-6 bg-slate-300 peer-checked:bg-purple-600 rounded-full peer peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                  </label>
-                </div>
-              </div>
-
-              <textarea
-                value={currentSale.notes || ""}
-                onChange={(e) => setCurrentSale({ ...currentSale, notes: e.target.value })}
-                placeholder="Notas..."
-                className="w-full h-12 px-2 py-1 text-xs rounded-lg border border-slate-300 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-
-              {/* Resumen */}
-              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-3 border border-emerald-200 space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-emerald-700 font-medium">Subtotal</span>
-                  <span className="font-bold text-emerald-900">${subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-emerald-700 font-medium">Descuento</span>
-                  <Input type="number" step="0.01" value={currentSale.discount || ""} onChange={(e) => setCurrentSale({ ...currentSale, discount: parseFloat(e.target.value) || 0 })} className="w-24 h-6 text-xs text-right p-1" placeholder="0.00" />
-                </div>
-                {currentSale.genera_iva && (
-                  <>
-                    <div className="flex justify-between text-xs border-t border-emerald-300 pt-1">
-                      <span className="text-emerald-700">Neto</span>
-                      <span className="font-bold">${neto_gravado.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-emerald-700">IVA 21%</span>
-                      <span className="font-bold text-emerald-600">${iva_21.toFixed(2)}</span>
-                    </div>
-                  </>
-                )}
-                <div className="flex justify-between text-sm border-t border-emerald-300 pt-2">
-                  <span className="font-bold text-emerald-900">TOTAL</span>
-                  <Input type="number" step="0.01" value={currentSale.total_manual || total_final.toFixed(2)} onChange={(e) => setCurrentSale({ ...currentSale, total_manual: parseFloat(e.target.value) || total_final })} className="w-28 h-8 text-right text-sm font-bold text-emerald-600 p-1" />
-                </div>
-              </div>
-            </div>
-            </div>
+            <Button type="button" variant="outline" onClick={handleCloseDialog} className="px-6">
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-700 px-6" disabled={cart.length === 0 || tieneItemsInvalidos || !currentSale.talonario_id}>
+              <DollarSign className="h-4 w-4 mr-2" />
+              Confirmar y Pagar
+            </Button>
           </div>
 
             <Button type="button" variant="outline" onClick={handleCloseDialog} className="px-6">
