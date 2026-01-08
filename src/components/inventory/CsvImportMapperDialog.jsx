@@ -205,11 +205,7 @@ export default function CsvImportMapperDialog({
   // Vista previa de datos transformados
   const previewData = useMemo(() => {
     if (!validateMapping() || headers.length === 0) return [];
-    try {
-      return transformData().slice(0, 3);
-    } catch {
-      return [];
-    }
+    return transformData(true).slice(0, 3);
   }, [fieldMapping, rows]);
 
   return (
