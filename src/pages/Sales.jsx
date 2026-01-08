@@ -1258,19 +1258,14 @@ export default function Sales() {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleCloseDialog}>
+            <Button type="button" variant="outline" onClick={handleCloseDialog} className="px-6">
               Cancelar
             </Button>
-            <Button 
-              onClick={handleSubmit} 
-              className="bg-emerald-600 hover:bg-emerald-700"
-              disabled={cart.length === 0 || tieneItemsInvalidos || !currentSale.talonario_id}
-            >
+            <Button onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-700 px-6" disabled={cart.length === 0 || tieneItemsInvalidos || !currentSale.talonario_id}>
               <DollarSign className="h-4 w-4 mr-2" />
-              Siguiente: Pagos
+              Confirmar y Pagar
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
