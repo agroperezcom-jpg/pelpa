@@ -233,6 +233,38 @@ export default function CsvImportMapperDialog({
             </div>
           )}
 
+          {/* Errores por fila */}
+          {Object.keys(rowErrors).length > 0 && (
+            <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
+              <div className="flex gap-2 items-start">
+                <AlertCircle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-orange-900 mb-2">
+                    {Object.keys(rowErrors).length} fila{Object.keys(rowErrors).length !== 1 ? 's' : ''} con errores:
+                  </p>
+                  <div className="space-y-1 max-h-40 overflow-y-auto">
+                    {Object.entries(rowErrors).map(([rowNum, error]) => (
+                      <p key={rowNum} className="text-sm text-orange-800">
+                        <span className="font-medium">Fila {rowNum}:</span> {error}
+                      </p>
+                    ))}
+                  </div>
+                  <label className="flex items-center gap-2 mt-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={importOnlyValid}
+                      onChange={(e) => setImportOnlyValid(e.target.checked)}
+                      className="rounded"
+                    />
+                    <span className="text-sm font-medium text-orange-900">
+                      Importar solo las filas válidas ({previewData.length} productos)
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Mapeo de columnas */}
           <div className="space-y-3">
             <h3 className="font-semibold">Selecciona a qué campo corresponde cada columna</h3>
