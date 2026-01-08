@@ -61,6 +61,8 @@ export default function Clients() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isImporterOpen, setIsImporterOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -191,6 +193,12 @@ export default function Clients() {
     return matchesSearch && matchesStatus;
   });
 
+  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
+  const paginatedClients = filteredClients.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   const exportToCSV = () => {
     const headers = ["Nombre", "Email", "Teléfono", "Tipo IVA", "CUIT/CUIL", "Dirección", "Total Compras", "Último Contacto"];
     const rows = filteredClients.map(c => [
@@ -284,7 +292,7 @@ export default function Clients() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredClients.map((client) => (
+              {paginatedClients.map((client) => (
                 <TableRow key={client.id} className="hover:bg-slate-50">
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -367,7 +375,7 @@ export default function Clients() {
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredClients.length === 0 && (
+              {paginatedClients.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8 text-slate-500">
                     No se encontraron clientes
@@ -377,6 +385,46 @@ export default function Clients() {
             </TableBody>
           </Table>
         </div>
+        {filteredClients.length > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 bg-slate-50">
+            <p className="text-xs text-slate-600">
+              Mostrando <span className="font-medium">{((currentPage - 1) * itemsPerPage) + 1}</span> a <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredClients.length)}</span> de <span className="font-medium">{filteredClients.length}</span> clientes
+            </p>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="h-8 px-3 text-xs"
+              >
+                ← Anterior
+              </Button>
+              <div className="flex items-center gap-1 px-2">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(page)}
+                    className="h-8 w-8 p-0 text-xs"
+                  >
+                    {page}
+                  </Button>
+                ))}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="h-8 px-3 text-xs"
+              >
+                Siguiente →
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* CSV Importer */}
