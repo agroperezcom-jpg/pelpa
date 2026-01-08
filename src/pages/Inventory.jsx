@@ -68,6 +68,8 @@ export default function Inventory() {
   const [quantity, setQuantity] = useState("");
   const [reason, setReason] = useState("");
   const [isImporting, setIsImporting] = useState(false);
+  const [isMapperDialogOpen, setIsMapperDialogOpen] = useState(false);
+  const [csvDataForMapper, setCsvDataForMapper] = useState(null);
 
   const queryClient = useQueryClient();
 
