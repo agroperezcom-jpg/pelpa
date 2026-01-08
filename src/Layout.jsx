@@ -99,7 +99,8 @@ export default function Layout({ children, currentPageName }) {
         { name: "Ventas", page: "Sales", description: "Punto de venta" },
         { name: "Presupuestos", page: "Presupuestos", description: "Cotizaciones" },
         { name: "Clientes", page: "Clients", description: "Base de clientes" },
-        { name: "Servicios", page: "Services", description: "Catálogo servicios" }
+        { name: "Servicios", page: "Services", description: "Catálogo servicios" },
+        { name: "Talonarios", page: "Talonarios", description: "Numeración de comprobantes" }
       ]
     },
     {

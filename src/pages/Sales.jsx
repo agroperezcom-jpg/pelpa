@@ -186,6 +186,154 @@ export default function Sales() {
     queryFn: () => base44.entities.ConfiguracionIIBB.list()
   });
 
+  const anularVentaMutation = useMutation({
+    mutationFn: async ({ ventaId, motivo }) => {
+      const venta = sales.find(s => s.id === ventaId);
+      if (!venta) throw new Error("Venta no encontrada");
+
+      if (venta.estado === "ANULADA") {
+        throw new Error("La venta ya está anulada");
+      }
+
+      // Verificar período fiscal si generó IVA o IIBB
+      const periodoVenta = venta.created_date.substring(0, 7);
+      
+      if (venta.genera_iva) {
+        const periodoCerradoIVA = periodosIVA.find(p => p.periodo === periodoVenta && p.estado === "CERRADO");
+        if (periodoCerradoIVA) {
+          throw new Error(`No se puede anular: el período IVA ${periodoVenta} está cerrado`);
+        }
+      }
+
+      if (venta.genera_iibb) {
+        const periodoCerradoIIBB = periodosIIBB.find(p => p.periodo === periodoVenta && p.estado === "CERRADO");
+        if (periodoCerradoIIBB) {
+          throw new Error(`No se puede anular: el período IIBB ${periodoVenta} está cerrado`);
+        }
+      }
+
+      // Revertir stock
+      for (const item of venta.items.filter(i => i.type === 'product')) {
+        const product = products.find(p => p.id === item.item_id);
+        if (product) {
+          await base44.entities.Product.update(product.id, {
+            stock: product.stock + item.quantity
+          });
+
+          await base44.entities.InventoryMovement.create({
+            product_id: product.id,
+            product_name: product.name,
+            type: 'ingreso',
+            quantity: item.quantity,
+            previous_stock: product.stock,
+            new_stock: product.stock + item.quantity,
+            reason: 'Anulación de venta',
+            reference: `Anulación venta ${venta.numero_comprobante}`
+          });
+        }
+      }
+
+      // Revertir movimientos de tesorería y CC
+      const pagosVenta = await base44.entities.PagoVenta.filter({ venta_id: ventaId });
+      
+      for (const pago of pagosVenta) {
+        if (pago.medio_pago_nombre === "Cuenta Corriente") {
+          const client = clients.find(c => c.id === venta.client_id);
+          await base44.entities.Client.update(venta.client_id, {
+            saldo_cc: (client?.saldo_cc || 0) - pago.importe
+          });
+
+          await base44.entities.MovimientoCC.create({
+            tipo_entidad: "CLIENTE",
+            entidad_id: venta.client_id,
+            entidad_nombre: venta.client_name,
+            fecha: new Date().toISOString().split('T')[0],
+            concepto: `Anulación venta ${venta.numero_comprobante}`,
+            debe: 0,
+            haber: pago.importe,
+            saldo: (client?.saldo_cc || 0) - pago.importe,
+            referencia_tipo: "anulacion_venta",
+            referencia_id: ventaId
+          });
+        } else if (!pago.es_cheque) {
+          await base44.entities.MovimientoTesoreria.create({
+            fecha: new Date().toISOString().split('T')[0],
+            tipo: "EGRESO",
+            medio_pago_id: pago.medio_pago_id,
+            medio_pago_nombre: pago.medio_pago_nombre,
+            banco_id: pago.banco_id,
+            banco_nombre: pago.banco_nombre,
+            caja_id: pago.caja_id,
+            caja_nombre: pago.caja_nombre,
+            importe: pago.importe,
+            referencia_tipo: "anulacion_venta",
+            referencia_id: ventaId,
+            observaciones: `Anulación venta ${venta.numero_comprobante}`
+          });
+
+          if (pago.banco_id) {
+            const banco = bancos.find(b => b.id === pago.banco_id);
+            await base44.entities.Banco.update(pago.banco_id, {
+              saldo_actual: banco.saldo_actual - pago.importe
+            });
+          }
+          if (pago.caja_id) {
+            const caja = cajas.find(c => c.id === pago.caja_id);
+            await base44.entities.Caja.update(pago.caja_id, {
+              saldo_actual: caja.saldo_actual - pago.importe
+            });
+          }
+        }
+      }
+
+      // Eliminar registros fiscales
+      if (venta.genera_iva) {
+        const ivaVentasRelacionados = await base44.entities.IVAVenta.filter({ venta_id: ventaId });
+        for (const iv of ivaVentasRelacionados) {
+          await base44.entities.IVAVenta.delete(iv.id);
+        }
+      }
+
+      if (venta.genera_iibb) {
+        const iibbVentasRelacionados = await base44.entities.IIBBVenta.filter({ venta_id: ventaId });
+        for (const iiv of iibbVentasRelacionados) {
+          await base44.entities.IIBBVenta.delete(iiv.id);
+        }
+      }
+
+      // Liberar número si corresponde
+      const talonario = talonarios.find(t => t.id === venta.talonario_id);
+      if (talonario?.permite_reutilizar && !venta.genera_iva) {
+        const numeroComprobante = parseInt(venta.numero_comprobante.split('-')[1]);
+        const numerosLiberados = talonario.numeros_liberados || [];
+        
+        await base44.entities.Talonario.update(talonario.id, {
+          numeros_liberados: [...numerosLiberados, numeroComprobante].sort((a, b) => a - b)
+        });
+      }
+
+      // Actualizar venta
+      return await base44.entities.Sale.update(ventaId, {
+        estado: "ANULADA",
+        fecha_anulacion: new Date().toISOString(),
+        motivo_anulacion: motivo,
+        usuario_anulacion: user?.email
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sales'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosCC'] });
+      queryClient.invalidateQueries({ queryKey: ['cajas'] });
+      queryClient.invalidateQueries({ queryKey: ['bancos'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['talonarios'] });
+      queryClient.invalidateQueries({ queryKey: ['ivaVentas'] });
+      queryClient.invalidateQueries({ queryKey: ['iibbVentas'] });
+    }
+  });
+
   const createSaleMutation = useMutation({
     mutationFn: async ({ saleData, pagos, tipoVenta }) => {
       // PROTECCIÓN FISCAL: Verificar que el período no esté cerrado
@@ -712,14 +860,15 @@ export default function Sales() {
               <TableHead>Comprobante</TableHead>
               <TableHead>Cliente</TableHead>
               <TableHead>IVA</TableHead>
-              <TableHead>Lista</TableHead>
+              <TableHead>Estado</TableHead>
               <TableHead>Items</TableHead>
               <TableHead className="text-right">Total</TableHead>
+              <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredSales.map((sale) => (
-              <TableRow key={sale.id} className="hover:bg-slate-50">
+              <TableRow key={sale.id} className={sale.estado === "ANULADA" ? "bg-red-50 opacity-60" : "hover:bg-slate-50"}>
                 <TableCell className="text-slate-500 text-sm">
                   {format(new Date(sale.created_date), "d MMM HH:mm", { locale: es })}
                 </TableCell>
@@ -740,9 +889,11 @@ export default function Sales() {
                   )}
                 </TableCell>
                 <TableCell>
-                  <Badge className={sale.tipo_lista === "MINORISTA" ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700"}>
-                    {sale.tipo_lista || "MINORISTA"}
-                  </Badge>
+                  {sale.estado === "ANULADA" ? (
+                    <Badge className="bg-red-100 text-red-700">Anulada</Badge>
+                  ) : (
+                    <Badge className="bg-green-100 text-green-700">Confirmada</Badge>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Badge variant="secondary">{sale.items?.length || 0}</Badge>
@@ -750,11 +901,28 @@ export default function Sales() {
                 <TableCell className="text-right font-bold text-emerald-600">
                   ${sale.total?.toLocaleString()}
                 </TableCell>
+                <TableCell>
+                  {sale.estado === "CONFIRMADA" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => {
+                        const motivo = prompt("Motivo de anulación:");
+                        if (motivo) {
+                          anularVentaMutation.mutate({ ventaId: sale.id, motivo });
+                        }
+                      }}
+                    >
+                      Anular
+                    </Button>
+                  )}
+                </TableCell>
               </TableRow>
             ))}
             {filteredSales.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={8} className="text-center py-8 text-slate-500">
                   No hay ventas registradas
                 </TableCell>
               </TableRow>
