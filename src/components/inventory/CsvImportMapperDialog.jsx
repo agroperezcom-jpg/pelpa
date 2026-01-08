@@ -119,17 +119,11 @@ export default function CsvImportMapperDialog({
           }
         });
 
-        // Validar que tenga al menos nombre y costo
-        if (hasData) {
-          if (!product.name) {
-            throw new Error(`El nombre del producto es obligatorio`);
-          }
-          if (product.costo_unitario === undefined || product.costo_unitario === null) {
-            throw new Error(`El costo unitario es obligatorio`);
-          }
-          if (!product.tipo_articulo_id) {
-            throw new Error(`El tipo artículo es obligatorio`);
-          }
+        // Validar solo el nombre como obligatorio
+                if (hasData) {
+                  if (!product.name) {
+                    throw new Error(`El nombre del producto es obligatorio`);
+                  }
 
           // Calcular precios según tipo artículo
           const tipo = tiposArticulo.find(t => t.id === product.tipo_articulo_id);
