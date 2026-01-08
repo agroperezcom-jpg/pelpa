@@ -24,6 +24,7 @@ import TesoreriaV2 from './pages/TesoreriaV2';
 import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
 import Dashboard from './pages/Dashboard';
+import RolesPermisos from './pages/RolesPermisos';
 import __Layout from './Layout.jsx';
 
 
@@ -54,6 +55,7 @@ export const PAGES = {
     "TiposArticulo": TiposArticulo,
     "Treasury": Treasury,
     "Dashboard": Dashboard,
+    "RolesPermisos": RolesPermisos,
 }
 
 export const pagesConfig = {
