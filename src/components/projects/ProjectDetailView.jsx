@@ -186,11 +186,11 @@ export default function ProjectDetailView({ project, onBack, onEdit }) {
         </TabsContent>
 
         <TabsContent value="tasks">
-          <ProjectTasksTab projectId={project.id} phases={phases} />
+          <ProjectTasksTab projectId={project.id} phases={phases} projectStatus={project.status} />
         </TabsContent>
 
         <TabsContent value="phases">
-          <ProjectPhasesTab projectId={project.id} />
+          <ProjectPhasesTab projectId={project.id} projectStatus={project.status} />
         </TabsContent>
 
         <TabsContent value="milestones">

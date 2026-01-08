@@ -9,13 +9,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Trash2, ChevronRight } from "lucide-react";
+import { Plus, Edit, Trash2, ChevronRight, AlertTriangle, Calendar, Users } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
-export default function ProjectPhasesTab({ projectId }) {
+export default function ProjectPhasesTab({ projectId, projectStatus }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPhase, setEditingPhase] = useState(null);
+  
+  const canEditPhases = ['aprobado', 'en_ejecucion'].includes(projectStatus);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -129,8 +132,26 @@ export default function ProjectPhasesTab({ projectId }) {
 
   return (
     <div className="space-y-4">
+      {!canEditPhases && (
+        <Card className="border-2 border-amber-200 bg-amber-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <div>
+                <p className="text-sm font-medium text-amber-900">Proyecto no habilitado para fases</p>
+                <p className="text-xs text-amber-700">El proyecto debe estar aprobado para crear y gestionar fases operativas.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       <div className="flex justify-end">
-        <Button onClick={() => handleOpenDialog()} className="bg-blue-600 hover:bg-blue-700">
+        <Button 
+          onClick={() => handleOpenDialog()} 
+          className="bg-blue-600 hover:bg-blue-700"
+          disabled={!canEditPhases}
+        >
           <Plus className="h-4 w-4 mr-2" />
           Nueva Fase
         </Button>
@@ -187,12 +208,18 @@ export default function ProjectPhasesTab({ projectId }) {
                 </div>
 
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(phase)}>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => handleOpenDialog(phase)}
+                    disabled={!canEditPhases}
+                  >
                     <Edit className="h-4 w-4" />
                   </Button>
                   <Button 
                     variant="ghost" 
                     size="icon"
+                    disabled={!canEditPhases}
                     onClick={() => {
                       if (confirm('¿Eliminar esta fase?')) {
                         deletePhaseMutation.mutate(phase.id);

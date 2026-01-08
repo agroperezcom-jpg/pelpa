@@ -97,18 +97,17 @@ export default function Projects() {
   });
 
   const projectsByStatus = {
-    propuesto: projects.filter(p => p.status === "propuesto").length,
-    activo: projects.filter(p => p.status === "activo").length,
-    en_pausa: projects.filter(p => p.status === "en_pausa").length,
-    finalizado: projects.filter(p => p.status === "finalizado").length,
-    cancelado: projects.filter(p => p.status === "cancelado").length
+    en_presupuestacion: projects.filter(p => p.status === "en_presupuestacion").length,
+    pendiente_aprobacion: projects.filter(p => p.status === "pendiente_aprobacion").length,
+    aprobado: projects.filter(p => p.status === "aprobado").length,
+    en_ejecucion: projects.filter(p => p.status === "en_ejecucion").length,
+    finalizado: projects.filter(p => p.status === "finalizado").length
   };
 
   const overdueProjects = projects.filter(p => 
     p.estimated_end_date && 
     new Date(p.estimated_end_date) < new Date() && 
-    p.status !== "finalizado" && 
-    p.status !== "cancelado"
+    ['aprobado', 'en_ejecucion'].includes(p.status)
   ).length;
 
   const myTasks = tasks.filter(task => {
@@ -150,26 +149,26 @@ export default function Projects() {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase">Activos</p>
-            <p className="text-2xl font-bold text-green-600 mt-1">{projectsByStatus.activo}</p>
+            <p className="text-xs font-medium text-slate-500 uppercase">En Presupuestación</p>
+            <p className="text-2xl font-bold text-blue-600 mt-1">{projectsByStatus.en_presupuestacion}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase">Propuestos</p>
-            <p className="text-2xl font-bold text-purple-600 mt-1">{projectsByStatus.propuesto}</p>
+            <p className="text-xs font-medium text-slate-500 uppercase">Pendiente Aprobación</p>
+            <p className="text-2xl font-bold text-amber-600 mt-1">{projectsByStatus.pendiente_aprobacion}</p>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-4">
+            <p className="text-xs font-medium text-slate-500 uppercase">En Ejecución</p>
+            <p className="text-2xl font-bold text-green-600 mt-1">{projectsByStatus.en_ejecucion}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs font-medium text-slate-500 uppercase">Finalizados</p>
             <p className="text-2xl font-bold text-slate-600 mt-1">{projectsByStatus.finalizado}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase">Atrasados</p>
-            <p className="text-2xl font-bold text-red-600 mt-1">{overdueProjects}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
@@ -198,9 +197,12 @@ export default function Projects() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="propuesto">Propuesto</SelectItem>
-                <SelectItem value="activo">Activo</SelectItem>
-                <SelectItem value="en_pausa">En Pausa</SelectItem>
+                <SelectItem value="borrador">Borrador</SelectItem>
+                <SelectItem value="en_presupuestacion">En Presupuestación</SelectItem>
+                <SelectItem value="pendiente_aprobacion">Pendiente Aprobación</SelectItem>
+                <SelectItem value="aprobado">Aprobado</SelectItem>
+                <SelectItem value="rechazado">Rechazado</SelectItem>
+                <SelectItem value="en_ejecucion">En Ejecución</SelectItem>
                 <SelectItem value="finalizado">Finalizado</SelectItem>
                 <SelectItem value="cancelado">Cancelado</SelectItem>
               </SelectContent>

@@ -11,14 +11,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Edit, Trash2, CheckSquare, Clock, User, Flag, X } from "lucide-react";
+import { Plus, Edit, Trash2, CheckSquare, Clock, User, Flag, X, AlertTriangle } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
 
-export default function ProjectTasksTab({ projectId, phases }) {
+export default function ProjectTasksTab({ projectId, phases, projectStatus }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
+  
+  const canEditTasks = ['aprobado', 'en_ejecucion'].includes(projectStatus);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -173,6 +175,20 @@ export default function ProjectTasksTab({ projectId, phases }) {
 
   return (
     <div className="space-y-4">
+      {!canEditTasks && (
+        <Card className="border-2 border-amber-200 bg-amber-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <div>
+                <p className="text-sm font-medium text-amber-900">Proyecto no habilitado para tareas</p>
+                <p className="text-xs text-amber-700">El proyecto debe estar aprobado para crear y gestionar tareas operativas.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       <div className="flex items-center justify-between">
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-48">
@@ -187,7 +203,11 @@ export default function ProjectTasksTab({ projectId, phases }) {
           </SelectContent>
         </Select>
 
-        <Button onClick={() => handleOpenDialog()} className="bg-blue-600 hover:bg-blue-700">
+        <Button 
+          onClick={() => handleOpenDialog()} 
+          className="bg-blue-600 hover:bg-blue-700"
+          disabled={!canEditTasks}
+        >
           <Plus className="h-4 w-4 mr-2" />
           Nueva Tarea
         </Button>
@@ -270,12 +290,18 @@ export default function ProjectTasksTab({ projectId, phases }) {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(task)}>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleOpenDialog(task)}
+                        disabled={!canEditTasks}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button 
                         variant="ghost" 
                         size="icon"
+                        disabled={!canEditTasks}
                         onClick={() => {
                           if (confirm('¿Eliminar esta tarea?')) {
                             deleteTaskMutation.mutate(task.id);

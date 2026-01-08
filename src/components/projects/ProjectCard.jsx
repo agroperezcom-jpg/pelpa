@@ -18,17 +18,19 @@ export default function ProjectCard({ project, onClick }) {
   };
 
   const statusColors = {
-    propuesto: "bg-purple-100 text-purple-700",
-    activo: "bg-green-100 text-green-700",
-    en_pausa: "bg-amber-100 text-amber-700",
+    borrador: "bg-slate-100 text-slate-700",
+    en_presupuestacion: "bg-blue-100 text-blue-700",
+    pendiente_aprobacion: "bg-amber-100 text-amber-700",
+    aprobado: "bg-green-100 text-green-700",
+    rechazado: "bg-red-100 text-red-700",
+    en_ejecucion: "bg-purple-100 text-purple-700",
     finalizado: "bg-slate-100 text-slate-700",
     cancelado: "bg-red-100 text-red-700"
   };
 
   const isOverdue = project.estimated_end_date && 
     new Date(project.estimated_end_date) < new Date() && 
-    project.status !== "finalizado" && 
-    project.status !== "cancelado";
+    !['finalizado', 'cancelado', 'borrador', 'en_presupuestacion', 'pendiente_aprobacion', 'rechazado'].includes(project.status);
 
   const daysRemaining = project.estimated_end_date 
     ? differenceInDays(new Date(project.estimated_end_date), new Date())
