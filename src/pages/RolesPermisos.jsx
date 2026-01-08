@@ -365,145 +365,160 @@ export default function RolesPermisos() {
 
   return (
     <PermissionGuard modulo="usuarios" accion="ADMIN">
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <Shield className="h-6 w-6 text-primary" />
-              Roles y Permisos
-            </h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Gestión de accesos y control de seguridad del sistema
-            </p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        {/* Header */}
+        <div className="border-b border-slate-200 bg-white sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
+            <div className="flex items-start justify-between gap-6">
+              <div>
+                <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+                  <div className="p-2 bg-slate-100 rounded-lg">
+                    <Shield className="h-6 w-6 text-slate-700" />
+                  </div>
+                  Roles y Permisos
+                </h1>
+                <p className="text-slate-500 text-sm mt-2">
+                  Gestión centralizada de accesos y control de seguridad
+                </p>
+              </div>
+              <Button onClick={() => handleOpenDialog()} className="bg-slate-700 hover:bg-slate-800 text-white whitespace-nowrap mt-2">
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Rol
+              </Button>
+            </div>
           </div>
-          <Button onClick={() => handleOpenDialog()} className="bg-primary hover:bg-[hsl(var(--primary-hover))] w-full sm:w-auto whitespace-nowrap">
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo Rol
-          </Button>
         </div>
 
-        <Tabs defaultValue="roles" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="roles">Roles</TabsTrigger>
-            <TabsTrigger value="usuarios">Usuarios</TabsTrigger>
-          </TabsList>
+        {/* Content */}
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
+          <Tabs defaultValue="roles" className="space-y-8">
+            <div className="flex gap-2 border-b border-slate-200">
+              <TabsList className="bg-transparent border-0 gap-8">
+                <TabsTrigger value="roles" className="relative text-base font-medium text-slate-600 hover:text-slate-900 border-0 pb-3 px-0 data-[state=active]:bg-transparent data-[state=active]:text-slate-900 data-[state=active]:border-b-2 data-[state=active]:border-slate-900">
+                  Roles
+                </TabsTrigger>
+                <TabsTrigger value="usuarios" className="relative text-base font-medium text-slate-600 hover:text-slate-900 border-0 pb-3 px-0 data-[state=active]:bg-transparent data-[state=active]:text-slate-900 data-[state=active]:border-b-2 data-[state=active]:border-slate-900">
+                  Usuarios
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-          <TabsContent value="roles" className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
-              {roles.map(rol => (
-                <Card key={rol.id} className="border-0 shadow-sm">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{rol.nombre}</CardTitle>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {rol.descripcion || "Sin descripción"}
-                        </p>
+            <TabsContent value="roles" className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {roles.map(rol => (
+                  <Card key={rol.id} className="border border-slate-200 shadow-sm hover:shadow-md transition-shadow bg-white rounded-lg overflow-hidden">
+                    <CardHeader className="pb-4 border-b border-slate-100">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <CardTitle className="text-base font-semibold text-slate-900">{rol.nombre}</CardTitle>
+                          <p className="text-sm text-slate-500 mt-1.5 line-clamp-2">
+                            {rol.descripcion || "Sin descripción"}
+                          </p>
+                        </div>
+                        {rol.es_sistema && (
+                          <Badge className="bg-slate-100 text-slate-700 text-xs font-medium">Sistema</Badge>
+                        )}
                       </div>
-                      {rol.es_sistema && (
-                        <Badge variant="outline" className="text-xs">
-                          Sistema
-                        </Badge>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        Usuarios
-                      </span>
-                      <Badge variant="secondary">{getRolUsers(rol.id).length}</Badge>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground flex items-center gap-2">
-                        <Lock className="h-4 w-4" />
-                        Permisos
-                      </span>
-                      <Badge variant="secondary">{getRolPermisosCount(rol.id)}</Badge>
-                    </div>
-                    <div className="flex gap-2 pt-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleOpenPermisos(rol)}
-                        className="flex-1"
-                      >
-                        <Lock className="h-4 w-4 mr-1" />
-                        Permisos
-                      </Button>
-                      {!rol.es_sistema && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleOpenDialog(rol)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          {user?.role === 'admin' && (
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-3 bg-slate-50 rounded-lg">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Users className="h-4 w-4 text-slate-600" />
+                            <span className="text-xs text-slate-600 font-medium">Usuarios</span>
+                          </div>
+                          <p className="text-xl font-bold text-slate-900">{getRolUsers(rol.id).length}</p>
+                        </div>
+                        <div className="p-3 bg-slate-50 rounded-lg">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Lock className="h-4 w-4 text-slate-600" />
+                            <span className="text-xs text-slate-600 font-medium">Permisos</span>
+                          </div>
+                          <p className="text-xl font-bold text-slate-900">{getRolPermisosCount(rol.id)}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleOpenPermisos(rol)}
+                          className="flex-1 text-sm"
+                        >
+                          <Lock className="h-3.5 w-3.5 mr-1.5" />
+                          Configurar
+                        </Button>
+                        {!rol.es_sistema && (
+                          <>
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="text-red-600 hover:text-red-700"
-                              onClick={() => {
-                                setRolToDelete(rol);
-                                setDeleteConfirmOpen(true);
-                              }}
+                              onClick={() => handleOpenDialog(rol)}
+                              className="px-2"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Edit className="h-4 w-4 text-slate-600" />
                             </Button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                            {user?.role === 'admin' && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => {
+                                  setRolToDelete(rol);
+                                  setDeleteConfirmOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
           </TabsContent>
 
-          <TabsContent value="usuarios">
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base">Asignación de Roles</CardTitle>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Asigna roles personalizados a usuarios para controlar su acceso
-                </p>
-              </CardHeader>
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-secondary/50">
-                    <TableHead>Usuario</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Rol Sistema</TableHead>
-                    <TableHead>Rol Personalizado</TableHead>
-                    <TableHead>Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map(user => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.full_name}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{user.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                          {user.role === 'admin' ? 'Administrador' : 'Usuario'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <UserRolSelector user={user} roles={roles} />
-                      </TableCell>
-                      <TableCell>
-                        <UserStatusToggle user={user} />
-                      </TableCell>
+            <TabsContent value="usuarios" className="space-y-4">
+              <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-100">
+                  <p className="text-sm font-medium text-slate-900">Asignación de Roles</p>
+                  <p className="text-xs text-slate-500 mt-1">Asigna roles personalizados a usuarios para controlar su acceso</p>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50 border-b border-slate-200">
+                      <TableHead className="font-semibold text-slate-700 h-12">Usuario</TableHead>
+                      <TableHead className="font-semibold text-slate-700">Email</TableHead>
+                      <TableHead className="font-semibold text-slate-700">Rol Sistema</TableHead>
+                      <TableHead className="font-semibold text-slate-700">Rol Personalizado</TableHead>
+                      <TableHead className="font-semibold text-slate-700 w-16">Estado</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map(user => (
+                      <TableRow key={user.id} className="border-b border-slate-100 hover:bg-slate-50">
+                        <TableCell className="font-medium text-slate-900">{user.full_name}</TableCell>
+                        <TableCell className="text-sm text-slate-600">{user.email}</TableCell>
+                        <TableCell>
+                          <Badge className={user.role === 'admin' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'}>
+                            {user.role === 'admin' ? 'Admin' : 'Usuario'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <UserRolSelector user={user} roles={roles} />
+                        </TableCell>
+                        <TableCell>
+                          <UserStatusToggle user={user} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
 
         {/* Dialog Crear/Editar Rol */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -541,82 +556,89 @@ export default function RolesPermisos() {
 
         {/* Dialog Permisos */}
         <Dialog open={permisosDialogOpen} onOpenChange={setPermisosDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Permisos: {selectedRol?.nombre}
+          <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto p-0">
+            <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-6 py-4">
+              <DialogTitle className="flex items-center gap-3 text-lg">
+                <div className="p-2 bg-slate-100 rounded">
+                  <Shield className="h-5 w-5 text-slate-700" />
+                </div>
+                <div>
+                  <p>Permisos del Rol</p>
+                  <p className="text-sm font-semibold text-slate-900 mt-0.5">{selectedRol?.nombre}</p>
+                </div>
               </DialogTitle>
-            </DialogHeader>
+            </div>
 
-            <div className="space-y-6">
-              {/* Agrupar por categoría */}
+            <div className="px-6 py-6 space-y-8">
               {['Operativa', 'Finanzas', 'Gestión', 'Contactos', 'Análisis', 'Sistema'].map(categoria => {
                 const modulosCategoria = MODULOS.filter(m => m.categoria === categoria);
                 if (modulosCategoria.length === 0) return null;
 
                 return (
-                  <div key={categoria} className="space-y-3">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="h-px flex-1 bg-border"></div>
-                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                  <div key={categoria} className="space-y-4">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-1 h-6 bg-slate-700 rounded-full"></div>
+                      <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">
                         {categoria}
                       </h3>
-                      <div className="h-px flex-1 bg-border"></div>
+                      <div className="h-px flex-1 bg-slate-200"></div>
                     </div>
 
-                    {modulosCategoria.map(modulo => {
-                      const hasAll = ACCIONES.every(a => selectedPermisos[`${modulo.id}_${a.id}`]);
-                      
-                      return (
-                        <Card key={modulo.id} className="border-0 shadow-sm">
-                          <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
+                    <div className="space-y-3">
+                      {modulosCategoria.map(modulo => {
+                        const hasAll = ACCIONES.every(a => selectedPermisos[`${modulo.id}_${a.id}`]);
+
+                        return (
+                          <div key={modulo.id} className="border border-slate-200 rounded-lg overflow-hidden bg-white hover:border-slate-300 transition-colors">
+                            <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
                               <div className="flex items-center gap-3">
                                 <Checkbox
                                   checked={hasAll}
                                   onCheckedChange={(checked) => toggleModuloCompleto(modulo.id, checked)}
                                 />
                                 <div>
-                                  <p className="font-semibold flex items-center gap-2">
+                                  <p className="font-semibold text-slate-900 flex items-center gap-2">
                                     {modulo.nombre}
                                     {modulo.critico && (
-                                      <Badge variant="destructive" className="text-xs">Crítico</Badge>
+                                      <Badge className="bg-red-100 text-red-700 text-xs font-medium">Crítico</Badge>
                                     )}
                                   </p>
                                 </div>
                               </div>
-                            </div>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
-                              {ACCIONES.map(accion => (
-                                <div key={accion.id} className="flex items-start gap-2">
-                                  <Checkbox
-                                    id={`${modulo.id}_${accion.id}`}
-                                    checked={selectedPermisos[`${modulo.id}_${accion.id}`] || false}
-                                    onCheckedChange={() => togglePermiso(modulo.id, accion.id)}
-                                  />
-                                  <label
-                                    htmlFor={`${modulo.id}_${accion.id}`}
-                                    className="text-sm cursor-pointer"
-                                  >
-                                    <div className="font-medium">{accion.nombre}</div>
-                                    <div className="text-xs text-muted-foreground">{accion.desc}</div>
-                                  </label>
+                              {hasAll && (
+                                <div className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
+                                  Todo acceso
                                 </div>
-                              ))}
+                              )}
                             </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
+                            <div className="px-4 py-4">
+                              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                                {ACCIONES.map(accion => (
+                                  <label key={accion.id} className="flex items-start gap-2.5 cursor-pointer group">
+                                    <Checkbox
+                                      id={`${modulo.id}_${accion.id}`}
+                                      checked={selectedPermisos[`${modulo.id}_${accion.id}`] || false}
+                                      onCheckedChange={() => togglePermiso(modulo.id, accion.id)}
+                                      className="mt-1"
+                                    />
+                                    <div className="flex-1">
+                                      <div className="font-medium text-slate-900 text-sm">{accion.nombre}</div>
+                                      <div className="text-xs text-slate-500 group-hover:text-slate-600 transition-colors">{accion.desc}</div>
+                                    </div>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })}
             </div>
 
-            <DialogFooter>
+            <div className="sticky bottom-0 bg-white border-t border-slate-200 px-6 py-4 flex justify-end gap-3">
               <Button variant="outline" onClick={() => setPermisosDialogOpen(false)}>
                 Cancelar
               </Button>
@@ -626,12 +648,12 @@ export default function RolesPermisos() {
                   permisos: selectedPermisos 
                 })}
                 disabled={savePermisosMutation.isPending || !selectedRol}
-                className="bg-primary hover:bg-[hsl(var(--primary-hover))]"
+                className="bg-slate-700 hover:bg-slate-800 text-white"
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 {savePermisosMutation.isPending ? "Guardando..." : "Guardar permisos"}
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
