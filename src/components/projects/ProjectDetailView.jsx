@@ -19,6 +19,7 @@ import ProjectMilestonesTab from "./ProjectMilestonesTab";
 import ProjectDocumentsTab from "./ProjectDocumentsTab";
 import ProjectActivityTab from "./ProjectActivityTab";
 import ProjectBudgetingTab from "./ProjectBudgetingTab";
+import { AlertTriangle } from "lucide-react";
 
 export default function ProjectDetailView({ project, onBack, onEdit }) {
   const queryClient = useQueryClient();
@@ -77,6 +78,26 @@ export default function ProjectDetailView({ project, onBack, onEdit }) {
           Editar
         </Button>
       </div>
+
+      {/* Alertas de Estado No Operativo */}
+      {!['aprobado', 'en_ejecucion', 'finalizado'].includes(project.status) && (
+        <Card className="border-2 border-amber-200 bg-amber-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <div>
+                <p className="text-sm font-bold text-amber-900">Proyecto no operativo</p>
+                <p className="text-xs text-amber-700">
+                  {project.status === 'en_presupuestacion' && 'Completá la presupuestación y enviá a aprobación para habilitar tareas y fases.'}
+                  {project.status === 'pendiente_aprobacion' && 'Esperando aprobación ejecutiva del presupuesto.'}
+                  {project.status === 'rechazado' && 'Presupuesto rechazado. Revisá observaciones y ajustá la propuesta.'}
+                  {project.status === 'borrador' && 'Proyecto en borrador. Avanzá a presupuestación.'}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid lg:grid-cols-4 gap-4">
         <Card className="border-0 shadow-sm" style={{ borderLeft: `4px solid ${project.color}` }}>

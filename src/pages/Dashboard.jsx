@@ -95,7 +95,10 @@ export default function Dashboard() {
 
   const activityChartData = last30Days.map(date => {
     const dayStr = format(date, 'yyyy-MM-dd');
-    const dayProjects = projects.filter(p => p.created_date?.startsWith(dayStr));
+    const dayProjects = projects.filter(p => 
+      p.created_date?.startsWith(dayStr) && 
+      ['aprobado', 'en_ejecucion', 'finalizado'].includes(p.status)
+    );
     return {
       name: format(date, 'd', { locale: es }),
       date: format(date, 'd MMM', { locale: es }),

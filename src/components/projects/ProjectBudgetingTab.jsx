@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   DollarSign, Plus, CheckCircle, XCircle, Edit, FileText, AlertTriangle,
-  TrendingUp, Users, Package, Clock, Send
+  TrendingUp, Users, Package, Clock, Send, Trash2
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -35,9 +35,12 @@ export default function ProjectBudgetingTab({ projectId, projectStatus }) {
       costo_hora: "",
       total: 0
     },
+    costos_por_fase: [],
+    costos_externos: [],
     margen_esperado: "",
     observaciones: "",
-    moneda: "ARS"
+    moneda: "ARS",
+    umbral_alerta_desviacion: 10
   });
 
   const queryClient = useQueryClient();
@@ -199,11 +202,35 @@ export default function ProjectBudgetingTab({ projectId, projectStatus }) {
         costos_fijos: budget.costos_fijos || "",
         costos_variables: budget.costos_variables || "",
         recursos_humanos: budget.recursos_humanos || { horas_estimadas: "", costo_hora: "", total: 0 },
+        costos_por_fase: budget.costos_por_fase || [],
+        costos_externos: budget.costos_externos || [],
         margen_esperado: budget.margen_esperado || "",
         observaciones: budget.observaciones || "",
-        moneda: budget.moneda || "ARS"
+        moneda: budget.moneda || "ARS",
+        umbral_alerta_desviacion: budget.umbral_alerta_desviacion || 10
       });
       setEditingBudget(budget);
+    } else {
+      // Inicializar con fases existentes
+      const costosPorFase = phases.map(p => ({
+        phase_id: p.id,
+        phase_name: p.name,
+        costo_estimado: 0,
+        costo_real: 0
+      }));
+      
+      setFormData({
+        version_name: "",
+        costos_fijos: "",
+        costos_variables: "",
+        recursos_humanos: { horas_estimadas: "", costo_hora: "", total: 0 },
+        costos_por_fase: costosPorFase,
+        costos_externos: [],
+        margen_esperado: "",
+        observaciones: "",
+        moneda: "ARS",
+        umbral_alerta_desviacion: 10
+      });
     }
     setIsDialogOpen(true);
   };
@@ -216,7 +243,11 @@ export default function ProjectBudgetingTab({ projectId, projectStatus }) {
     const horasEstimadas = parseFloat(formData.recursos_humanos.horas_estimadas) || 0;
     const costoHora = parseFloat(formData.recursos_humanos.costo_hora) || 0;
     const totalRecursosHumanos = horasEstimadas * costoHora;
-    const totalCostos = costosFijos + costosVariables + totalRecursosHumanos;
+    
+    const totalCostosFases = formData.costos_por_fase.reduce((sum, f) => sum + (parseFloat(f.costo_estimado) || 0), 0);
+    const totalCostosExternos = formData.costos_externos.reduce((sum, c) => sum + (parseFloat(c.costo_estimado) || 0), 0);
+    
+    const totalCostos = costosFijos + costosVariables + totalRecursosHumanos + totalCostosFases + totalCostosExternos;
     const margen = parseFloat(formData.margen_esperado) || 0;
     const totalPresupuestado = totalCostos * (1 + margen / 100);
 
@@ -226,12 +257,17 @@ export default function ProjectBudgetingTab({ projectId, projectStatus }) {
       costos_variables: costosVariables,
       recursos_humanos: {
         horas_estimadas: horasEstimadas,
+        horas_reales: 0,
         costo_hora: costoHora,
-        total: totalRecursosHumanos
+        total_estimado: totalRecursosHumanos,
+        total_real: 0
       },
       margen_esperado: margen,
-      total_costos: totalCostos,
-      total_presupuestado: totalPresupuestado
+      total_costos_estimados: totalCostos,
+      total_costos_reales: 0,
+      total_presupuestado: totalPresupuestado,
+      desviacion_porcentaje: 0,
+      umbral_alerta_desviacion: parseFloat(formData.umbral_alerta_desviacion) || 10
     };
 
     if (editingBudget) {
@@ -413,7 +449,7 @@ export default function ProjectBudgetingTab({ projectId, projectStatus }) {
                       <div>
                         <p className="text-xs text-slate-500">Total Costos</p>
                         <p className="text-sm font-bold text-slate-700">
-                          ${budget.total_costos?.toLocaleString()}
+                          ${budget.total_costos_estimados?.toLocaleString()}
                         </p>
                       </div>
                       <div>
@@ -626,6 +662,118 @@ export default function ProjectBudgetingTab({ projectId, projectStatus }) {
               </div>
             </div>
 
+            {/* Distribución por Fases */}
+            {phases.length > 0 && (
+              <div className="border rounded-lg p-4 space-y-3 bg-slate-50">
+                <Label className="text-sm font-semibold">Distribución por Fase (opcional)</Label>
+                <div className="space-y-2">
+                  {formData.costos_por_fase.map((fase, idx) => (
+                    <div key={idx} className="grid grid-cols-3 gap-2 items-center">
+                      <p className="text-sm font-medium text-slate-700">{fase.phase_name}</p>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={fase.costo_estimado}
+                        onChange={(e) => {
+                          const newFases = [...formData.costos_por_fase];
+                          newFases[idx].costo_estimado = parseFloat(e.target.value) || 0;
+                          setFormData({ ...formData, costos_por_fase: newFases });
+                        }}
+                        placeholder="Costo estimado"
+                      />
+                      <p className="text-xs text-slate-500">
+                        ${(parseFloat(fase.costo_estimado) || 0).toLocaleString()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Costos Externos */}
+            <div className="border rounded-lg p-4 space-y-3 bg-slate-50">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold">Costos Externos</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      costos_externos: [
+                        ...formData.costos_externos,
+                        { concepto: "", proveedor: "", costo_estimado: 0, costo_real: 0 }
+                      ]
+                    });
+                  }}
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Agregar
+                </Button>
+              </div>
+              {formData.costos_externos.map((costo, idx) => (
+                <div key={idx} className="grid grid-cols-4 gap-2 items-start">
+                  <Input
+                    placeholder="Concepto"
+                    value={costo.concepto}
+                    onChange={(e) => {
+                      const newCostos = [...formData.costos_externos];
+                      newCostos[idx].concepto = e.target.value;
+                      setFormData({ ...formData, costos_externos: newCostos });
+                    }}
+                  />
+                  <Input
+                    placeholder="Proveedor"
+                    value={costo.proveedor}
+                    onChange={(e) => {
+                      const newCostos = [...formData.costos_externos];
+                      newCostos[idx].proveedor = e.target.value;
+                      setFormData({ ...formData, costos_externos: newCostos });
+                    }}
+                  />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="Costo"
+                    value={costo.costo_estimado}
+                    onChange={(e) => {
+                      const newCostos = [...formData.costos_externos];
+                      newCostos[idx].costo_estimado = parseFloat(e.target.value) || 0;
+                      setFormData({ ...formData, costos_externos: newCostos });
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        costos_externos: formData.costos_externos.filter((_, i) => i !== idx)
+                      });
+                    }}
+                  >
+                    <Trash2 className="h-3 w-3 text-red-500" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Umbral de Alerta (%)</Label>
+                <Input
+                  type="number"
+                  step="1"
+                  value={formData.umbral_alerta_desviacion}
+                  onChange={(e) => setFormData({ ...formData, umbral_alerta_desviacion: e.target.value })}
+                  placeholder="10"
+                />
+                <p className="text-xs text-slate-500">Alerta si la desviación supera este %</p>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label>Observaciones</Label>
               <Textarea
@@ -644,7 +792,9 @@ export default function ProjectBudgetingTab({ projectId, projectStatus }) {
                     ${(
                       (parseFloat(formData.costos_fijos) || 0) +
                       (parseFloat(formData.costos_variables) || 0) +
-                      ((parseFloat(formData.recursos_humanos.horas_estimadas) || 0) * (parseFloat(formData.recursos_humanos.costo_hora) || 0))
+                      ((parseFloat(formData.recursos_humanos.horas_estimadas) || 0) * (parseFloat(formData.recursos_humanos.costo_hora) || 0)) +
+                      formData.costos_por_fase.reduce((sum, f) => sum + (parseFloat(f.costo_estimado) || 0), 0) +
+                      formData.costos_externos.reduce((sum, c) => sum + (parseFloat(c.costo_estimado) || 0), 0)
                     ).toLocaleString()}
                   </p>
                 </div>
@@ -654,7 +804,9 @@ export default function ProjectBudgetingTab({ projectId, projectStatus }) {
                     ${(
                       ((parseFloat(formData.costos_fijos) || 0) +
                       (parseFloat(formData.costos_variables) || 0) +
-                      ((parseFloat(formData.recursos_humanos.horas_estimadas) || 0) * (parseFloat(formData.recursos_humanos.costo_hora) || 0))) *
+                      ((parseFloat(formData.recursos_humanos.horas_estimadas) || 0) * (parseFloat(formData.recursos_humanos.costo_hora) || 0)) +
+                      formData.costos_por_fase.reduce((sum, f) => sum + (parseFloat(f.costo_estimado) || 0), 0) +
+                      formData.costos_externos.reduce((sum, c) => sum + (parseFloat(c.costo_estimado) || 0), 0)) *
                       (1 + (parseFloat(formData.margen_esperado) || 0) / 100)
                     ).toLocaleString()}
                   </p>

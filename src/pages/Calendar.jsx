@@ -127,10 +127,11 @@ export default function Calendar() {
   const getAllEvents = () => {
     const events = [];
 
-    // Projects
+    // Projects (solo aprobados y en ejecución)
     if (layers.projects) {
       projects.forEach(project => {
-        if (project.start_date || project.estimated_end_date) {
+        const isOperational = ['aprobado', 'en_ejecucion', 'finalizado'].includes(project.status);
+        if ((project.start_date || project.estimated_end_date) && isOperational) {
           const matchesProject = selectedProject === "all" || project.id === selectedProject;
           const matchesUser = selectedUser === "all" || 
             project.responsible_email === selectedUser ||
@@ -290,8 +291,7 @@ export default function Calendar() {
   const overdueProjects = projects.filter(p => 
     p.estimated_end_date && 
     new Date(p.estimated_end_date) < today && 
-    p.status !== "finalizado" && 
-    p.status !== "cancelado"
+    ['aprobado', 'en_ejecucion'].includes(p.status)
   );
 
   const overdueTasks = tasks.filter(t => 
@@ -444,9 +444,9 @@ export default function Calendar() {
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase">Proyectos activos</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase">Proyectos en ejecución</p>
             <p className="text-2xl font-bold text-blue-600 mt-1">
-              {projects.filter(p => p.status === "activo").length}
+              {projects.filter(p => ['aprobado', 'en_ejecucion'].includes(p.status)).length}
             </p>
           </CardContent>
         </Card>
