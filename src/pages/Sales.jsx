@@ -1160,6 +1160,16 @@ export default function Sales() {
 
               <div className="space-y-3">
                 <div className="space-y-1">
+                  <Label className="text-xs">Notas/Observaciones</Label>
+                  <textarea
+                    value={currentSale.notes || ""}
+                    onChange={(e) => setCurrentSale({ ...currentSale, notes: e.target.value })}
+                    placeholder="Agregar notas sobre la venta..."
+                    className="w-full h-16 px-3 py-2 text-sm rounded-lg border border-slate-300 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
                   <Label className="text-xs">Lista de Precios</Label>
                   <Select 
                     value={currentSale.tipo_lista} 
