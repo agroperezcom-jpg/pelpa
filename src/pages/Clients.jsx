@@ -48,15 +48,18 @@ import {
   Download,
   Calendar,
   DollarSign,
-  AlertCircle
+  AlertCircle,
+  Upload
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
+import ClientsCsvImporter from "../components/clients/ClientsCsvImporter";
 
 export default function Clients() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isImporterOpen, setIsImporterOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -228,6 +231,10 @@ export default function Clients() {
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
+          <Button variant="outline" onClick={() => setIsImporterOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Importar
+          </Button>
           <Button onClick={() => handleOpenDialog()} className="bg-blue-600 hover:bg-blue-700">
             <Plus className="h-4 w-4 mr-2" />
             Nuevo Cliente
@@ -371,6 +378,13 @@ export default function Clients() {
           </Table>
         </div>
       </Card>
+
+      {/* CSV Importer */}
+      <ClientsCsvImporter
+        isOpen={isImporterOpen}
+        onClose={() => setIsImporterOpen(false)}
+        clients={clients}
+      />
 
       {/* Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
