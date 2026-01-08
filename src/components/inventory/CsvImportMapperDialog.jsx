@@ -125,20 +125,22 @@ export default function CsvImportMapperDialog({
                     throw new Error(`El nombre del producto es obligatorio`);
                   }
 
-          // Calcular precios según tipo artículo
-          const tipo = tiposArticulo.find(t => t.id === product.tipo_articulo_id);
-          if (tipo) {
-            const costo = product.costo_unitario;
+          // Calcular precios según tipo artículo si está disponible
+          if (product.tipo_articulo_id && product.costo_unitario) {
+            const tipo = tiposArticulo.find(t => t.id === product.tipo_articulo_id);
+            if (tipo) {
+              const costo = product.costo_unitario;
 
-            // Minorista
-            product.precio_minimo_minorista = costo * (1 + tipo.margen_minorista);
-            product.precio_lista_minorista = product.precio_minimo_minorista * 
-              (1 + tipo.descuento_efectivo);
+              // Minorista
+              product.precio_minimo_minorista = costo * (1 + tipo.margen_minorista);
+              product.precio_lista_minorista = product.precio_minimo_minorista * 
+                (1 + tipo.descuento_efectivo);
 
-            // Mayorista
-            product.precio_minimo_mayorista = costo * (1 + tipo.margen_mayorista);
-            product.precio_lista_mayorista = product.precio_minimo_mayorista * 
-              (1 + tipo.descuento_efectivo);
+              // Mayorista
+              product.precio_minimo_mayorista = costo * (1 + tipo.margen_mayorista);
+              product.precio_lista_mayorista = product.precio_minimo_mayorista * 
+                (1 + tipo.descuento_efectivo);
+            }
           }
 
           // Asignar defaults
@@ -146,6 +148,14 @@ export default function CsvImportMapperDialog({
           product.category = product.category || "otros";
           product.stock = product.stock || 0;
           product.min_stock = product.min_stock || 5;
+          // Valores por defecto si faltan campos críticos
+          if (!product.costo_unitario) {
+            product.costo_unitario = 0;
+          }
+          if (!product.tipo_articulo_id) {
+            product.tipo_articulo_id = tiposArticulo[0]?.id || "";
+            product.tipo_articulo_nombre = tiposArticulo[0]?.nombre || "Sin especificar";
+          }
           
           transformedProducts.push(product);
         }
