@@ -55,7 +55,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../utils";
-import CsvImportMapperDialog from "../components/inventory/CsvImportMapperDialog";
+import AdvancedCsvImporter from "../components/inventory/AdvancedCsvImporter";
 
 const CATEGORIES = [
   { value: "libros", label: "Libros" },
