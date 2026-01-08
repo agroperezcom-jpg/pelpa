@@ -452,7 +452,7 @@ export default function Sales() {
       if (talonario.permite_reutilizar && talonario.numeros_liberados?.length > 0) {
         // Usar el número liberado más bajo
         numeroAsignado = Math.min(...talonario.numeros_liberados);
-        numeroComprobante = `${talonario.prefijo}-${String(numeroAsignado).padStart(6, '0')}`;
+        numeroComprobante = `${talonario.prefijo}-${String(numeroAsignado).padStart(8, '0')}`;
         
         // Remover el número de la lista de liberados
         const nuevosLiberados = talonario.numeros_liberados.filter(n => n !== numeroAsignado);
@@ -468,7 +468,7 @@ export default function Sales() {
           throw new Error(`El talonario "${talonario.nombre}" ha alcanzado su límite de numeración`);
         }
 
-        numeroComprobante = `${talonario.prefijo}-${String(numeroAsignado).padStart(6, '0')}`;
+        numeroComprobante = `${talonario.prefijo}-${String(numeroAsignado).padStart(8, '0')}`;
 
         // Actualizar último número usado
         await base44.entities.Talonario.update(talonario.id, {
@@ -1258,7 +1258,7 @@ export default function Sales() {
                         .filter(t => t.activo && t.tipo_comprobante === (currentSale.genera_iva ? "B" : "X"))
                         .map(t => (
                           <SelectItem key={t.id} value={t.id}>
-                            {t.nombre} ({t.prefijo}-{String(t.ultimo_numero_usado + 1).padStart(6, '0')})
+                            {t.nombre} ({t.prefijo}-{String(t.ultimo_numero_usado + 1).padStart(8, '0')})
                           </SelectItem>
                         ))}
                     </SelectContent>
