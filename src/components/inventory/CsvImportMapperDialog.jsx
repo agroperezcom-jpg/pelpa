@@ -170,15 +170,10 @@ export default function CsvImportMapperDialog({
   };
 
   const handleConfirm = () => {
-    if (!validateMapping()) return;
+    validateMapping();
 
     const transformedData = transformData(importOnlyValid);
     
-    if (transformedData.length === 0 && !importOnlyValid) {
-      setErrors(["No hay datos válidos para importar"]);
-      return;
-    }
-
     if (transformedData.length === 0) {
       setErrors(["No hay datos válidos para importar"]);
       return;
