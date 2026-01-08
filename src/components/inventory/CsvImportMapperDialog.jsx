@@ -91,86 +91,95 @@ export default function CsvImportMapperDialog({
     return true;
   };
 
-  // Transformar datos según mapeo
-  const transformData = () => {
-    const transformedProducts = rows.map((row, rowIndex) => {
-      const product = {};
-      let hasData = false;
+  // Transformar datos según mapeo con manejo de errores por fila
+  const transformData = (skipErrors = false) => {
+    const transformedProducts = [];
+    const newRowErrors = {};
 
-      headers.forEach((header, colIndex) => {
-        const fieldKey = fieldMapping[header];
-        if (!fieldKey) return;
+    rows.forEach((row, rowIndex) => {
+      try {
+        const product = {};
+        let hasData = false;
 
-        const value = row[colIndex];
-        if (!value) return;
+        headers.forEach((header, colIndex) => {
+          const fieldKey = fieldMapping[header];
+          if (!fieldKey) return;
 
-        hasData = true;
+          const value = row[colIndex];
+          if (!value) return;
 
-        // Buscar el tipo de dato del campo
-        const fieldDef = PRODUCT_FIELDS.find(f => f.key === fieldKey);
+          hasData = true;
 
-        if (fieldKey === "tipo_articulo_nombre") {
-          // Buscar el ID del tipo artículo por nombre
-          const tipo = tiposArticulo.find(t => 
-            t.nombre?.toLowerCase() === value.toString().toLowerCase()
-          );
-          if (!tipo) {
-            throw new Error(
-              `Fila ${rowIndex + 2}: Tipo Artículo "${value}" no encontrado en el sistema`
+          // Buscar el tipo de dato del campo
+          const fieldDef = PRODUCT_FIELDS.find(f => f.key === fieldKey);
+
+          if (fieldKey === "tipo_articulo_nombre") {
+            // Buscar el ID del tipo artículo por nombre
+            const tipo = tiposArticulo.find(t => 
+              t.nombre?.toLowerCase() === value.toString().toLowerCase()
             );
+            if (!tipo) {
+              throw new Error(`Tipo Artículo "${value}" no encontrado en el sistema`);
+            }
+            product.tipo_articulo_id = tipo.id;
+            product.tipo_articulo_nombre = tipo.nombre;
+          } else if (fieldDef?.type === "number") {
+            const num = parseFloat(value);
+            if (isNaN(num)) {
+              throw new Error(`Campo "${fieldDef.label}" debe ser un número, recibió "${value}"`);
+            }
+            product[fieldKey] = num;
+          } else {
+            product[fieldKey] = value.toString();
           }
-          product.tipo_articulo_id = tipo.id;
-          product.tipo_articulo_nombre = tipo.nombre;
-        } else if (fieldDef?.type === "number") {
-          const num = parseFloat(value);
-          if (isNaN(num)) {
-            throw new Error(
-              `Fila ${rowIndex + 2}: Campo "${fieldDef.label}" debe ser un número, recibió "${value}"`
-            );
+        });
+
+        // Validar que tenga al menos nombre y costo
+        if (hasData) {
+          if (!product.name) {
+            throw new Error(`El nombre del producto es obligatorio`);
           }
-          product[fieldKey] = num;
-        } else {
-          product[fieldKey] = value.toString();
-        }
-      });
+          if (product.costo_unitario === undefined || product.costo_unitario === null) {
+            throw new Error(`El costo unitario es obligatorio`);
+          }
+          if (!product.tipo_articulo_id) {
+            throw new Error(`El tipo artículo es obligatorio`);
+          }
 
-      // Validar que tenga al menos nombre y costo
-      if (hasData) {
-        if (!product.name) {
-          throw new Error(`Fila ${rowIndex + 2}: El nombre del producto es obligatorio`);
-        }
-        if (product.costo_unitario === undefined || product.costo_unitario === null) {
-          throw new Error(`Fila ${rowIndex + 2}: El costo unitario es obligatorio`);
-        }
-        if (!product.tipo_articulo_id) {
-          throw new Error(`Fila ${rowIndex + 2}: El tipo artículo es obligatorio`);
-        }
+          // Calcular precios según tipo artículo
+          const tipo = tiposArticulo.find(t => t.id === product.tipo_articulo_id);
+          if (tipo) {
+            const costo = product.costo_unitario;
 
-        // Calcular precios según tipo artículo
-        const tipo = tiposArticulo.find(t => t.id === product.tipo_articulo_id);
-        if (tipo) {
-          const costo = product.costo_unitario;
+            // Minorista
+            product.precio_minimo_minorista = costo * (1 + tipo.margen_minorista);
+            product.precio_lista_minorista = product.precio_minimo_minorista * 
+              (1 + tipo.descuento_efectivo);
 
-          // Minorista
-          product.precio_minimo_minorista = costo * (1 + tipo.margen_minorista);
-          product.precio_lista_minorista = product.precio_minimo_minorista * 
-            (1 + tipo.descuento_efectivo);
+            // Mayorista
+            product.precio_minimo_mayorista = costo * (1 + tipo.margen_mayorista);
+            product.precio_lista_mayorista = product.precio_minimo_mayorista * 
+              (1 + tipo.descuento_efectivo);
+          }
 
-          // Mayorista
-          product.precio_minimo_mayorista = costo * (1 + tipo.margen_mayorista);
-          product.precio_lista_mayorista = product.precio_minimo_mayorista * 
-            (1 + tipo.descuento_efectivo);
+          // Asignar defaults
+          product.is_active = true;
+          product.category = product.category || "otros";
+          product.stock = product.stock || 0;
+          product.min_stock = product.min_stock || 5;
+          
+          transformedProducts.push(product);
         }
-
-        // Asignar defaults
-        product.is_active = true;
-        product.category = product.category || "otros";
-        product.stock = product.stock || 0;
-        product.min_stock = product.min_stock || 5;
+      } catch (error) {
+        newRowErrors[rowIndex + 2] = error.message;
       }
+    });
 
-      return hasData ? product : null;
-    }).filter(Boolean);
+    setRowErrors(newRowErrors);
+
+    if (!skipErrors && Object.keys(newRowErrors).length > 0) {
+      return [];
+    }
 
     return transformedProducts;
   };
