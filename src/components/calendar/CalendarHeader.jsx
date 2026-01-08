@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Settings } from "lucide-react";
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -11,7 +11,9 @@ export default function CalendarHeader({
   viewMode, 
   setViewMode,
   onCreateEvent,
-  filteredEventsCount 
+  filteredEventsCount,
+  customDaysCount,
+  onCustomRangeClick
 }) {
   const handlePrevious = () => {
     if (viewMode === "month") {
@@ -20,6 +22,8 @@ export default function CalendarHeader({
       setCurrentDate(subWeeks(currentDate, 1));
     } else if (viewMode === "day") {
       setCurrentDate(subDays(currentDate, 1));
+    } else if (viewMode === "custom") {
+      setCurrentDate(subDays(currentDate, customDaysCount || 5));
     }
   };
 
@@ -30,6 +34,8 @@ export default function CalendarHeader({
       setCurrentDate(addWeeks(currentDate, 1));
     } else if (viewMode === "day") {
       setCurrentDate(addDays(currentDate, 1));
+    } else if (viewMode === "custom") {
+      setCurrentDate(addDays(currentDate, customDaysCount || 5));
     }
   };
 
@@ -44,6 +50,9 @@ export default function CalendarHeader({
       return `Semana del ${format(currentDate, "d MMM", { locale: es })}`;
     } else if (viewMode === "day") {
       return format(currentDate, "d 'de' MMMM yyyy", { locale: es });
+    } else if (viewMode === "custom") {
+      const endDate = addDays(currentDate, (customDaysCount || 5) - 1);
+      return `${format(currentDate, "d MMM", { locale: es })} - ${format(endDate, "d MMM yyyy", { locale: es })}`;
     }
     return format(currentDate, "MMMM yyyy", { locale: es });
   };
@@ -63,7 +72,7 @@ export default function CalendarHeader({
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 border rounded-lg p-1 bg-white">
+        <div className="flex items-center gap-2 border rounded-lg p-1 bg-card">
           <Button
             variant={viewMode === "day" ? "default" : "ghost"}
             size="sm"
@@ -89,6 +98,14 @@ export default function CalendarHeader({
             Mes
           </Button>
           <Button
+            variant={viewMode === "custom" ? "default" : "ghost"}
+            size="sm"
+            onClick={onCustomRangeClick}
+            className="text-xs"
+          >
+            {viewMode === "custom" ? `${customDaysCount}d` : "Rango"}
+          </Button>
+          <Button
             variant={viewMode === "timeline" ? "default" : "ghost"}
             size="sm"
             onClick={() => setViewMode("timeline")}
@@ -110,13 +127,13 @@ export default function CalendarHeader({
           </Button>
         </div>
 
-        <div className="font-semibold text-slate-800 min-w-[200px] text-center">
+        <div className="font-semibold text-foreground min-w-[200px] text-center">
           {getDateLabel()}
         </div>
 
-        <Button onClick={onCreateEvent} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={onCreateEvent} className="bg-primary hover:bg-[hsl(var(--primary-hover))]">
           <Plus className="h-4 w-4 mr-2" />
-          Nuevo
+          Nueva Tarea
         </Button>
       </div>
     </div>
