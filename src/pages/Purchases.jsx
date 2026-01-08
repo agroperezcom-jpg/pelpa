@@ -59,7 +59,11 @@ export default function Purchases() {
     medio_pago_id: "",
     importe: "",
     banco_id: "",
-    caja_id: ""
+    caja_id: "",
+    es_cheque: false,
+    cheque_numero: "",
+    cheque_banco_id: "",
+    cheque_fecha_vencimiento: ""
   });
   const [retencionIIBB, setRetencionIIBB] = useState({
     aplica: false,
@@ -182,13 +186,42 @@ export default function Purchases() {
         });
       }
 
+      // Registrar cheques propios emitidos
+      for (const pago of pagosData) {
+        if (pago.es_cheque) {
+          const bancoNombre = bancos.find(b => b.id === pago.cheque_banco_id)?.nombre || "";
+
+          await base44.entities.Check.create({
+            tipo_origen: "PROPIO",
+            tipo_soporte: "FISICO",
+            numero_cheque: pago.cheque_numero,
+            banco_id: pago.cheque_banco_id,
+            banco_nombre: bancoNombre,
+            fecha_emision: compraData.fecha,
+            fecha_vencimiento: pago.cheque_fecha_vencimiento || "",
+            importe: pago.importe,
+            estado: "EMITIDO",
+            titular_tipo: "PROVEEDOR",
+            titular_id: compraData.proveedor_id,
+            titular_nombre: compraData.proveedor_nombre,
+            referencia_origen_tipo: "COMPRA",
+            referencia_origen_id: compra.id,
+            usuario_registro: user?.email || "",
+            fecha_ultimo_cambio: new Date().toISOString(),
+            usuario_ultimo_cambio: user?.email || "",
+            observaciones: `Emitido en compra ${compraData.numero_comprobante_proveedor}`
+          });
+        }
+      }
+
       for (const pago of pagosData) {
         await base44.entities.PagoCompra.create({
           compra_id: compra.id,
           ...pago
         });
 
-        await base44.entities.MovimientoTesoreria.create({
+        if (!pago.es_cheque) {
+          await base44.entities.MovimientoTesoreria.create({
           fecha: compraData.fecha,
           tipo: "EGRESO",
           medio_pago_id: pago.medio_pago_id,
@@ -201,21 +234,22 @@ export default function Purchases() {
           referencia_tipo: "compra",
           referencia_id: compra.id,
           observaciones: `Compra ${compraData.numero_comprobante_proveedor} - ${compraData.proveedor_nombre}`
-        });
+          });
 
-        if (pago.banco_id) {
+          if (pago.banco_id) {
           const banco = bancos.find(b => b.id === pago.banco_id);
           await base44.entities.Banco.update(pago.banco_id, {
             saldo_actual: banco.saldo_actual - pago.importe
           });
-        }
-        if (pago.caja_id) {
+          }
+          if (pago.caja_id) {
           const caja = cajas.find(c => c.id === pago.caja_id);
           await base44.entities.Caja.update(pago.caja_id, {
             saldo_actual: caja.saldo_actual - pago.importe
           });
-        }
-      }
+          }
+          }
+          }
 
       // Generar movimiento CC si hay deuda pendiente
       const proveedor = proveedores.find(p => p.id === compraData.proveedor_id);
@@ -265,6 +299,7 @@ export default function Purchases() {
       queryClient.invalidateQueries({ queryKey: ['bancos'] });
       queryClient.invalidateQueries({ queryKey: ['cajas'] });
       queryClient.invalidateQueries({ queryKey: ['retencionesIIBB'] });
+      queryClient.invalidateQueries({ queryKey: ['cheques'] });
       handleCloseDialog();
     },
     onError: (error) => {
@@ -283,7 +318,7 @@ export default function Purchases() {
     setDetalles([]);
     setPagos([]);
     setNuevoDetalle({ producto_id: "", cantidad: "", costo_unitario: "" });
-    setNuevoPago({ medio_pago_id: "", importe: "", banco_id: "", caja_id: "" });
+    setNuevoPago({ medio_pago_id: "", importe: "", banco_id: "", caja_id: "", es_cheque: false, cheque_numero: "", cheque_banco_id: "", cheque_fecha_vencimiento: "" });
     setRetencionIIBB({ aplica: false, importe_retenido: "", numero_comprobante: "" });
     setIsDialogOpen(true);
   };
@@ -1016,36 +1051,105 @@ export default function Purchases() {
 
             <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
               <h4 className="font-medium text-sm text-blue-900">Agregar Pago</h4>
-              <div className="grid grid-cols-12 gap-3">
-                <div className="col-span-4">
-                  <Label className="text-xs">Medio de Pago *</Label>
-                  <Select value={nuevoPago.medio_pago_id} onValueChange={(v) => setNuevoPago({ ...nuevoPago, medio_pago_id: v, banco_id: "", caja_id: "" })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mediosPago.filter(m => m.nombre !== "Cuenta Corriente").map(m => (
-                        <SelectItem key={m.id} value={m.id}>{m.nombre}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
 
-                <div className="col-span-3">
-                  <Label className="text-xs">Importe *</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={nuevoPago.importe}
-                    onChange={(e) => setNuevoPago({ ...nuevoPago, importe: e.target.value })}
-                    placeholder="0.00"
-                  />
-                </div>
+              <div className="flex gap-2 mb-3">
+                <Button
+                  size="sm"
+                  variant={!nuevoPago.es_cheque ? "default" : "outline"}
+                  onClick={() => setNuevoPago({ ...nuevoPago, es_cheque: false })}
+                >
+                  Medio de Pago
+                </Button>
+                <Button
+                  size="sm"
+                  variant={nuevoPago.es_cheque ? "default" : "outline"}
+                  onClick={() => setNuevoPago({ ...nuevoPago, es_cheque: true, medio_pago_id: "" })}
+                  className="bg-orange-600 hover:bg-orange-700"
+                >
+                  <FileText className="h-3 w-3 mr-1" />
+                  Cheque Propio
+                </Button>
+              </div>
 
-                {medioSeleccionado?.requiere_banco && (
+              {!nuevoPago.es_cheque ? (
+                <div className="grid grid-cols-12 gap-3">
+                  <div className="col-span-4">
+                    <Label className="text-xs">Medio de Pago *</Label>
+                    <Select value={nuevoPago.medio_pago_id} onValueChange={(v) => setNuevoPago({ ...nuevoPago, medio_pago_id: v, banco_id: "", caja_id: "" })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mediosPago.filter(m => m.nombre !== "Cuenta Corriente").map(m => (
+                          <SelectItem key={m.id} value={m.id}>{m.nombre}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="col-span-3">
+                    <Label className="text-xs">Importe *</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={nuevoPago.importe}
+                      onChange={(e) => setNuevoPago({ ...nuevoPago, importe: e.target.value })}
+                      placeholder="0.00"
+                    />
+                  </div>
+
+                  {medioSeleccionado?.requiere_banco && (
+                    <div className="col-span-3">
+                      <Label className="text-xs">Banco *</Label>
+                      <Select value={nuevoPago.banco_id} onValueChange={(v) => setNuevoPago({ ...nuevoPago, banco_id: v })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {bancos.map(b => (
+                            <SelectItem key={b.id} value={b.id}>{b.nombre}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {medioSeleccionado?.requiere_caja && (
+                    <div className="col-span-3">
+                      <Label className="text-xs">Caja *</Label>
+                      <Select value={nuevoPago.caja_id} onValueChange={(v) => setNuevoPago({ ...nuevoPago, caja_id: v })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {cajas.map(c => (
+                            <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  <div className={`${medioSeleccionado?.requiere_banco || medioSeleccionado?.requiere_caja ? 'col-span-2' : 'col-span-5'} flex items-end`}>
+                    <Button onClick={agregarPago} className="w-full bg-blue-600 hover:bg-blue-700">
+                      <Plus className="h-4 w-4 mr-1" />
+                      Agregar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-12 gap-3">
+                  <div className="col-span-3">
+                    <Label className="text-xs">Número Cheque *</Label>
+                    <Input
+                      value={nuevoPago.cheque_numero}
+                      onChange={(e) => setNuevoPago({ ...nuevoPago, cheque_numero: e.target.value })}
+                      placeholder="12345678"
+                    />
+                  </div>
                   <div className="col-span-3">
                     <Label className="text-xs">Banco *</Label>
-                    <Select value={nuevoPago.banco_id} onValueChange={(v) => setNuevoPago({ ...nuevoPago, banco_id: v })}>
+                    <Select value={nuevoPago.cheque_banco_id} onValueChange={(v) => setNuevoPago({ ...nuevoPago, cheque_banco_id: v })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccionar" />
                       </SelectTrigger>
@@ -1056,31 +1160,31 @@ export default function Purchases() {
                       </SelectContent>
                     </Select>
                   </div>
-                )}
-
-                {medioSeleccionado?.requiere_caja && (
-                  <div className="col-span-3">
-                    <Label className="text-xs">Caja *</Label>
-                    <Select value={nuevoPago.caja_id} onValueChange={(v) => setNuevoPago({ ...nuevoPago, caja_id: v })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {cajas.map(c => (
-                          <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="col-span-2">
+                    <Label className="text-xs">Vencimiento</Label>
+                    <Input
+                      type="date"
+                      value={nuevoPago.cheque_fecha_vencimiento}
+                      onChange={(e) => setNuevoPago({ ...nuevoPago, cheque_fecha_vencimiento: e.target.value })}
+                    />
                   </div>
-                )}
-
-                <div className={`${medioSeleccionado?.requiere_banco || medioSeleccionado?.requiere_caja ? 'col-span-2' : 'col-span-5'} flex items-end`}>
-                  <Button onClick={agregarPago} className="w-full bg-blue-600 hover:bg-blue-700">
-                    <Plus className="h-4 w-4 mr-1" />
-                    Agregar
-                  </Button>
+                  <div className="col-span-3">
+                    <Label className="text-xs">Importe *</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={nuevoPago.importe}
+                      onChange={(e) => setNuevoPago({ ...nuevoPago, importe: e.target.value })}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="col-span-1 flex items-end">
+                    <Button onClick={agregarPago} className="w-full bg-orange-600 hover:bg-orange-700">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {pagos.length > 0 && (
@@ -1097,11 +1201,17 @@ export default function Purchases() {
                   <TableBody>
                     {pagos.map((pago, idx) => (
                       <TableRow key={idx}>
-                        <TableCell className="font-medium">{pago.medio_pago_nombre}</TableCell>
+                        <TableCell>
+                          <div className="font-medium">{pago.es_cheque ? "Cheque Propio" : pago.medio_pago_nombre}</div>
+                          {pago.es_cheque && (
+                            <div className="text-xs text-orange-600">Nº {pago.cheque_numero}</div>
+                          )}
+                        </TableCell>
                         <TableCell className="text-sm text-slate-600">
-                          {pago.banco_nombre && `🏦 ${pago.banco_nombre}`}
-                          {pago.caja_nombre && `💵 ${pago.caja_nombre}`}
-                          {!pago.banco_nombre && !pago.caja_nombre && "—"}
+                          {pago.es_cheque && pago.cheque_banco_id && bancos.find(b => b.id === pago.cheque_banco_id)?.nombre}
+                          {!pago.es_cheque && pago.banco_nombre && `🏦 ${pago.banco_nombre}`}
+                          {!pago.es_cheque && pago.caja_nombre && `💵 ${pago.caja_nombre}`}
+                          {!pago.es_cheque && !pago.banco_nombre && !pago.caja_nombre && "—"}
                         </TableCell>
                         <TableCell className="text-right font-bold">${pago.importe.toFixed(2)}</TableCell>
                         <TableCell>

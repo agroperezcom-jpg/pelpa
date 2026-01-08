@@ -304,6 +304,34 @@ export default function Sales() {
         }
       }
 
+      // Registrar cheques de terceros recibidos
+      for (const pago of pagos) {
+        if (pago.es_cheque) {
+          const bancoNombre = bancos.find(b => b.id === pago.cheque_banco_id)?.nombre || "";
+          
+          await base44.entities.Check.create({
+            tipo_origen: "TERCERO",
+            tipo_soporte: "FISICO",
+            numero_cheque: pago.cheque_numero,
+            banco_id: pago.cheque_banco_id,
+            banco_nombre: bancoNombre,
+            fecha_emision: format(new Date(), 'yyyy-MM-dd'),
+            fecha_vencimiento: pago.cheque_fecha_vencimiento || "",
+            importe: pago.importe,
+            estado: "EN_CARTERA",
+            titular_tipo: "CLIENTE",
+            titular_id: saleData.client_id || "",
+            titular_nombre: saleData.client_name || "Consumidor Final",
+            referencia_origen_tipo: "VENTA",
+            referencia_origen_id: sale.id,
+            usuario_registro: user?.email || "",
+            fecha_ultimo_cambio: new Date().toISOString(),
+            usuario_ultimo_cambio: user?.email || "",
+            observaciones: `Recibido en venta ${numeroComprobante}`
+          });
+        }
+      }
+
       // Procesar cada pago
       for (const pago of pagos) {
         // Guardar registro de pago
@@ -334,8 +362,8 @@ export default function Sales() {
           await base44.entities.Client.update(saleData.client_id, {
             saldo_cc: nuevoSaldo
           });
-        } else {
-          // Movimiento Tesorería
+        } else if (!pago.es_cheque) {
+          // Movimiento Tesorería (solo si no es cheque)
           await base44.entities.MovimientoTesoreria.create({
             fecha: new Date().toISOString().split('T')[0],
             tipo: "INGRESO",
