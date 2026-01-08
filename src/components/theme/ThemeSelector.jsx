@@ -11,12 +11,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Sun, Moon, Palette, Upload, CheckCircle2, Info } from 'lucide-react';
+import { Sun, Moon, Palette, Upload, CheckCircle2, Info, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+const colorPalettes = [
+  { name: 'Azul Profesional', color: '#2563eb', description: 'Confianza y estabilidad' },
+  { name: 'Verde Moderno', color: '#059669', description: 'Crecimiento y éxito' },
+  { name: 'Púrpura Creativo', color: '#7c3aed', description: 'Innovación y dinamismo' },
+  { name: 'Rojo Energético', color: '#dc2626', description: 'Pasión y urgencia' },
+  { name: 'Ámbar Cálido', color: '#d97706', description: 'Calidez y confianza' },
+  { name: 'Teal Sofisticado', color: '#0891b2', description: 'Equilibrio y calma' },
+  { name: 'Rosa Elegante', color: '#db2777', description: 'Distinción y modernidad' },
+  { name: 'Índigo Profesional', color: '#4f46e5', description: 'Profundidad y autoridad' }
+];
 
 export default function ThemeSelector() {
   const { theme, setTheme, brandColor, setBrandColor, brandIntensity, setBrandIntensity } = useTheme();
-  const [previewColor, setPreviewColor] = useState(brandColor || '#3b82f6');
+  const [previewColor, setPreviewColor] = useState(brandColor || '#2563eb');
+  const [showPalettes, setShowPalettes] = useState(false);
   const fileInputRef = useRef(null);
 
   const themes = [
@@ -30,9 +42,9 @@ export default function ThemeSelector() {
     {
       id: 'dark',
       name: 'Tema Oscuro',
-      description: 'Interfaz sobria y moderna para trabajo nocturno',
+      description: 'Interfaz moderna y elegante optimizada para la noche',
       icon: Moon,
-      preview: 'bg-gradient-to-br from-slate-800 to-slate-900'
+      preview: 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950'
     },
     {
       id: 'brand',
@@ -114,8 +126,8 @@ export default function ThemeSelector() {
         <CardHeader>
           <CardTitle className="text-base">Seleccionar Tema Visual</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-3 gap-4">
+        <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {themes.map((t) => {
               const Icon = t.icon;
               const isActive = theme === t.id;
@@ -197,11 +209,51 @@ export default function ThemeSelector() {
               </div>
             </div>
 
+            {/* Color Palettes */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-yellow-500" />
+                  Paletas de Color Predefinidas
+                </Label>
+                <button
+                  onClick={() => setShowPalettes(!showPalettes)}
+                  className="text-xs text-primary hover:underline"
+                >
+                  {showPalettes ? 'Ocultar' : 'Ver todas'}
+                </button>
+              </div>
+              {showPalettes && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {colorPalettes.map((pal) => (
+                    <button
+                      key={pal.color}
+                      onClick={() => {
+                        setPreviewColor(pal.color);
+                        setBrandColor(pal.color);
+                        setTheme('brand');
+                      }}
+                      className="group flex flex-col gap-2"
+                      title={pal.description}
+                    >
+                      <div 
+                        className="h-16 rounded-lg border-2 border-border/40 group-hover:border-primary/50 transition-all"
+                        style={{ backgroundColor: pal.color }}
+                      />
+                      <p className="text-xs font-medium text-foreground text-center group-hover:text-primary transition-colors">
+                        {pal.name.split(' ')[0]}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Manual Color Picker */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Color Manual</Label>
+              <Label className="text-sm font-medium">Color Personalizado</Label>
               <p className="text-xs text-muted-foreground mb-2">
-                O selecciona un color manualmente
+                Crea tu propio color de marca
               </p>
               <div className="flex gap-3">
                 <div className="relative flex-1">
@@ -209,17 +261,17 @@ export default function ThemeSelector() {
                     type="color"
                     value={previewColor}
                     onChange={handleColorChange}
-                    className="h-12 cursor-pointer"
+                    className="h-12 cursor-pointer rounded-lg"
                   />
                 </div>
                 <Input
                   type="text"
                   value={previewColor}
                   onChange={(e) => setPreviewColor(e.target.value)}
-                  className="flex-1 font-mono"
-                  placeholder="#3b82f6"
+                  className="flex-1 font-mono text-xs"
+                  placeholder="#2563eb"
                 />
-                <Button onClick={handleApplyColor}>
+                <Button onClick={handleApplyColor} className="whitespace-nowrap">
                   Aplicar
                 </Button>
               </div>
@@ -290,7 +342,7 @@ export default function ThemeSelector() {
             setTheme('light');
             setBrandColor(null);
             setBrandIntensity('suave');
-            setPreviewColor('#3b82f6');
+            setPreviewColor('#2563eb');
           }}
           className="text-sm"
         >
