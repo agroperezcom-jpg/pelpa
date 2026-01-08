@@ -149,6 +149,7 @@ const ACCIONES = [
   { id: "ANNUL", nombre: "Anular", desc: "Anular operaciones" },
   { id: "REPORT", nombre: "Reportes", desc: "Generar reportes" },
   { id: "CLOSE_PERIOD", nombre: "Cerrar períodos", desc: "Cerrar períodos fiscales" },
+  { id: "DELETE_ALL", nombre: "Borrar Todo", desc: "Eliminar todos los registros" },
   { id: "ADMIN", nombre: "Administrador", desc: "Control total del módulo" }
 ];
 
