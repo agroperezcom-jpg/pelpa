@@ -2,7 +2,6 @@ import Analytics from './pages/Analytics';
 import Calendar from './pages/Calendar';
 import Cheques from './pages/Cheques';
 import Clients from './pages/Clients';
-import Dashboard from './pages/Dashboard';
 import DashboardEjecutivo from './pages/DashboardEjecutivo';
 import Expenses from './pages/Expenses';
 import Finance from './pages/Finance';
@@ -32,7 +31,6 @@ export const PAGES = {
     "Calendar": Calendar,
     "Cheques": Cheques,
     "Clients": Clients,
-    "Dashboard": Dashboard,
     "DashboardEjecutivo": DashboardEjecutivo,
     "Expenses": Expenses,
     "Finance": Finance,
@@ -57,7 +55,7 @@ export const PAGES = {
 }
 
 export const pagesConfig = {
-    mainPage: "Dashboard",
+    mainPage: "Analytics",
     Pages: PAGES,
     Layout: __Layout,
 };
