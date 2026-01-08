@@ -60,7 +60,12 @@ export default function PagosProveedores() {
     medio_pago_id: "",
     importe: "",
     banco_id: "",
-    caja_id: ""
+    caja_id: "",
+    tipo_pago: "MEDIO",
+    cheque_id: "",
+    cheque_propio_numero: "",
+    cheque_propio_banco_id: "",
+    cheque_propio_vencimiento: ""
   });
 
   const queryClient = useQueryClient();
@@ -97,6 +102,14 @@ export default function PagosProveedores() {
   const { data: cajas = [] } = useQuery({
     queryKey: ['cajas'],
     queryFn: () => base44.entities.Caja.list()
+  });
+
+  const { data: chequesDisponibles = [] } = useQuery({
+    queryKey: ['chequesDisponibles'],
+    queryFn: () => base44.entities.Check.filter({
+      tipo_origen: "TERCERO",
+      estado: "EN_CARTERA"
+    })
   });
 
   const confirmarPagoMutation = useMutation({
@@ -149,39 +162,94 @@ export default function PagosProveedores() {
 
       // 3) Crear medios de pago
       for (const medio of medios) {
-        await base44.entities.PagoProveedorMedio.create({
-          pago_cabecera_id: pago.id,
-          ...medio
-        });
-
-        // Movimiento tesorería
-        await base44.entities.MovimientoTesoreria.create({
-          fecha: pagoData.fecha,
-          tipo: "EGRESO",
-          medio_pago_id: medio.medio_pago_id,
-          medio_pago_nombre: medio.medio_pago_nombre,
-          banco_id: medio.banco_id,
-          banco_nombre: medio.banco_nombre,
-          caja_id: medio.caja_id,
-          caja_nombre: medio.caja_nombre,
-          importe: medio.importe,
-          referencia_tipo: "pago_proveedor",
-          referencia_id: pago.id,
-          observaciones: `Pago ${nuevoNumero} a ${pagoData.proveedor_nombre}`
-        });
-
-        // Actualizar saldos
-        if (medio.banco_id) {
-          const banco = bancos.find(b => b.id === medio.banco_id);
-          await base44.entities.Banco.update(medio.banco_id, {
-            saldo_actual: banco.saldo_actual - medio.importe
+        if (medio.tipo_pago === "CHEQUE_TERCERO") {
+          // Entregar cheque de tercero
+          await base44.entities.Check.update(medio.cheque_id, {
+            estado: "ENTREGADO",
+            fecha_ultimo_cambio: new Date().toISOString(),
+            usuario_ultimo_cambio: user.email,
+            observaciones: `Entregado a ${pagoData.proveedor_nombre} - Pago ${nuevoNumero}`
           });
-        }
-        if (medio.caja_id) {
-          const caja = cajas.find(c => c.id === medio.caja_id);
-          await base44.entities.Caja.update(medio.caja_id, {
-            saldo_actual: caja.saldo_actual - medio.importe
+
+          await base44.entities.PagoProveedorMedio.create({
+            pago_cabecera_id: pago.id,
+            medio_pago_id: null,
+            medio_pago_nombre: medio.medio_pago_nombre,
+            importe: medio.importe,
+            banco_id: null,
+            banco_nombre: medio.banco_nombre,
+            caja_id: null,
+            caja_nombre: ""
           });
+        } else if (medio.tipo_pago === "CHEQUE_PROPIO") {
+          // Emitir cheque propio
+          await base44.entities.Check.create({
+            tipo_origen: "PROPIO",
+            tipo_soporte: "FISICO",
+            numero_cheque: medio.cheque_propio_numero,
+            banco_id: medio.cheque_propio_banco_id,
+            banco_nombre: medio.cheque_propio_banco_nombre,
+            fecha_emision: pagoData.fecha,
+            fecha_vencimiento: medio.cheque_propio_vencimiento || "",
+            importe: medio.importe,
+            estado: "ENTREGADO",
+            titular_tipo: "PROVEEDOR",
+            titular_id: pagoData.proveedor_id,
+            titular_nombre: pagoData.proveedor_nombre,
+            referencia_origen_tipo: "PAGO",
+            referencia_origen_id: pago.id,
+            usuario_registro: user.email,
+            fecha_ultimo_cambio: new Date().toISOString(),
+            usuario_ultimo_cambio: user.email,
+            observaciones: `Emitido para pago ${nuevoNumero} a ${pagoData.proveedor_nombre}`
+          });
+
+          await base44.entities.PagoProveedorMedio.create({
+            pago_cabecera_id: pago.id,
+            medio_pago_id: null,
+            medio_pago_nombre: medio.medio_pago_nombre,
+            importe: medio.importe,
+            banco_id: medio.cheque_propio_banco_id,
+            banco_nombre: medio.cheque_propio_banco_nombre,
+            caja_id: null,
+            caja_nombre: ""
+          });
+        } else {
+          // Medio de pago normal
+          await base44.entities.PagoProveedorMedio.create({
+            pago_cabecera_id: pago.id,
+            ...medio
+          });
+
+          // Movimiento tesorería
+          await base44.entities.MovimientoTesoreria.create({
+            fecha: pagoData.fecha,
+            tipo: "EGRESO",
+            medio_pago_id: medio.medio_pago_id,
+            medio_pago_nombre: medio.medio_pago_nombre,
+            banco_id: medio.banco_id,
+            banco_nombre: medio.banco_nombre,
+            caja_id: medio.caja_id,
+            caja_nombre: medio.caja_nombre,
+            importe: medio.importe,
+            referencia_tipo: "pago_proveedor",
+            referencia_id: pago.id,
+            observaciones: `Pago ${nuevoNumero} a ${pagoData.proveedor_nombre}`
+          });
+
+          // Actualizar saldos
+          if (medio.banco_id) {
+            const banco = bancos.find(b => b.id === medio.banco_id);
+            await base44.entities.Banco.update(medio.banco_id, {
+              saldo_actual: banco.saldo_actual - medio.importe
+            });
+          }
+          if (medio.caja_id) {
+            const caja = cajas.find(c => c.id === medio.caja_id);
+            await base44.entities.Caja.update(medio.caja_id, {
+              saldo_actual: caja.saldo_actual - medio.importe
+            });
+          }
         }
       }
 
@@ -302,41 +370,77 @@ export default function PagosProveedores() {
   };
 
   const agregarMedio = () => {
-    if (!nuevoMedio.medio_pago_id || !nuevoMedio.importe || parseFloat(nuevoMedio.importe) <= 0) {
-      alert("Complete todos los campos del medio de pago");
-      return;
+    if (nuevoMedio.tipo_pago === "CHEQUE_TERCERO") {
+      if (!nuevoMedio.cheque_id) {
+        alert("Seleccione un cheque");
+        return;
+      }
+      const cheque = chequesDisponibles.find(c => c.id === nuevoMedio.cheque_id);
+      setMediosPagoUsados([...mediosPagoUsados, {
+        tipo_pago: "CHEQUE_TERCERO",
+        cheque_id: nuevoMedio.cheque_id,
+        medio_pago_nombre: `Cheque ${cheque.numero_cheque}`,
+        importe: cheque.importe,
+        banco_nombre: cheque.banco_nombre
+      }]);
+    } else if (nuevoMedio.tipo_pago === "CHEQUE_PROPIO") {
+      if (!nuevoMedio.cheque_propio_numero || !nuevoMedio.cheque_propio_banco_id || !nuevoMedio.importe) {
+        alert("Complete todos los campos del cheque");
+        return;
+      }
+      const banco = bancos.find(b => b.id === nuevoMedio.cheque_propio_banco_id);
+      setMediosPagoUsados([...mediosPagoUsados, {
+        tipo_pago: "CHEQUE_PROPIO",
+        medio_pago_nombre: `Cheque Propio ${nuevoMedio.cheque_propio_numero}`,
+        importe: parseFloat(nuevoMedio.importe),
+        cheque_propio_numero: nuevoMedio.cheque_propio_numero,
+        cheque_propio_banco_id: nuevoMedio.cheque_propio_banco_id,
+        cheque_propio_banco_nombre: banco?.nombre || "",
+        cheque_propio_vencimiento: nuevoMedio.cheque_propio_vencimiento
+      }]);
+    } else {
+      if (!nuevoMedio.medio_pago_id || !nuevoMedio.importe || parseFloat(nuevoMedio.importe) <= 0) {
+        alert("Complete todos los campos del medio de pago");
+        return;
+      }
+
+      const medio = mediosPago.find(m => m.id === nuevoMedio.medio_pago_id);
+      
+      if (medio.requiere_banco && !nuevoMedio.banco_id) {
+        alert("Seleccione un banco");
+        return;
+      }
+
+      if (medio.requiere_caja && !nuevoMedio.caja_id) {
+        alert("Seleccione una caja");
+        return;
+      }
+
+      const banco = bancos.find(b => b.id === nuevoMedio.banco_id);
+      const caja = cajas.find(c => c.id === nuevoMedio.caja_id);
+
+      setMediosPagoUsados([...mediosPagoUsados, {
+        tipo_pago: "MEDIO",
+        medio_pago_id: nuevoMedio.medio_pago_id,
+        medio_pago_nombre: medio.nombre,
+        importe: parseFloat(nuevoMedio.importe),
+        banco_id: nuevoMedio.banco_id || null,
+        banco_nombre: banco?.nombre || "",
+        caja_id: nuevoMedio.caja_id || null,
+        caja_nombre: caja?.nombre || ""
+      }]);
     }
-
-    const medio = mediosPago.find(m => m.id === nuevoMedio.medio_pago_id);
-    
-    if (medio.requiere_banco && !nuevoMedio.banco_id) {
-      alert("Seleccione un banco");
-      return;
-    }
-
-    if (medio.requiere_caja && !nuevoMedio.caja_id) {
-      alert("Seleccione una caja");
-      return;
-    }
-
-    const banco = bancos.find(b => b.id === nuevoMedio.banco_id);
-    const caja = cajas.find(c => c.id === nuevoMedio.caja_id);
-
-    setMediosPagoUsados([...mediosPagoUsados, {
-      medio_pago_id: nuevoMedio.medio_pago_id,
-      medio_pago_nombre: medio.nombre,
-      importe: parseFloat(nuevoMedio.importe),
-      banco_id: nuevoMedio.banco_id || null,
-      banco_nombre: banco?.nombre || "",
-      caja_id: nuevoMedio.caja_id || null,
-      caja_nombre: caja?.nombre || ""
-    }]);
 
     setNuevoMedio({
       medio_pago_id: "",
       importe: "",
       banco_id: "",
-      caja_id: ""
+      caja_id: "",
+      tipo_pago: "MEDIO",
+      cheque_id: "",
+      cheque_propio_numero: "",
+      cheque_propio_banco_id: "",
+      cheque_propio_vencimiento: ""
     });
   };
 
@@ -638,38 +742,140 @@ export default function PagosProveedores() {
                 </div>
               </div>
 
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-                <h4 className="font-medium text-sm text-blue-900 mb-3">Agregar Medio de Pago</h4>
-                <div className="grid grid-cols-12 gap-3">
-                  <div className="col-span-3">
-                    <Label className="text-xs">Medio de Pago *</Label>
-                    <Select value={nuevoMedio.medio_pago_id} onValueChange={(v) => setNuevoMedio({ ...nuevoMedio, medio_pago_id: v, banco_id: "", caja_id: "" })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {mediosPago.filter(m => m.nombre !== "Cuenta Corriente").map(m => (
-                          <SelectItem key={m.id} value={m.id}>{m.nombre}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 space-y-3">
+                <h4 className="font-medium text-sm text-blue-900">Agregar Medio de Pago</h4>
+                
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={nuevoMedio.tipo_pago === "MEDIO" ? "default" : "outline"}
+                    onClick={() => setNuevoMedio({ ...nuevoMedio, tipo_pago: "MEDIO" })}
+                  >
+                    Medio de Pago
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={nuevoMedio.tipo_pago === "CHEQUE_TERCERO" ? "default" : "outline"}
+                    onClick={() => setNuevoMedio({ ...nuevoMedio, tipo_pago: "CHEQUE_TERCERO" })}
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    Cheque de Tercero
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={nuevoMedio.tipo_pago === "CHEQUE_PROPIO" ? "default" : "outline"}
+                    onClick={() => setNuevoMedio({ ...nuevoMedio, tipo_pago: "CHEQUE_PROPIO" })}
+                    className="bg-orange-600 hover:bg-orange-700"
+                  >
+                    Cheque Propio
+                  </Button>
+                </div>
 
-                  <div className="col-span-2">
-                    <Label className="text-xs">Importe *</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={nuevoMedio.importe}
-                      onChange={(e) => setNuevoMedio({ ...nuevoMedio, importe: e.target.value })}
-                      placeholder="0.00"
-                    />
-                  </div>
+                {nuevoMedio.tipo_pago === "MEDIO" && (
+                  <div className="grid grid-cols-12 gap-3">
+                    <div className="col-span-3">
+                      <Label className="text-xs">Medio de Pago *</Label>
+                      <Select value={nuevoMedio.medio_pago_id} onValueChange={(v) => setNuevoMedio({ ...nuevoMedio, medio_pago_id: v, banco_id: "", caja_id: "" })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {mediosPago.filter(m => m.nombre !== "Cuenta Corriente").map(m => (
+                            <SelectItem key={m.id} value={m.id}>{m.nombre}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  {medioSeleccionado?.requiere_banco && (
+                    <div className="col-span-2">
+                      <Label className="text-xs">Importe *</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={nuevoMedio.importe}
+                        onChange={(e) => setNuevoMedio({ ...nuevoMedio, importe: e.target.value })}
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    {medioSeleccionado?.requiere_banco && (
+                      <div className="col-span-3">
+                        <Label className="text-xs">Banco *</Label>
+                        <Select value={nuevoMedio.banco_id} onValueChange={(v) => setNuevoMedio({ ...nuevoMedio, banco_id: v })}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {bancos.map(b => (
+                              <SelectItem key={b.id} value={b.id}>{b.nombre}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {medioSeleccionado?.requiere_caja && (
+                      <div className="col-span-3">
+                        <Label className="text-xs">Caja *</Label>
+                        <Select value={nuevoMedio.caja_id} onValueChange={(v) => setNuevoMedio({ ...nuevoMedio, caja_id: v })}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {cajas.map(c => (
+                              <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    <div className={`${medioSeleccionado?.requiere_banco || medioSeleccionado?.requiere_caja ? 'col-span-1' : 'col-span-4'} flex items-end`}>
+                      <Button onClick={agregarMedio} className="w-full bg-blue-600 hover:bg-blue-700">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {nuevoMedio.tipo_pago === "CHEQUE_TERCERO" && (
+                  <div className="grid grid-cols-12 gap-3">
+                    <div className="col-span-10">
+                      <Label className="text-xs">Cheque Disponible *</Label>
+                      <Select value={nuevoMedio.cheque_id} onValueChange={(v) => setNuevoMedio({ ...nuevoMedio, cheque_id: v })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar cheque" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {chequesDisponibles.map(c => (
+                            <SelectItem key={c.id} value={c.id}>
+                              Nº {c.numero_cheque} - {c.banco_nombre} - ${c.importe.toLocaleString()}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-2 flex items-end">
+                      <Button onClick={agregarMedio} className="w-full bg-purple-600 hover:bg-purple-700">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {nuevoMedio.tipo_pago === "CHEQUE_PROPIO" && (
+                  <div className="grid grid-cols-12 gap-3">
+                    <div className="col-span-3">
+                      <Label className="text-xs">Número Cheque *</Label>
+                      <Input
+                        value={nuevoMedio.cheque_propio_numero}
+                        onChange={(e) => setNuevoMedio({ ...nuevoMedio, cheque_propio_numero: e.target.value })}
+                        placeholder="12345678"
+                      />
+                    </div>
                     <div className="col-span-3">
                       <Label className="text-xs">Banco *</Label>
-                      <Select value={nuevoMedio.banco_id} onValueChange={(v) => setNuevoMedio({ ...nuevoMedio, banco_id: v })}>
+                      <Select value={nuevoMedio.cheque_propio_banco_id} onValueChange={(v) => setNuevoMedio({ ...nuevoMedio, cheque_propio_banco_id: v })}>
                         <SelectTrigger>
                           <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
@@ -680,30 +886,31 @@ export default function PagosProveedores() {
                         </SelectContent>
                       </Select>
                     </div>
-                  )}
-
-                  {medioSeleccionado?.requiere_caja && (
-                    <div className="col-span-3">
-                      <Label className="text-xs">Caja *</Label>
-                      <Select value={nuevoMedio.caja_id} onValueChange={(v) => setNuevoMedio({ ...nuevoMedio, caja_id: v })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {cajas.map(c => (
-                            <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <div className="col-span-2">
+                      <Label className="text-xs">Vencimiento</Label>
+                      <Input
+                        type="date"
+                        value={nuevoMedio.cheque_propio_vencimiento}
+                        onChange={(e) => setNuevoMedio({ ...nuevoMedio, cheque_propio_vencimiento: e.target.value })}
+                      />
                     </div>
-                  )}
-
-                  <div className={`${medioSeleccionado?.requiere_banco || medioSeleccionado?.requiere_caja ? 'col-span-1' : 'col-span-4'} flex items-end`}>
-                    <Button onClick={agregarMedio} className="w-full bg-blue-600 hover:bg-blue-700">
-                      <Plus className="h-4 w-4" />
-                    </Button>
+                    <div className="col-span-2">
+                      <Label className="text-xs">Importe *</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={nuevoMedio.importe}
+                        onChange={(e) => setNuevoMedio({ ...nuevoMedio, importe: e.target.value })}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div className="col-span-2 flex items-end">
+                      <Button onClick={agregarMedio} className="w-full bg-orange-600 hover:bg-orange-700">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {mediosPagoUsados.length > 0 && (
@@ -720,7 +927,15 @@ export default function PagosProveedores() {
                     <TableBody>
                       {mediosPagoUsados.map((medio, idx) => (
                         <TableRow key={idx}>
-                          <TableCell className="font-medium">{medio.medio_pago_nombre}</TableCell>
+                          <TableCell>
+                            <div className="font-medium">{medio.medio_pago_nombre}</div>
+                            {medio.tipo_pago === "CHEQUE_TERCERO" && (
+                              <Badge className="bg-purple-100 text-purple-700 text-xs mt-1">Cheque Tercero</Badge>
+                            )}
+                            {medio.tipo_pago === "CHEQUE_PROPIO" && (
+                              <Badge className="bg-orange-100 text-orange-700 text-xs mt-1">Cheque Propio</Badge>
+                            )}
+                          </TableCell>
                           <TableCell className="text-sm text-slate-600">
                             {medio.banco_nombre && `🏦 ${medio.banco_nombre}`}
                             {medio.caja_nombre && `💵 ${medio.caja_nombre}`}
