@@ -989,15 +989,15 @@ export default function Sales() {
 
       {/* New Sale Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto p-4">
+          <DialogHeader className="pb-2">
             <DialogTitle className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5 text-emerald-600" />
               Nueva Venta
             </DialogTitle>
           </DialogHeader>
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
             {/* Products/Services Selection */}
             <div className="space-y-4">
               <div className="relative">
