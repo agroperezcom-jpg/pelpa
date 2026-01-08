@@ -15,6 +15,16 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -70,6 +80,7 @@ export default function Products() {
   const [viewMode, setViewMode] = useState("grid");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -114,6 +125,18 @@ export default function Products() {
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Product.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] })
+  });
+
+  const deleteAllMutation = useMutation({
+    mutationFn: async () => {
+      for (const product of products) {
+        await base44.entities.Product.delete(product.id);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      setDeleteAllOpen(false);
+    }
   });
 
   const calculatePrices = (costoUnitario, tipoArticuloId) => {
@@ -255,18 +278,22 @@ export default function Products() {
             {products.length} producto{products.length !== 1 ? 's' : ''} en catálogo
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Link to={createPageUrl("TiposArticulo")}>
-            <Button variant="outline">
+            <Button variant="outline" className="w-full sm:w-auto whitespace-nowrap">
               <Settings className="h-4 w-4 mr-2" />
               Tipos de Artículo
             </Button>
           </Link>
-          <Button variant="outline" onClick={exportToCSV}>
+          <Button variant="outline" onClick={exportToCSV} className="w-full sm:w-auto whitespace-nowrap">
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
-          <Button onClick={() => handleOpenDialog()} className="bg-emerald-600 hover:bg-emerald-700">
+          <Button onClick={() => setDeleteAllOpen(true)} variant="destructive" className="w-full sm:w-auto whitespace-nowrap">
+            <Trash2 className="h-4 w-4 mr-2" />
+            Borrar Todo
+          </Button>
+          <Button onClick={() => handleOpenDialog()} className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto whitespace-nowrap">
             <Plus className="h-4 w-4 mr-2" />
             Nuevo Producto
           </Button>
@@ -463,6 +490,24 @@ export default function Products() {
           No se encontraron productos
         </div>
       )}
+
+      {/* Delete All Alert Dialog */}
+      <AlertDialog open={deleteAllOpen} onOpenChange={setDeleteAllOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-600">Borrar todos los productos</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Estás seguro de que deseas eliminar <strong>{products.length} producto{products.length !== 1 ? 's' : ''}</strong>? Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteAllMutation.mutate()} className="bg-red-600 hover:bg-red-700">
+              Eliminar Todo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
