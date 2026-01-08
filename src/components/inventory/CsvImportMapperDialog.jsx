@@ -34,6 +34,8 @@ export default function CsvImportMapperDialog({
 }) {
   const [fieldMapping, setFieldMapping] = useState({});
   const [errors, setErrors] = useState([]);
+  const [rowErrors, setRowErrors] = useState({});
+  const [importOnlyValid, setImportOnlyValid] = useState(true);
 
   // Campos disponibles en Product
   const PRODUCT_FIELDS = [
