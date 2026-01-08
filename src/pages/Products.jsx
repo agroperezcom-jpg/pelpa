@@ -49,7 +49,9 @@ import {
   Barcode,
   Grid3X3,
   List,
-  Settings
+  Settings,
+  Upload,
+  FileSpreadsheet
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../utils";
