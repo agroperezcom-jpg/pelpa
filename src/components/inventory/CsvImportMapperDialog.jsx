@@ -72,23 +72,8 @@ export default function CsvImportMapperDialog({
 
   // Validar mapeo
   const validateMapping = () => {
-    const newErrors = [];
-    const mappedFields = Object.values(fieldMapping).filter(v => v);
-    
-    // Verificar campos obligatorios
-    PRODUCT_FIELDS.filter(f => f.required).forEach(field => {
-      if (!mappedFields.includes(field.key)) {
-        newErrors.push(`Campo requerido no mapeado: ${field.label}`);
-      }
-    });
-
-    if (newErrors.length > 0) {
-      setErrors(newErrors);
-      return false;
-    }
-
     setErrors([]);
-    return true;
+    return true; // Permitir continuar incluso sin mapear todos los campos obligatorios
   };
 
   // Transformar datos según mapeo con manejo de errores por fila
