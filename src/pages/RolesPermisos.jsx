@@ -16,6 +16,16 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -29,7 +39,7 @@ import {
   TabsList,
   TabsTrigger
 } from "@/components/ui/tabs";
-import { Shield, Plus, Edit, Users, Lock, CheckCircle2, Power } from "lucide-react";
+import { Shield, Plus, Edit, Users, Lock, CheckCircle2, Power, Trash2 } from "lucide-react";
 import PermissionGuard from "@/components/permissions/PermissionGuard";
 import {
   Select,
@@ -149,8 +159,16 @@ export default function RolesPermisos() {
   const [selectedRol, setSelectedRol] = useState(null);
   const [selectedPermisos, setSelectedPermisos] = useState({});
   const [formData, setFormData] = useState({ nombre: "", descripcion: "" });
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [rolToDelete, setRolToDelete] = useState(null);
+  const [user, setUser] = useState(null);
 
   const queryClient = useQueryClient();
+
+  // Obtener usuario actual para verificar si es admin
+  React.useEffect(() => {
+    base44.auth.me().then(setUser).catch(() => {});
+  }, []);
 
   const { data: roles = [] } = useQuery({
     queryKey: ['roles'],
@@ -247,6 +265,40 @@ export default function RolesPermisos() {
     },
     onError: (error) => {
       alert("Error al guardar permisos: " + error.message);
+    }
+  });
+
+  const deleteRolMutation = useMutation({
+    mutationFn: async (rolId) => {
+      const rol = roles.find(r => r.id === rolId);
+      if (!rol) throw new Error("Rol no encontrado");
+      
+      if (rol.es_sistema) {
+        throw new Error("No se pueden eliminar roles del sistema");
+      }
+
+      const usuariosAsignados = getRolUsers(rolId);
+      if (usuariosAsignados.length > 0) {
+        throw new Error(`No se puede eliminar: hay ${usuariosAsignados.length} usuario(s) asignado(s) a este rol`);
+      }
+
+      // Eliminar permisos asociados
+      const permisosDel = rolPermisos.filter(rp => rp.rol_id === rolId);
+      for (const p of permisosDel) {
+        await base44.entities.RolPermiso.delete(p.id);
+      }
+
+      // Eliminar rol
+      await base44.entities.Rol.delete(rolId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      queryClient.invalidateQueries({ queryKey: ['rolPermisos'] });
+      setDeleteConfirmOpen(false);
+      setRolToDelete(null);
+    },
+    onError: (error) => {
+      alert("Error al eliminar rol: " + error.message);
     }
   });
 
@@ -380,13 +432,28 @@ export default function RolesPermisos() {
                         Permisos
                       </Button>
                       {!rol.es_sistema && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleOpenDialog(rol)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleOpenDialog(rol)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          {user?.role === 'admin' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-red-600 hover:text-red-700"
+                              onClick={() => {
+                                setRolToDelete(rol);
+                                setDeleteConfirmOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </>
                       )}
                     </div>
                   </CardContent>
@@ -566,7 +633,29 @@ export default function RolesPermisos() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-    </PermissionGuard>
-  );
-}
+
+        {/* Alert Dialog Eliminar Rol */}
+        <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+         <AlertDialogContent>
+           <AlertDialogHeader>
+             <AlertDialogTitle>Eliminar rol "{rolToDelete?.nombre}"</AlertDialogTitle>
+             <AlertDialogDescription>
+               Esta acción no se puede deshacer. Se eliminarán todos los permisos asociados a este rol.
+             </AlertDialogDescription>
+           </AlertDialogHeader>
+           <AlertDialogFooter>
+             <AlertDialogCancel>Cancelar</AlertDialogCancel>
+             <AlertDialogAction
+               onClick={() => deleteRolMutation.mutate(rolToDelete?.id)}
+               className="bg-red-600 hover:bg-red-700"
+               disabled={deleteRolMutation.isPending}
+             >
+               {deleteRolMutation.isPending ? "Eliminando..." : "Eliminar"}
+             </AlertDialogAction>
+           </AlertDialogFooter>
+         </AlertDialogContent>
+        </AlertDialog>
+        </div>
+        </PermissionGuard>
+        );
+        }
