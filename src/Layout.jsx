@@ -166,7 +166,7 @@ export default function Layout({ children, currentPageName }) {
     <ThemeProvider>
       <div className="min-h-screen bg-background transition-theme">
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white/90 backdrop-blur-sm border-b border-border/40 z-50 flex items-center justify-between px-4">
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card/90 backdrop-blur-sm border-b border-border/40 z-50 flex items-center justify-between px-4 transition-theme">
         <button 
           onClick={() => setSidebarOpen(true)}
           className="p-2 -ml-2 rounded-lg hover:bg-secondary transition-colors"
@@ -196,7 +196,7 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed top-0 left-0 bottom-0 w-64 bg-white border-r border-border/40 z-50",
+        "fixed top-0 left-0 bottom-0 w-64 bg-card border-r border-border/40 z-50 transition-theme",
         "transition-transform duration-300 ease-out",
         "lg:translate-x-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -298,7 +298,7 @@ export default function Layout({ children, currentPageName }) {
       <main className="lg:pl-64 min-h-screen">
         <div className="pt-14 lg:pt-0">
           {/* Desktop Header */}
-          <header className="hidden lg:flex h-14 items-center justify-between px-6 border-b border-border/40 bg-white/60 backdrop-blur-sm sticky top-0 z-30">
+          <header className="hidden lg:flex h-14 items-center justify-between px-6 border-b border-border/40 bg-card/60 backdrop-blur-sm sticky top-0 z-30 transition-theme">
             <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">
                 {modules.find(m => m.items.some(i => i.page === currentPageName))?.name}
@@ -325,7 +325,7 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Command Palette */}
       <Dialog open={commandOpen} onOpenChange={setCommandOpen}>
-        <DialogContent className="max-w-xl p-0 gap-0 bg-white rounded-xl border border-border/40 shadow-elevated overflow-hidden">
+        <DialogContent className="max-w-xl p-0 gap-0 bg-card rounded-xl border border-border/40 shadow-elevated overflow-hidden transition-theme">
           <div className="p-4 border-b border-border/40">
             <div className="flex items-center gap-3">
               <Search className="h-4 w-4 text-muted-foreground" />
