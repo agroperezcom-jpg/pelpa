@@ -508,11 +508,11 @@ export default function SettingsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user">Empleado</SelectItem>
-                  <SelectItem value="admin">Administrador</SelectItem>
+                  <SelectItem value="admin" disabled>Administrador (requiere plan premium)</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-slate-500">
-                Los administradores tienen acceso completo al sistema, incluyendo configuración.
+                Solo se pueden invitar empleados. Los administradores deben ser añadidos desde la configuración de la organización.
               </p>
             </div>
             <DialogFooter>
