@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* Premium Design System - Minimal & Elegant */
-:root {
+:root, .light {
   /* Base Colors - Soft & Warm */
   --background: 40 20% 98%; /* Blanco roto cálido */
   --foreground: 220 15% 20%; /* Gris oscuro suave */
@@ -19,6 +19,7 @@
   /* Primary - Slate Blue */
   --primary: 220 14% 35%;
   --primary-foreground: 0 0% 100%;
+  --primary-hover: 220 14% 30%;
   
   /* Secondary - Light Warm Gray */
   --secondary: 40 15% 96%;
@@ -63,8 +64,9 @@
   --card-foreground: 40 15% 90%;
   --popover: 220 15% 12%;
   --popover-foreground: 40 15% 90%;
-  --primary: 40 15% 90%;
+  --primary: 220 15% 75%;
   --primary-foreground: 220 15% 10%;
+  --primary-hover: 220 15% 80%;
   --secondary: 220 15% 15%;
   --secondary-foreground: 40 15% 85%;
   --muted: 220 15% 18%;
@@ -73,9 +75,64 @@
   --accent-foreground: 40 15% 90%;
   --destructive: 0 55% 55%;
   --destructive-foreground: 0 0% 100%;
-  --border: 220 15% 18%;
+  --border: 220 15% 20%;
   --input: 220 15% 18%;
   --ring: 40 15% 50%;
+}
+
+/* Brand Adaptive Theme - Light Variant */
+.brand {
+  /* Use brand color for primary when available */
+  --primary: var(--brand-primary, 220 14% 35%);
+  --primary-foreground: var(--brand-primary-foreground, 0 0% 100%);
+  --primary-hover: var(--brand-primary-hover, 220 14% 30%);
+  --accent: var(--brand-accent, 35 20% 93%);
+  --accent-foreground: var(--brand-accent-foreground, 220 15% 25%);
+  
+  /* Keep rest as light theme */
+  --background: 40 20% 98%;
+  --foreground: 220 15% 20%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 15% 20%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 15% 20%;
+  --secondary: 40 15% 96%;
+  --secondary-foreground: 220 15% 35%;
+  --muted: 40 15% 94%;
+  --muted-foreground: 220 10% 50%;
+  --destructive: 0 55% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 40 15% 90%;
+  --input: 40 15% 90%;
+  --ring: var(--brand-primary, 220 14% 60%);
+  --radius: 0.625rem;
+}
+
+/* Brand Adaptive Theme - Dark Variant */
+.brand.dark-brand {
+  /* Use brand color for primary when available */
+  --primary: var(--brand-primary, 220 15% 75%);
+  --primary-foreground: var(--brand-primary-foreground, 0 0% 100%);
+  --primary-hover: var(--brand-primary-hover, 220 15% 80%);
+  --accent: var(--brand-accent, 220 15% 18%);
+  --accent-foreground: var(--brand-accent-foreground, 40 15% 90%);
+  
+  /* Keep rest as dark theme */
+  --background: 220 15% 10%;
+  --foreground: 40 15% 90%;
+  --card: 220 15% 12%;
+  --card-foreground: 40 15% 90%;
+  --popover: 220 15% 12%;
+  --popover-foreground: 40 15% 90%;
+  --secondary: 220 15% 15%;
+  --secondary-foreground: 40 15% 85%;
+  --muted: 220 15% 18%;
+  --muted-foreground: 40 15% 60%;
+  --destructive: 0 55% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 220 15% 20%;
+  --input: 220 15% 18%;
+  --ring: var(--brand-primary, 40 15% 50%);
 }
 
 @layer base {
@@ -88,6 +145,7 @@
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   /* Typography - Jerarquía clara */
@@ -267,6 +325,10 @@
   /* Smooth Transitions */
   .transition-smooth {
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .transition-theme {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
   }
 
   /* Text Balance */
