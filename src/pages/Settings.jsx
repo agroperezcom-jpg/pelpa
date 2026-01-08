@@ -50,6 +50,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 import ThemeSelector from "../components/theme/ThemeSelector";
+import IdentidadEmpresa from "../components/settings/IdentidadEmpresa";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -214,6 +215,7 @@ export default function SettingsPage() {
         <TabsList className="bg-white border shadow-sm">
           <TabsTrigger value="users">Usuarios</TabsTrigger>
           <TabsTrigger value="sessions">Registro de Sesiones</TabsTrigger>
+          <TabsTrigger value="identidad">Identidad</TabsTrigger>
           <TabsTrigger value="theme">Tema Visual</TabsTrigger>
           <TabsTrigger value="fiscal">Configuración Fiscal</TabsTrigger>
         </TabsList>
@@ -309,6 +311,10 @@ export default function SettingsPage() {
               </TableBody>
             </Table>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="identidad">
+          <IdentidadEmpresa />
         </TabsContent>
 
         <TabsContent value="theme">

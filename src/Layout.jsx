@@ -38,6 +38,29 @@ export default function Layout({ children, currentPageName }) {
   const [commandSearch, setCommandSearch] = useState("");
   const location = useLocation();
 
+  const { data: configuracionEmpresa = [] } = useQuery({
+    queryKey: ['configuracionEmpresa'],
+    queryFn: () => base44.entities.ConfiguracionEmpresa.list()
+  });
+
+  const config = configuracionEmpresa[0];
+  const nombreEmpresa = config?.nombre_empresa || "Sistema";
+  const tipografiaLogo = config?.tipografia_logo || "inter";
+
+  const fontFamilyMap = {
+    "inter": "'Inter', sans-serif",
+    "ibm-plex-sans": "'IBM Plex Sans', sans-serif",
+    "source-sans-3": "'Source Sans 3', sans-serif",
+    "poppins": "'Poppins', sans-serif",
+    "manrope": "'Manrope', sans-serif",
+    "dm-sans": "'DM Sans', sans-serif",
+    "playfair-display": "'Playfair Display', serif",
+    "cormorant": "'Cormorant', serif",
+    "libre-baskerville": "'Libre Baskerville', serif",
+    "montserrat": "'Montserrat', sans-serif",
+    "nunito": "'Nunito', sans-serif"
+  };
+
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -175,8 +198,11 @@ export default function Layout({ children, currentPageName }) {
         >
           <Menu className="h-5 w-5 text-muted-foreground" />
         </button>
-        
-        <span className="text-sm font-medium text-foreground">
+
+        <span 
+          className="text-sm font-medium text-foreground"
+          style={{ fontFamily: fontFamilyMap[tipografiaLogo] }}
+        >
           {allPages.find(p => p.page === currentPageName)?.name || "Dashboard"}
         </span>
         
@@ -208,9 +234,16 @@ export default function Layout({ children, currentPageName }) {
           <div className="h-14 flex items-center justify-between px-5 border-b border-border/40">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center">
-                <span className="text-white text-sm font-semibold">S</span>
+                <span className="text-white text-sm font-semibold">
+                  {nombreEmpresa.charAt(0).toUpperCase()}
+                </span>
               </div>
-              <span className="font-semibold text-foreground tracking-tight">Sistema</span>
+              <span 
+                className="font-semibold text-foreground tracking-tight"
+                style={{ fontFamily: fontFamilyMap[tipografiaLogo] }}
+              >
+                {nombreEmpresa}
+              </span>
             </div>
             <button 
               onClick={() => setSidebarOpen(false)}

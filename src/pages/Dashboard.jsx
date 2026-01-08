@@ -282,7 +282,7 @@ export default function Dashboard() {
             </Link>
           </div>
           <div className="space-y-2">
-            {projects.slice(0, 5).map((project) => (
+            {projects.filter(p => ['aprobado', 'en_ejecucion', 'finalizado'].includes(p.status)).slice(0, 5).map((project) => (
               <div
                 key={project.id}
                 className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/50 transition-colors cursor-pointer"
@@ -301,8 +301,8 @@ export default function Dashboard() {
                 </div>
                 <Badge variant="secondary" className={`text-[10px] px-2 py-0.5 font-normal ${
                   project.status === 'finalizado' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                  project.status === 'activo' ? 'bg-sky-50 text-sky-700 border border-sky-100' :
-                  project.status === 'propuesto' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
+                  project.status === 'en_ejecucion' ? 'bg-purple-50 text-purple-700 border border-purple-100' :
+                  project.status === 'aprobado' ? 'bg-sky-50 text-sky-700 border border-sky-100' :
                   'bg-slate-50 text-slate-600 border border-slate-100'
                 }`}>
                   {project.status?.replace('_', ' ')}
