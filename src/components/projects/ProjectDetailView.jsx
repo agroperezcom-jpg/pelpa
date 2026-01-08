@@ -18,6 +18,7 @@ import ProjectTasksTab from "./ProjectTasksTab";
 import ProjectMilestonesTab from "./ProjectMilestonesTab";
 import ProjectDocumentsTab from "./ProjectDocumentsTab";
 import ProjectActivityTab from "./ProjectActivityTab";
+import ProjectBudgetingTab from "./ProjectBudgetingTab";
 
 export default function ProjectDetailView({ project, onBack, onEdit }) {
   const queryClient = useQueryClient();
@@ -38,9 +39,12 @@ export default function ProjectDetailView({ project, onBack, onEdit }) {
   });
 
   const statusColors = {
-    propuesto: "bg-purple-100 text-purple-700",
-    activo: "bg-green-100 text-green-700",
-    en_pausa: "bg-amber-100 text-amber-700",
+    borrador: "bg-slate-100 text-slate-700",
+    en_presupuestacion: "bg-blue-100 text-blue-700",
+    pendiente_aprobacion: "bg-amber-100 text-amber-700",
+    aprobado: "bg-green-100 text-green-700",
+    rechazado: "bg-red-100 text-red-700",
+    en_ejecucion: "bg-purple-100 text-purple-700",
     finalizado: "bg-slate-100 text-slate-700",
     cancelado: "bg-red-100 text-red-700"
   };
@@ -167,14 +171,19 @@ export default function ProjectDetailView({ project, onBack, onEdit }) {
         )}
       </div>
 
-      <Tabs defaultValue="tasks" className="space-y-4">
+      <Tabs defaultValue="budgeting" className="space-y-4">
         <TabsList className="bg-white border shadow-sm">
+          <TabsTrigger value="budgeting">Presupuestación</TabsTrigger>
           <TabsTrigger value="tasks">Tareas</TabsTrigger>
           <TabsTrigger value="phases">Fases</TabsTrigger>
           <TabsTrigger value="milestones">Hitos</TabsTrigger>
           <TabsTrigger value="documents">Documentos</TabsTrigger>
           <TabsTrigger value="activity">Actividad</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="budgeting">
+          <ProjectBudgetingTab projectId={project.id} projectStatus={project.status} />
+        </TabsContent>
 
         <TabsContent value="tasks">
           <ProjectTasksTab projectId={project.id} phases={phases} />

@@ -15,7 +15,7 @@ export default function ProjectDialog({ isOpen, onClose, project, onSave }) {
     name: "",
     description: "",
     type: "desarrollo",
-    status: "propuesto",
+    status: "en_presupuestacion",
     priority: "media",
     start_date: "",
     estimated_end_date: "",
@@ -67,7 +67,7 @@ export default function ProjectDialog({ isOpen, onClose, project, onSave }) {
         name: "",
         description: "",
         type: "desarrollo",
-        status: "propuesto",
+        status: "en_presupuestacion",
         priority: "media",
         start_date: "",
         estimated_end_date: "",
@@ -192,18 +192,24 @@ export default function ProjectDialog({ isOpen, onClose, project, onSave }) {
 
             <div className="space-y-2">
               <Label>Estado *</Label>
-              <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
+              <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })} disabled={!project}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="propuesto">Propuesto</SelectItem>
-                  <SelectItem value="activo">Activo</SelectItem>
-                  <SelectItem value="en_pausa">En Pausa</SelectItem>
+                  <SelectItem value="borrador">Borrador</SelectItem>
+                  <SelectItem value="en_presupuestacion">En Presupuestación</SelectItem>
+                  <SelectItem value="pendiente_aprobacion">Pendiente de Aprobación</SelectItem>
+                  <SelectItem value="aprobado">Aprobado</SelectItem>
+                  <SelectItem value="rechazado">Rechazado</SelectItem>
+                  <SelectItem value="en_ejecucion">En Ejecución</SelectItem>
                   <SelectItem value="finalizado">Finalizado</SelectItem>
                   <SelectItem value="cancelado">Cancelado</SelectItem>
                 </SelectContent>
               </Select>
+              {!project && (
+                <p className="text-xs text-slate-500">Nuevos proyectos inician en "En Presupuestación"</p>
+              )}
             </div>
 
             <div className="space-y-2">
