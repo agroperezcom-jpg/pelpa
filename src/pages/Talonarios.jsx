@@ -71,6 +71,7 @@ export default function Talonarios() {
 
       return await base44.entities.Talonario.create({
         ...data,
+        numero_hasta: data.numero_hasta || null,
         ultimo_numero_usado: data.numero_desde - 1,
         numeros_liberados: []
       });
