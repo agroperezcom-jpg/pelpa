@@ -206,38 +206,8 @@ export default function Inventory() {
   const handleImportCSV = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    setIsImporting(true);
-    const reader = new FileReader();
-
-    reader.onload = (event) => {
-      try {
-        const text = event.target.result;
-        const lines = text.split('\n').filter(line => line.trim());
-        
-        if (lines.length < 2) {
-          alert('El archivo está vacío o no tiene datos');
-          setIsImporting(false);
-          e.target.value = '';
-          return;
-        }
-
-        const headers = lines[0].split(',').map(h => h.trim());
-        const rows = lines.slice(1).map(line => line.split(',').map(v => v.trim()));
-
-        // Abrir diálogo de mapeo
-        setCsvDataForMapper({ headers, rows });
-        setIsMapperDialogOpen(true);
-      } catch (error) {
-        console.error('Error reading file:', error);
-        alert('Error al leer el archivo CSV');
-      } finally {
-        setIsImporting(false);
-        e.target.value = '';
-      }
-    };
-
-    reader.readAsText(file);
+    processCSVFile(file);
+    e.target.value = '';
   };
 
   const handleConfirmImport = async (productsToCreate) => {
