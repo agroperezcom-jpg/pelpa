@@ -56,8 +56,10 @@ export default function IdentidadEmpresa() {
     nombre_empresa: "",
     tipografia_logo: "inter",
     categoria_tipografia: "corporativa",
-    modo_visualizacion: "nombre"
+    modo_visualizacion: "nombre",
+    logo_url: ""
   });
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -74,7 +76,8 @@ export default function IdentidadEmpresa() {
         nombre_empresa: configuracion.nombre_empresa || "",
         tipografia_logo: configuracion.tipografia_logo || "inter",
         categoria_tipografia: configuracion.categoria_tipografia || "corporativa",
-        modo_visualizacion: configuracion.modo_visualizacion || "nombre"
+        modo_visualizacion: configuracion.modo_visualizacion || "nombre",
+        logo_url: configuracion.logo_url || ""
       });
     }
   }, [configuracion]);
@@ -111,8 +114,24 @@ export default function IdentidadEmpresa() {
       nombre_empresa: "Sistema",
       tipografia_logo: "inter",
       categoria_tipografia: "corporativa",
-      modo_visualizacion: "nombre"
+      modo_visualizacion: "nombre",
+      logo_url: ""
     });
+  };
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setIsUploadingLogo(true);
+    try {
+      const logoUrl = await base44.integrations.Core.UploadFile({ file });
+      setFormData({ ...formData, logo_url: logoUrl.file_url });
+    } catch (error) {
+      alert("Error al subir logo: " + error.message);
+    } finally {
+      setIsUploadingLogo(false);
+    }
   };
 
   const tipografiasCategoria = tipografias[formData.categoria_tipografia] || tipografias.corporativa;
@@ -130,6 +149,46 @@ export default function IdentidadEmpresa() {
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Logo de la Empresa */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">Logo de la Empresa</Label>
+            <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors bg-slate-50">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                disabled={isUploadingLogo}
+                className="hidden"
+                id="logo-input"
+              />
+              <label htmlFor="logo-input" className="cursor-pointer block">
+                {formData.logo_url ? (
+                  <div className="space-y-2">
+                    <img src={formData.logo_url} alt="Logo" className="h-16 mx-auto object-contain" />
+                    <p className="text-xs text-slate-500">Click para cambiar el logo</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Upload className="h-8 w-8 text-slate-400 mx-auto" />
+                    <p className="text-sm font-medium text-slate-600">Sube tu logo</p>
+                    <p className="text-xs text-slate-500">PNG, JPG o SVG (máx 5MB)</p>
+                  </div>
+                )}
+              </label>
+            </div>
+            {formData.logo_url && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setFormData({ ...formData, logo_url: "" })}
+                className="text-red-600 hover:text-red-700"
+              >
+                Eliminar logo
+              </Button>
+            )}
+          </div>
+
           {/* Nombre de la Empresa */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Nombre de la Empresa *</Label>
@@ -212,11 +271,15 @@ export default function IdentidadEmpresa() {
             </div>
             
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-sm font-semibold">
-                  {formData.nombre_empresa ? formData.nombre_empresa.charAt(0).toUpperCase() : 'S'}
-                </span>
-              </div>
+              {formData.logo_url ? (
+                <img src={formData.logo_url} alt="Logo" className="h-10 w-10 object-contain flex-shrink-0" />
+              ) : (
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-sm font-semibold">
+                    {formData.nombre_empresa ? formData.nombre_empresa.charAt(0).toUpperCase() : 'S'}
+                  </span>
+                </div>
+              )}
               <span 
                 className="text-2xl font-semibold text-slate-800 tracking-tight"
                 style={{ fontFamily: fontFamilyMap[formData.tipografia_logo] }}
@@ -228,19 +291,23 @@ export default function IdentidadEmpresa() {
             <div className="mt-6 pt-6 border-t">
               <p className="text-xs text-slate-500 mb-2">Aspecto en el sidebar:</p>
               <div className="bg-slate-100 rounded-lg p-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center">
-                    <span className="text-white text-sm font-semibold">
-                      {formData.nombre_empresa ? formData.nombre_empresa.charAt(0).toUpperCase() : 'S'}
-                    </span>
-                  </div>
-                  <span 
-                    className="font-semibold text-slate-800 tracking-tight"
-                    style={{ fontFamily: fontFamilyMap[formData.tipografia_logo] }}
-                  >
-                    {formData.nombre_empresa || "Sistema"}
-                  </span>
-                </div>
+               <div className="flex items-center gap-2.5">
+                 {formData.logo_url ? (
+                   <img src={formData.logo_url} alt="Logo" className="h-8 w-8 object-contain" />
+                 ) : (
+                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center">
+                     <span className="text-white text-sm font-semibold">
+                       {formData.nombre_empresa ? formData.nombre_empresa.charAt(0).toUpperCase() : 'S'}
+                     </span>
+                   </div>
+                 )}
+                 <span 
+                   className="font-semibold text-slate-800 tracking-tight"
+                   style={{ fontFamily: fontFamilyMap[formData.tipografia_logo] }}
+                 >
+                   {formData.nombre_empresa || "Sistema"}
+                 </span>
+               </div>
               </div>
             </div>
           </div>
