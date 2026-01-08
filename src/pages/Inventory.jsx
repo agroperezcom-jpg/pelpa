@@ -209,81 +209,27 @@ export default function Inventory() {
     setIsImporting(true);
     const reader = new FileReader();
 
-    reader.onload = async (event) => {
+    reader.onload = (event) => {
       try {
         const text = event.target.result;
         const lines = text.split('\n').filter(line => line.trim());
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-
-        const productsToCreate = [];
-        const errors = [];
-
-        for (let i = 1; i < lines.length; i++) {
-          const values = lines[i].split(',').map(v => v.trim());
-          
-          if (values.length < headers.length || !values[0]) continue;
-
-          const nombre = values[headers.indexOf('nombre')] || '';
-          const tipoArticuloNombre = values[headers.indexOf('tipo_articulo')] || '';
-          const costoUnitario = parseFloat(values[headers.indexOf('costo_unitario')]) || 0;
-
-          // Buscar tipo de artículo
-          const tipo = tiposArticulo.find(t => t.nombre.toLowerCase() === tipoArticuloNombre.toLowerCase());
-          
-          if (!tipo) {
-            errors.push(`Fila ${i + 1}: Tipo de artículo "${tipoArticuloNombre}" no encontrado`);
-            continue;
-          }
-
-          if (costoUnitario <= 0) {
-            errors.push(`Fila ${i + 1}: Costo unitario debe ser mayor a 0`);
-            continue;
-          }
-
-          // Calcular precios basados en margen del tipo
-          const precioMinimoMinorista = costoUnitario * (1 + tipo.margen_minorista);
-          const precioListaMinorista = precioMinimoMinorista / (1 - tipo.descuento_efectivo);
-          const precioMinimoMayorista = costoUnitario * (1 + tipo.margen_mayorista);
-          const precioListaMayorista = precioMinimoMayorista / (1 - tipo.descuento_efectivo);
-
-          const product = {
-            name: nombre,
-            description: values[headers.indexOf('descripcion')] || '',
-            tipo_articulo_id: tipo.id,
-            tipo_articulo_nombre: tipo.nombre,
-            costo_unitario: costoUnitario,
-            precio_minimo_minorista: precioMinimoMinorista,
-            precio_lista_minorista: precioListaMinorista,
-            precio_minimo_mayorista: precioMinimoMayorista,
-            precio_lista_mayorista: precioListaMayorista,
-            category: values[headers.indexOf('categoria')] || 'otros',
-            supplier: values[headers.indexOf('proveedor')] || '',
-            stock: parseInt(values[headers.indexOf('stock')]) || 0,
-            min_stock: parseInt(values[headers.indexOf('stock_minimo')]) || 5,
-            barcode: values[headers.indexOf('codigo_barras')] || '',
-            is_active: true
-          };
-
-          productsToCreate.push(product);
+        
+        if (lines.length < 2) {
+          alert('El archivo está vacío o no tiene datos');
+          setIsImporting(false);
+          e.target.value = '';
+          return;
         }
 
-        if (productsToCreate.length > 0) {
-          await base44.entities.Product.bulkCreate(productsToCreate);
-          queryClient.invalidateQueries({ queryKey: ['products'] });
-          
-          let message = `✓ ${productsToCreate.length} producto${productsToCreate.length !== 1 ? 's' : ''} importado${productsToCreate.length !== 1 ? 's' : ''} exitosamente`;
-          if (errors.length > 0) {
-            message += `\n\n⚠️ ${errors.length} fila${errors.length !== 1 ? 's' : ''} omitida${errors.length !== 1 ? 's' : ''}:\n${errors.join('\n')}`;
-          }
-          alert(message);
-        } else if (errors.length > 0) {
-          alert(`❌ No se importaron productos:\n${errors.join('\n')}`);
-        } else {
-          alert('El archivo no contiene datos válidos');
-        }
+        const headers = lines[0].split(',').map(h => h.trim());
+        const rows = lines.slice(1).map(line => line.split(',').map(v => v.trim()));
+
+        // Abrir diálogo de mapeo
+        setCsvDataForMapper({ headers, rows });
+        setIsMapperDialogOpen(true);
       } catch (error) {
-        console.error('Error importing:', error);
-        alert('Error al importar productos. Verifica que:\n• Los tipos de artículos existan\n• El costo unitario sea un número válido\n• El archivo use formato CSV correcto');
+        console.error('Error reading file:', error);
+        alert('Error al leer el archivo CSV');
       } finally {
         setIsImporting(false);
         e.target.value = '';
@@ -291,6 +237,25 @@ export default function Inventory() {
     };
 
     reader.readAsText(file);
+  };
+
+  const handleConfirmImport = async (productsToCreate) => {
+    try {
+      if (productsToCreate.length === 0) {
+        alert('No hay productos para importar');
+        return;
+      }
+
+      await base44.entities.Product.bulkCreate(productsToCreate);
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+
+      alert(`✓ ${productsToCreate.length} producto${productsToCreate.length !== 1 ? 's' : ''} importado${productsToCreate.length !== 1 ? 's' : ''} exitosamente`);
+      setIsMapperDialogOpen(false);
+      setCsvDataForMapper(null);
+    } catch (error) {
+      console.error('Error importing:', error);
+      alert('Error al importar productos: ' + error.message);
+    }
   };
 
   return (
