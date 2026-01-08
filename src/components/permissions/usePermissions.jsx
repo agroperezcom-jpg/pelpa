@@ -26,9 +26,12 @@ export function usePermissions() {
     // Admin tiene acceso a todo
     if (user?.role === 'admin') return true;
 
-    // Si no tiene rol personalizado, solo puede ver
+    // Si el usuario está inactivo, no tiene permisos
+    if (user?.activo === false) return false;
+
+    // Si no tiene rol personalizado, solo puede ver dashboard y calendario
     if (!user?.rol_id) {
-      return accion === 'VIEW';
+      return (modulo === 'calendario' || modulo === 'proyectos') && accion === 'VIEW';
     }
 
     // Verificar permiso específico
@@ -63,6 +66,12 @@ export function usePermissions() {
               'tablero_fiscal', 'iva_mensual', 'ingresos_brutos', 'talonarios', 'configuracion', 'usuarios'];
     }
 
+    // Si el usuario está inactivo, no permitir nada excepto ver su perfil
+    if (user?.activo === false) {
+      return [];
+    }
+
+    // Obtener módulos únicos de los permisos del rol
     const modulos = [...new Set(rolPermisos.map(rp => rp.modulo))];
     return modulos;
   };
@@ -73,6 +82,7 @@ export function usePermissions() {
     hasPermission,
     getModulePermissions,
     getAllowedModules,
-    isAdmin: user?.role === 'admin'
+    isAdmin: user?.role === 'admin',
+    isActive: user?.activo !== false
   };
 }

@@ -29,8 +29,83 @@ import {
   TabsList,
   TabsTrigger
 } from "@/components/ui/tabs";
-import { Shield, Plus, Edit, Users, Lock, CheckCircle2 } from "lucide-react";
+import { Shield, Plus, Edit, Users, Lock, CheckCircle2, Power } from "lucide-react";
 import PermissionGuard from "@/components/permissions/PermissionGuard";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+
+function UserRolSelector({ user, roles }) {
+  const queryClient = useQueryClient();
+
+  const updateUserRolMutation = useMutation({
+    mutationFn: ({ userId, rolId, rolNombre }) => 
+      base44.entities.User.update(userId, { rol_id: rolId, rol_nombre: rolNombre }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    }
+  });
+
+  const handleChange = (value) => {
+    if (value === "none") {
+      updateUserRolMutation.mutate({ userId: user.id, rolId: null, rolNombre: null });
+    } else {
+      const rol = roles.find(r => r.id === value);
+      updateUserRolMutation.mutate({ userId: user.id, rolId: value, rolNombre: rol?.nombre });
+    }
+  };
+
+  if (user.role === 'admin') {
+    return <span className="text-sm text-muted-foreground italic">Acceso total</span>;
+  }
+
+  return (
+    <Select value={user.rol_id || "none"} onValueChange={handleChange}>
+      <SelectTrigger className="w-48">
+        <SelectValue placeholder="Sin asignar" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="none">Sin rol personalizado</SelectItem>
+        {roles.filter(r => !r.es_sistema).map(rol => (
+          <SelectItem key={rol.id} value={rol.id}>
+            {rol.nombre}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function UserStatusToggle({ user }) {
+  const queryClient = useQueryClient();
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: (userId) => 
+      base44.entities.User.update(userId, { activo: user.activo === false }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    }
+  });
+
+  if (user.role === 'admin') {
+    return null; // No permitir desactivar admins
+  }
+
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      onClick={() => toggleStatusMutation.mutate(user.id)}
+      className={user.activo !== false ? "text-green-600 hover:text-green-700" : "text-red-600 hover:text-red-700"}
+    >
+      <Power className="h-4 w-4" />
+    </Button>
+  );
+}
 
 const MODULOS = [
   { id: "ventas", nombre: "Ventas", categoria: "Operativa", critico: true },
@@ -291,7 +366,8 @@ export default function RolesPermisos() {
                         onClick={() => handleOpenPermisos(rol)}
                         className="flex-1"
                       >
-                        Configurar permisos
+                        <Lock className="h-4 w-4 mr-1" />
+                        Permisos
                       </Button>
                       {!rol.es_sistema && (
                         <Button
@@ -311,6 +387,12 @@ export default function RolesPermisos() {
 
           <TabsContent value="usuarios">
             <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Asignación de Roles</CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Asigna roles personalizados a usuarios para controlar su acceso
+                </p>
+              </CardHeader>
               <Table>
                 <TableHeader>
                   <TableRow className="bg-secondary/50">
@@ -318,7 +400,7 @@ export default function RolesPermisos() {
                     <TableHead>Email</TableHead>
                     <TableHead>Rol Sistema</TableHead>
                     <TableHead>Rol Personalizado</TableHead>
-                    <TableHead>Estado</TableHead>
+                    <TableHead>Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -328,22 +410,14 @@ export default function RolesPermisos() {
                       <TableCell className="text-sm text-muted-foreground">{user.email}</TableCell>
                       <TableCell>
                         <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                          {user.role}
+                          {user.role === 'admin' ? 'Administrador' : 'Usuario'}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {user.rol_nombre ? (
-                          <Badge variant="outline">{user.rol_nombre}</Badge>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">Sin asignar</span>
-                        )}
+                        <UserRolSelector user={user} roles={roles} />
                       </TableCell>
                       <TableCell>
-                        {user.activo !== false ? (
-                          <Badge className="bg-green-100 text-green-700">Activo</Badge>
-                        ) : (
-                          <Badge className="bg-red-100 text-red-700">Inactivo</Badge>
-                        )}
+                        <UserStatusToggle user={user} />
                       </TableCell>
                     </TableRow>
                   ))}

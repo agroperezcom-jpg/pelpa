@@ -95,7 +95,7 @@ export default function Layout({ children, currentPageName }) {
     base44.auth.logout();
   };
 
-  const allowedModules = getAllowedModules();
+  const allowedModules = permissionsLoading ? [] : getAllowedModules();
 
   const allModules = [
     {
