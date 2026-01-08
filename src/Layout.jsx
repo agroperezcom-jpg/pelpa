@@ -14,6 +14,7 @@ import {
   Calendar as CalendarIcon,
   Briefcase,
   Settings,
+  Shield,
   LogOut,
   Search,
   ChevronRight,
@@ -147,6 +148,7 @@ export default function Layout({ children, currentPageName }) {
       name: "Sistema",
       items: [
         { name: "Configuración", page: "Settings", icon: Settings },
+        { name: "Roles y Permisos", page: "RolesPermisos", icon: Shield },
       ]
     }] : [])
   ];
