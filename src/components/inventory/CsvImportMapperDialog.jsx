@@ -174,17 +174,17 @@ export default function CsvImportMapperDialog({
   };
 
   const handleConfirm = () => {
-    validateMapping();
+          validateMapping();
 
-    const transformedData = transformData(importOnlyValid);
-    
-    if (transformedData.length === 0) {
-      setErrors(["No hay datos válidos para importar"]);
-      return;
-    }
+          const transformedData = transformData(true); // Siempre importar solo válidos
 
-    onConfirm(transformedData);
-  };
+          if (transformedData.length === 0) {
+            setErrors(["No hay datos válidos para importar. Asegúrate de que al menos el nombre del producto esté mapeado y presente en cada fila."]);
+            return;
+          }
+
+          onConfirm(transformedData);
+        };
 
   // Vista previa de datos transformados
   const previewData = useMemo(() => {
