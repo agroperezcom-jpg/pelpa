@@ -78,7 +78,6 @@ export default function Layout({ children, currentPageName }) {
       name: "General",
       items: [
         { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
-        { name: "Dashboard Ejecutivo", page: "DashboardEjecutivo", icon: BarChart3 },
       ]
     },
     {
@@ -122,7 +121,8 @@ export default function Layout({ children, currentPageName }) {
       id: "analisis",
       name: "Análisis",
       items: [
-        { name: "Analytics", page: "Analytics", icon: BarChart3 },
+        { name: "Dashboard Ejecutivo", page: "DashboardEjecutivo", icon: BarChart3 },
+        { name: "Analytics", page: "Analytics", icon: null },
         { name: "Tablero Fiscal", page: "TableroFiscal", icon: null },
         { name: "IVA Mensual", page: "IVAMensual", icon: null },
         { name: "Ingresos Brutos", page: "IngresosBrutos", icon: null },

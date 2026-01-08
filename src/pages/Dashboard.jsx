@@ -13,11 +13,7 @@ import {
   TrendingUp,
   AlertCircle,
   ArrowRight,
-  ShoppingCart,
-  CheckCircle2,
-  ArrowUpRight,
-  ArrowDownRight,
-  DollarSign
+  CheckCircle2
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -67,27 +63,13 @@ export default function Dashboard() {
     queryFn: () => base44.entities.Project.list('-created_date', 50)
   });
 
-  const { data: sales = [] } = useQuery({
-    queryKey: ['sales'],
-    queryFn: () => base44.entities.Sale.list('-created_date', 100)
-  });
 
-  const { data: ivaVentas = [] } = useQuery({
-    queryKey: ['ivaVentas'],
-    queryFn: () => base44.entities.IVAVenta.list('-created_date', 100)
-  });
-
-  const { data: periodosIVA = [] } = useQuery({
-    queryKey: ['periodosIVA'],
-    queryFn: () => base44.entities.PeriodoIVA.list('-anio,-mes', 3)
-  });
 
   // Calculate stats
   const lowStockProducts = products.filter(p => p.stock <= p.min_stock);
   const activeProjects = projects.filter(p => p.status !== 'completado' && p.status !== 'cancelado');
   
   const today = new Date();
-  const todayStr = format(today, 'yyyy-MM-dd');
   const todaySales = sales.filter(s => s.created_date?.startsWith(todayStr) && s.estado === "CONFIRMADA");
   const totalTodaySales = todaySales.reduce((acc, s) => acc + (s.total || 0), 0);
   const todayIVA = ivaVentas.filter(iv => iv.fecha === todayStr);
@@ -124,14 +106,7 @@ export default function Dashboard() {
     };
   });
 
-  // Alert for open fiscal period
-  const mesActual = new Date().getMonth() + 1;
-  const anioActual = new Date().getFullYear();
-  const mesAnterior = mesActual === 1 ? 12 : mesActual - 1;
-  const anioAnterior = mesActual === 1 ? anioActual - 1 : anioActual;
-  const periodoAnterior = `${anioAnterior}-${String(mesAnterior).padStart(2, '0')}`;
-  const periodoAnteriorRecord = periodosIVA.find(p => p.periodo === periodoAnterior);
-  const tienePeriodoAbierto = periodoAnteriorRecord && periodoAnteriorRecord.estado === "ABIERTO";
+
 
   return (
     <div className="space-y-6">
@@ -145,94 +120,35 @@ export default function Dashboard() {
             Hola, {user?.full_name?.split(' ')[0] || 'Usuario'}
           </h1>
         </div>
-        <Link to={createPageUrl("Sales")}>
+        <Link to={createPageUrl("Projects")}>
           <Button className="bg-primary hover:bg-[hsl(var(--primary-hover))] text-primary-foreground rounded-lg px-5 h-10 text-sm font-medium transition-all duration-200 shadow-subtle">
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            Nueva Venta
+            <Briefcase className="h-4 w-4 mr-2" />
+            Nuevo Proyecto
           </Button>
         </Link>
       </div>
 
       {/* Alerts */}
-      {(tienePeriodoAbierto || lowStockProducts.length > 0) && (
-        <div className="space-y-2">
-          {tienePeriodoAbierto && (
-            <div className="alert-soft warning flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-                <AlertCircle className="h-4 w-4 text-amber-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">
-                  Período fiscal {format(new Date(anioAnterior, mesAnterior - 1), 'MMMM yyyy', { locale: es })} abierto
-                </p>
-                <p className="text-xs text-amber-700/70 mt-0.5">Ciérralo para continuar operando correctamente</p>
-              </div>
-              <Link to={createPageUrl("IVAMensual")}>
-                <Button variant="ghost" size="sm" className="text-amber-700 hover:text-amber-800 hover:bg-amber-100/50">
-                  Gestionar <ArrowRight className="h-3 w-3 ml-1" />
-                </Button>
-              </Link>
-            </div>
-          )}
-          
-          {lowStockProducts.length > 0 && (
-            <div className="alert-soft info flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-sky-100 flex items-center justify-center flex-shrink-0">
-                <Package className="h-4 w-4 text-sky-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">
-                  {lowStockProducts.length} producto{lowStockProducts.length > 1 ? 's' : ''} con stock bajo
-                </p>
-              </div>
-              <Link to={createPageUrl("Inventory")}>
-                <Button variant="ghost" size="sm" className="text-sky-700 hover:text-sky-800 hover:bg-sky-100/50">
-                  Ver <ArrowRight className="h-3 w-3 ml-1" />
-                </Button>
-              </Link>
-            </div>
-          )}
+      {lowStockProducts.length > 0 && (
+        <div className="alert-soft info flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-sky-100 flex items-center justify-center flex-shrink-0">
+            <Package className="h-4 w-4 text-sky-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium">
+              {lowStockProducts.length} producto{lowStockProducts.length > 1 ? 's' : ''} con stock bajo
+            </p>
+          </div>
+          <Link to={createPageUrl("Inventory")}>
+            <Button variant="ghost" size="sm" className="text-sky-700 hover:text-sky-800 hover:bg-sky-100/50">
+              Ver <ArrowRight className="h-3 w-3 ml-1" />
+            </Button>
+          </Link>
         </div>
       )}
 
-      {/* Stats Grid */}
+      {/* Stats Grid - PMS Focused */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="stat-card">
-          <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-              <DollarSign className="h-5 w-5 text-emerald-600" />
-            </div>
-            {salesChange !== 0 && (
-              <div className={`flex items-center gap-0.5 text-xs font-medium ${
-                salesChange > 0 ? 'text-emerald-600' : 'text-rose-600'
-              }`}>
-                {salesChange > 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                {Math.abs(salesChange)}%
-              </div>
-            )}
-          </div>
-          <p className="text-2xl font-semibold text-foreground tracking-tight">
-            ${totalTodaySales.toLocaleString()}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Ventas hoy · {todaySales.length} operaciones
-          </p>
-        </div>
-
-        <div className="stat-card">
-          <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-sky-600" />
-            </div>
-          </div>
-          <p className="text-2xl font-semibold text-foreground tracking-tight">
-            ${totalMonthSales.toLocaleString()}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Ventas del mes · {thisMonth.length} operaciones
-          </p>
-        </div>
-
         <div className="stat-card">
           <div className="flex items-start justify-between mb-3">
             <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center">
@@ -260,23 +176,51 @@ export default function Dashboard() {
             Clientes registrados
           </p>
         </div>
+
+        <div className="stat-card">
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center">
+              <CheckCircle2 className="h-5 w-5 text-sky-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-semibold text-foreground tracking-tight">
+            {projects.filter(p => p.status === "finalizado").length}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Proyectos finalizados
+          </p>
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+              <TrendingUp className="h-5 w-5 text-emerald-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-semibold text-foreground tracking-tight">
+            {products.length}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Productos en catálogo
+          </p>
+        </div>
       </div>
 
       {/* Charts Row */}
       <div className="grid lg:grid-cols-5 gap-4">
-        {/* Sales Chart */}
+        {/* Activity Chart */}
         <div className="lg:col-span-3 chart-container">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-medium text-foreground">Ventas</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Últimos 7 días</p>
+              <h3 className="text-sm font-medium text-foreground">Actividad de Proyectos</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Últimos 30 días</p>
             </div>
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={salesChartData}>
+              <AreaChart data={activityChartData}>
                 <defs>
-                  <linearGradient id="colorVentas" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="colorActivity" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.15}/>
                     <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
                   </linearGradient>
@@ -292,15 +236,14 @@ export default function Dashboard() {
                   tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
                   axisLine={false}
                   tickLine={false}
-                  tickFormatter={(value) => `$${value/1000}k`}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Area 
                   type="monotone" 
-                  dataKey="ventas" 
+                  dataKey="proyectos" 
                   stroke="hsl(var(--primary))" 
                   strokeWidth={2}
-                  fill="url(#colorVentas)" 
+                  fill="url(#colorActivity)" 
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -354,57 +297,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* IVA Card */}
-      {todayIVA.length > 0 && (
-        <div className="premium-card p-5 bg-gradient-to-r from-emerald-50/50 to-sky-50/50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">IVA Débito Fiscal Hoy</p>
-                <div className="flex items-baseline gap-3 mt-1">
-                  <p className="text-xl font-semibold text-foreground">${totalIVAHoy.toFixed(2)}</p>
-                  <Badge className="bg-sky-50 text-sky-700 border border-sky-100 text-[10px] px-2 font-normal">
-                    {todayIVA.length} Facturas B
-                  </Badge>
-                </div>
-              </div>
-            </div>
-            <Link to={createPageUrl("Finance")}>
-              <Button variant="outline" size="sm" className="text-xs border-border/60 hover:bg-secondary/50">
-                Ver Libro IVA <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      )}
 
-      {/* Quick Actions */}
+
+      {/* Quick Actions - PMS Focused */}
       <div className="premium-card p-5">
         <h3 className="text-sm font-medium text-foreground mb-4">Acciones rápidas</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Link 
-            to={createPageUrl("Clients")} 
-            className="flex items-center gap-3 p-4 rounded-xl bg-secondary/40 hover:bg-secondary/70 transition-colors group"
-          >
-            <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
-              <Users className="h-4 w-4 text-emerald-600" />
-            </div>
-            <span className="text-sm font-medium text-foreground">Nuevo Cliente</span>
-          </Link>
-          
-          <Link 
-            to={createPageUrl("Products")} 
-            className="flex items-center gap-3 p-4 rounded-xl bg-secondary/40 hover:bg-secondary/70 transition-colors group"
-          >
-            <div className="w-9 h-9 rounded-lg bg-sky-50 flex items-center justify-center group-hover:bg-sky-100 transition-colors">
-              <Package className="h-4 w-4 text-sky-600" />
-            </div>
-            <span className="text-sm font-medium text-foreground">Nuevo Producto</span>
-          </Link>
-          
           <Link 
             to={createPageUrl("Projects")} 
             className="flex items-center gap-3 p-4 rounded-xl bg-secondary/40 hover:bg-secondary/70 transition-colors group"
@@ -414,15 +312,35 @@ export default function Dashboard() {
             </div>
             <span className="text-sm font-medium text-foreground">Nuevo Proyecto</span>
           </Link>
-          
+
           <Link 
-            to={createPageUrl("Inventory")} 
+            to={createPageUrl("Clients")} 
+            className="flex items-center gap-3 p-4 rounded-xl bg-secondary/40 hover:bg-secondary/70 transition-colors group"
+          >
+            <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+              <Users className="h-4 w-4 text-emerald-600" />
+            </div>
+            <span className="text-sm font-medium text-foreground">Nuevo Cliente</span>
+          </Link>
+
+          <Link 
+            to={createPageUrl("Products")} 
+            className="flex items-center gap-3 p-4 rounded-xl bg-secondary/40 hover:bg-secondary/70 transition-colors group"
+          >
+            <div className="w-9 h-9 rounded-lg bg-sky-50 flex items-center justify-center group-hover:bg-sky-100 transition-colors">
+              <Package className="h-4 w-4 text-sky-600" />
+            </div>
+            <span className="text-sm font-medium text-foreground">Nuevo Producto</span>
+          </Link>
+
+          <Link 
+            to={createPageUrl("Calendar")} 
             className="flex items-center gap-3 p-4 rounded-xl bg-secondary/40 hover:bg-secondary/70 transition-colors group"
           >
             <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
               <TrendingUp className="h-4 w-4 text-amber-600" />
             </div>
-            <span className="text-sm font-medium text-foreground">Ajustar Stock</span>
+            <span className="text-sm font-medium text-foreground">Ver Calendario</span>
           </Link>
         </div>
       </div>
