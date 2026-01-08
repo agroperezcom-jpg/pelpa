@@ -625,6 +625,18 @@ export default function Products() {
         </div>
       )}
 
+      {/* CSV Import Mapper Dialog */}
+      <CsvImportMapperDialog
+        isOpen={isMapperDialogOpen}
+        onClose={() => {
+          setIsMapperDialogOpen(false);
+          setCsvDataForMapper(null);
+        }}
+        csvData={csvDataForMapper}
+        tiposArticulo={tiposArticulo}
+        onConfirm={handleConfirmImport}
+      />
+
       {/* Delete All Alert Dialog */}
       <AlertDialog open={deleteAllOpen} onOpenChange={setDeleteAllOpen}>
         <AlertDialogContent>
