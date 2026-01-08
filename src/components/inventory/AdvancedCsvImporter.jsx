@@ -60,6 +60,12 @@ export default function AdvancedCsvImporter({ isOpen, onClose, tiposArticulo, pr
   const [importLog, setImportLog] = useState(null);
   const queryClient = useQueryClient();
 
+  React.useEffect(() => {
+    if (file) {
+      parseCSV();
+    }
+  }, [file]);
+
   const handleFileUpload = (e) => {
     const uploadedFile = e.target.files[0];
     if (uploadedFile) {
