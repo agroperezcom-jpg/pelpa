@@ -99,21 +99,22 @@ export default function CsvImportMapperDialog({
           const fieldDef = PRODUCT_FIELDS.find(f => f.key === fieldKey);
 
           if (fieldKey === "tipo_articulo_nombre") {
-            // Buscar el ID del tipo artículo por nombre
+            // Buscar el ID del tipo artículo por nombre (flexible)
             const tipo = tiposArticulo.find(t => 
-              t.nombre?.toLowerCase() === value.toString().toLowerCase()
+              t.nombre?.toLowerCase().includes(value.toString().toLowerCase()) ||
+              value.toString().toLowerCase().includes(t.nombre?.toLowerCase())
             );
-            if (!tipo) {
-              throw new Error(`Tipo Artículo "${value}" no encontrado en el sistema`);
+            if (tipo) {
+              product.tipo_articulo_id = tipo.id;
+              product.tipo_articulo_nombre = tipo.nombre;
             }
-            product.tipo_articulo_id = tipo.id;
-            product.tipo_articulo_nombre = tipo.nombre;
+            // Si no encuentra, lo asigna después con defecto
           } else if (fieldDef?.type === "number") {
             const num = parseFloat(value);
-            if (isNaN(num)) {
-              throw new Error(`Campo "${fieldDef.label}" debe ser un número, recibió "${value}"`);
+            if (!isNaN(num)) {
+              product[fieldKey] = num;
             }
-            product[fieldKey] = num;
+            // Si no es número, simplemente se ignora y se usa defecto después
           } else {
             product[fieldKey] = value.toString();
           }
