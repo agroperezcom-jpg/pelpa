@@ -263,10 +263,10 @@ export default function Talonarios() {
                     {talonario.numero_desde} - {talonario.numero_hasta || "∞"}
                   </TableCell>
                   <TableCell className="font-mono text-sm">
-                    {talonario.prefijo}-{String(talonario.ultimo_numero_usado).padStart(6, '0')}
+                    {talonario.prefijo}-{String(talonario.ultimo_numero_usado).padStart(8, '0')}
                   </TableCell>
                   <TableCell className="font-mono font-bold text-sm text-blue-600">
-                    {talonario.prefijo}-{String(proximo).padStart(6, '0')}
+                    {talonario.prefijo}-{String(proximo).padStart(8, '0')}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -440,7 +440,7 @@ export default function Talonarios() {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-xs text-blue-900 font-medium mb-2">Vista previa:</p>
               <p className="font-mono text-lg font-bold text-blue-600">
-                {formData.prefijo || "PREFIJO"}-{String(formData.numero_desde || 1).padStart(6, '0')}
+                {formData.prefijo || "PREFIJO"}-{String(formData.numero_desde || 1).padStart(8, '0')}
               </p>
             </div>
 
