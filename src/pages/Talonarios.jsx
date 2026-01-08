@@ -419,7 +419,7 @@ export default function Talonarios() {
                 <Input
                   type="number"
                   value={formData.numero_hasta}
-                  onChange={(e) => setFormData({ ...formData, numero_hasta: parseInt(e.target.value) || "" })}
+                  onChange={(e) => setFormData({ ...formData, numero_hasta: e.target.value ? parseInt(e.target.value) : "" })}
                   placeholder="Dejar vacío para ilimitado"
                 />
               </div>
