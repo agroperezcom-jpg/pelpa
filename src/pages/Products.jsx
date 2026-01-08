@@ -134,17 +134,8 @@ export default function Products() {
 
   const deleteAllMutation = useMutation({
     mutationFn: async () => {
-      // Obtener productos en lotes y borrar hasta que no haya más
-      let allProductsDeleted = false;
-      while (!allProductsDeleted) {
-        const batch = await base44.entities.Product.filter({}, '-created_date', 100);
-        if (batch.length === 0) {
-          allProductsDeleted = true;
-        } else {
-          // Borrar todos en paralelo
-          await Promise.all(batch.map(product => base44.entities.Product.delete(product.id)));
-        }
-      }
+      const response = await base44.functions.invoke('deleteAllProducts');
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
