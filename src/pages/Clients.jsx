@@ -62,7 +62,7 @@ export default function Clients() {
   const [isImporterOpen, setIsImporterOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 20;
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -390,35 +390,25 @@ export default function Clients() {
             <p className="text-xs text-slate-600">
               Mostrando <span className="font-medium">{((currentPage - 1) * itemsPerPage) + 1}</span> a <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredClients.length)}</span> de <span className="font-medium">{filteredClients.length}</span> clientes
             </p>
-            <div className="flex gap-1">
+            <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="h-8 px-3 text-xs"
+                className="h-8 px-4 text-xs"
               >
                 ← Anterior
               </Button>
-              <div className="flex items-center gap-1 px-2">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                  <Button
-                    key={page}
-                    variant={currentPage === page ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(page)}
-                    className="h-8 w-8 p-0 text-xs"
-                  >
-                    {page}
-                  </Button>
-                ))}
-              </div>
+              <span className="flex items-center text-xs text-slate-600 px-2">
+                Página <span className="font-medium mx-1">{currentPage}</span> de <span className="font-medium mx-1">{totalPages}</span>
+              </span>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="h-8 px-3 text-xs"
+                className="h-8 px-4 text-xs"
               >
                 Siguiente →
               </Button>
