@@ -269,6 +269,104 @@ export default function Products() {
     link.click();
   };
 
+  const exportTemplate = () => {
+    const headers = ["nombre", "descripcion", "tipo_articulo", "costo_unitario", "categoria", "proveedor", "stock", "stock_minimo", "codigo_barras"];
+    const example = ["Ejemplo: Cuaderno A5", "Cuaderno rayado 100 hojas", "Papelería", "3.50", "papeleria", "Proveedor XYZ", "50", "10", "7891234567890"];
+    
+    const csvContent = [headers, example].map(row => row.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "plantilla_productos.csv";
+    link.click();
+  };
+
+  const handleImportCSV = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    processCSVFile(file);
+    e.target.value = '';
+  };
+
+  const processCSVFile = (file) => {
+    if (!file.name.endsWith('.csv')) {
+      alert('Por favor selecciona un archivo CSV');
+      return;
+    }
+
+    setIsImporting(true);
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      try {
+        const text = event.target.result;
+        const lines = text.split('\n').filter(line => line.trim());
+        
+        if (lines.length < 2) {
+          alert('El archivo está vacío o no tiene datos');
+          setIsImporting(false);
+          return;
+        }
+
+        const headers = lines[0].split(',').map(h => h.trim());
+        const rows = lines.slice(1).map(line => line.split(',').map(v => v.trim()));
+
+        setCsvDataForMapper({ headers, rows });
+        setIsMapperDialogOpen(true);
+      } catch (error) {
+        console.error('Error reading file:', error);
+        alert('Error al leer el archivo CSV');
+      } finally {
+        setIsImporting(false);
+      }
+    };
+
+    reader.readAsText(file);
+  };
+
+  const handleConfirmImport = async (productsToCreate) => {
+    try {
+      if (productsToCreate.length === 0) {
+        alert('No hay productos para importar');
+        return;
+      }
+
+      await base44.entities.Product.bulkCreate(productsToCreate);
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+
+      alert(`✓ ${productsToCreate.length} producto${productsToCreate.length !== 1 ? 's' : ''} importado${productsToCreate.length !== 1 ? 's' : ''} exitosamente`);
+      setIsMapperDialogOpen(false);
+      setCsvDataForMapper(null);
+    } catch (error) {
+      console.error('Error importing:', error);
+      alert('Error al importar productos: ' + error.message);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      processCSVFile(files[0]);
+    }
+  };
+
   const calculatedPrices = formData.tipo_articulo_id && formData.costo_unitario ? 
     calculatePrices(formData.costo_unitario, formData.tipo_articulo_id) : null;
 
