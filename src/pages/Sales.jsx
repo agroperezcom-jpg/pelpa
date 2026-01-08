@@ -1010,23 +1010,31 @@ export default function Sales() {
                 />
               </div>
 
-              <div className="flex gap-2">
-                <Button 
-                  variant={activeTab === 'products' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setActiveTab('products')}
-                >
-                  <Package className="h-4 w-4 mr-2" />
-                  Productos
-                </Button>
-                <Button 
-                  variant={activeTab === 'services' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setActiveTab('services')}
-                >
-                  <Briefcase className="h-4 w-4 mr-2" />
-                  Servicios
-                </Button>
+              <div className="flex items-center justify-between">
+                <div className="flex gap-2">
+                  <Button 
+                    variant={activeTab === 'products' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => setActiveTab('products')}
+                  >
+                    <Package className="h-4 w-4 mr-2" />
+                    Productos
+                  </Button>
+                  <Button 
+                    variant={activeTab === 'services' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => setActiveTab('services')}
+                  >
+                    <Briefcase className="h-4 w-4 mr-2" />
+                    Servicios
+                  </Button>
+                </div>
+                <span className="text-xs text-slate-500 font-medium">
+                  {activeTab === 'products' 
+                    ? `${filteredProducts.length} disponibles`
+                    : `${filteredServices.length} disponibles`
+                  }
+                </span>
               </div>
 
               <div className="h-96 overflow-y-auto space-y-2 border rounded-lg p-2">
