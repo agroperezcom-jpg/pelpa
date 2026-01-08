@@ -111,6 +111,7 @@ export default function Layout({ children, currentPageName }) {
     { name: "Ventas", page: "Sales", icon: ShoppingCart },
     { name: "Gastos", page: "Expenses", icon: Receipt },
     { name: "Tesorería", page: "TesoreriaV2", icon: Landmark },
+    { name: "Cheques", page: "Cheques", icon: FileText },
     { name: "Tablero Fiscal", page: "TableroFiscal", icon: BarChart3 },
     { name: "IVA Mensual", page: "IVAMensual", icon: FileText },
     { name: "Ingresos Brutos", page: "IngresosBrutos", icon: Receipt },
