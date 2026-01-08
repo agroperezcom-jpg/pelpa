@@ -74,7 +74,7 @@ export default function Dashboard() {
   // Calculate stats
   const lowStockProducts = products.filter(p => p.stock < p.min_stock);
   const riskStockProducts = products.filter(p => p.stock > 0 && p.stock <= (p.min_stock || 0) * 1.5);
-  const activeProjects = projects.filter(p => p.status !== 'completado' && p.status !== 'cancelado');
+  const activeProjects = projects.filter(p => ['aprobado', 'en_ejecucion'].includes(p.status));
   
   // Today's tasks
   const todayStr = format(new Date(), 'yyyy-MM-dd');

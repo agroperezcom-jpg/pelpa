@@ -24,6 +24,7 @@ export default function ProjectBudgetingTab({ projectId, projectStatus }) {
   const [approvalComment, setApprovalComment] = useState("");
   const [selectedBudget, setSelectedBudget] = useState(null);
   const [user, setUser] = useState(null);
+  const [activeTab, setActiveTab] = useState("versions");
 
   const [formData, setFormData] = useState({
     version_name: "",
@@ -53,6 +54,16 @@ export default function ProjectBudgetingTab({ projectId, projectStatus }) {
   const { data: project } = useQuery({
     queryKey: ['project', projectId],
     queryFn: () => base44.entities.Project.filter({ id: projectId }).then(r => r[0])
+  });
+
+  const { data: phases = [] } = useQuery({
+    queryKey: ['projectPhases', projectId],
+    queryFn: () => base44.entities.ProjectPhase.filter({ project_id: projectId })
+  });
+
+  const { data: tasks = [] } = useQuery({
+    queryKey: ['projectTasks', projectId],
+    queryFn: () => base44.entities.ProjectTask.filter({ project_id: projectId })
   });
 
   const createBudgetMutation = useMutation({
@@ -338,7 +349,34 @@ export default function ProjectBudgetingTab({ projectId, projectStatus }) {
         </Card>
       )}
 
+      {/* Tabs: Versiones / Control */}
+      <div className="flex gap-2 border-b mb-4">
+        <button
+          onClick={() => setActiveTab("versions")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "versions"
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-slate-600 hover:text-slate-800"
+          }`}
+        >
+          Versiones de Presupuesto
+        </button>
+        {approvedBudget && (
+          <button
+            onClick={() => setActiveTab("control")}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "control"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-slate-600 hover:text-slate-800"
+            }`}
+          >
+            Control de Desviaciones
+          </button>
+        )}
+      </div>
+
       {/* Lista de Versiones */}
+      {activeTab === "versions" && (
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-slate-700 uppercase">Historial de Versiones</h3>
         {budgets.length === 0 ? (
@@ -468,6 +506,16 @@ export default function ProjectBudgetingTab({ projectId, projectStatus }) {
           ))
         )}
       </div>
+      )}
+
+      {/* Control de Desviaciones */}
+      {activeTab === "control" && approvedBudget && (
+        <BudgetDeviationControl 
+          budget={approvedBudget}
+          phases={phases}
+          tasks={tasks}
+        />
+      )}
 
       {/* Dialog Crear/Editar Presupuesto */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
