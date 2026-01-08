@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import BudgetDeviationControl from "./BudgetDeviationControl";
 
 export default function ProjectBudgetingTab({ projectId, projectStatus }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
