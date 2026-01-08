@@ -88,6 +88,7 @@ export default function Products() {
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [isAdvancedImporterOpen, setIsAdvancedImporterOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -308,6 +309,21 @@ export default function Products() {
 
   const calculatedPrices = formData.tipo_articulo_id && formData.costo_unitario ? 
     calculatePrices(formData.costo_unitario, formData.tipo_articulo_id) : null;
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setFormData({ ...formData, image_url: file_url });
+    } catch (error) {
+      alert("Error al subir imagen: " + error.message);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -796,13 +812,43 @@ export default function Products() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="image_url">URL de Imagen</Label>
-              <Input
-                id="image_url"
-                value={formData.image_url}
-                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                placeholder="https://..."
-              />
+              <Label htmlFor="image_url">Imagen del Producto</Label>
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <input
+                    id="image_upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={isUploadingImage}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('image_upload')?.click()}
+                    disabled={isUploadingImage}
+                    className="flex-1"
+                  >
+                    {isUploadingImage ? 'Subiendo...' : 'Seleccionar Imagen'}
+                  </Button>
+                  {formData.image_url && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => setFormData({ ...formData, image_url: '' })}
+                      className="text-red-600"
+                    >
+                      Eliminar
+                    </Button>
+                  )}
+                </div>
+                {formData.image_url && (
+                  <div className="w-full h-32 rounded-lg border border-slate-200 overflow-hidden bg-slate-50 flex items-center justify-center">
+                    <img src={formData.image_url} alt="Preview" className="h-full object-contain" />
+                  </div>
+                )}
+              </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
