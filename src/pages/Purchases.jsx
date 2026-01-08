@@ -379,6 +379,41 @@ export default function Purchases() {
   };
 
   const agregarPago = () => {
+    if (nuevoPago.es_cheque) {
+      if (!nuevoPago.cheque_numero || !nuevoPago.cheque_banco_id || !nuevoPago.importe || parseFloat(nuevoPago.importe) <= 0) {
+        alert("Complete todos los campos del cheque");
+        return;
+      }
+
+      const banco = bancos.find(b => b.id === nuevoPago.cheque_banco_id);
+
+      setPagos([...pagos, {
+        medio_pago_id: null,
+        medio_pago_nombre: `Cheque Propio ${nuevoPago.cheque_numero}`,
+        importe: parseFloat(nuevoPago.importe),
+        banco_id: nuevoPago.cheque_banco_id,
+        banco_nombre: banco?.nombre || "",
+        caja_id: null,
+        caja_nombre: "",
+        es_cheque: true,
+        cheque_numero: nuevoPago.cheque_numero,
+        cheque_banco_id: nuevoPago.cheque_banco_id,
+        cheque_fecha_vencimiento: nuevoPago.cheque_fecha_vencimiento
+      }]);
+
+      setNuevoPago({
+        medio_pago_id: "",
+        importe: "",
+        banco_id: "",
+        caja_id: "",
+        es_cheque: false,
+        cheque_numero: "",
+        cheque_banco_id: "",
+        cheque_fecha_vencimiento: ""
+      });
+      return;
+    }
+
     if (!nuevoPago.medio_pago_id || !nuevoPago.importe || parseFloat(nuevoPago.importe) <= 0) {
       return;
     }

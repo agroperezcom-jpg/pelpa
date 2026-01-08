@@ -416,6 +416,7 @@ export default function Sales() {
       queryClient.invalidateQueries({ queryKey: ['tiposComprobante'] });
       queryClient.invalidateQueries({ queryKey: ['ivaVentas'] });
       queryClient.invalidateQueries({ queryKey: ['iibbVentas'] });
+      queryClient.invalidateQueries({ queryKey: ['cheques'] });
       setIsPagosDialogOpen(false);
       setVentaConfirmada(sale);
       setPagosConfirmados(variables.pagos);
