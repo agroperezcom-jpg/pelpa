@@ -66,7 +66,8 @@ export default function Dashboard() {
 
 
   // Calculate stats
-  const lowStockProducts = products.filter(p => p.stock <= p.min_stock);
+  const lowStockProducts = products.filter(p => p.stock < p.min_stock);
+  const riskStockProducts = products.filter(p => p.stock > 0 && p.stock <= (p.min_stock || 0) * 1.5);
   const activeProjects = projects.filter(p => p.status !== 'completado' && p.status !== 'cancelado');
 
   // Project activity chart data (last 30 days)
@@ -109,21 +110,42 @@ export default function Dashboard() {
       </div>
 
       {/* Alerts */}
-      {lowStockProducts.length > 0 && (
-        <div className="alert-soft info flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-sky-100 flex items-center justify-center flex-shrink-0">
-            <Package className="h-4 w-4 text-sky-600" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium">
-              {lowStockProducts.length} producto{lowStockProducts.length > 1 ? 's' : ''} con stock bajo
-            </p>
-          </div>
-          <Link to={createPageUrl("Inventory")}>
-            <Button variant="ghost" size="sm" className="text-sky-700 hover:text-sky-800 hover:bg-sky-100/50">
-              Ver <ArrowRight className="h-3 w-3 ml-1" />
-            </Button>
-          </Link>
+      {(lowStockProducts.length > 0 || riskStockProducts.length > 0) && (
+        <div className="space-y-2">
+          {lowStockProducts.length > 0 && (
+            <div className="alert-soft error flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">
+                  {lowStockProducts.length} producto{lowStockProducts.length > 1 ? 's' : ''} debajo del stock mínimo
+                </p>
+              </div>
+              <Link to={createPageUrl("Inventory")}>
+                <Button variant="ghost" size="sm" className="text-red-700 hover:text-red-800 hover:bg-red-100/50">
+                  Ver <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          )}
+          {riskStockProducts.length > 0 && (
+            <div className="alert-soft warning flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+                <Package className="h-4 w-4 text-orange-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">
+                  {riskStockProducts.length} producto{riskStockProducts.length > 1 ? 's' : ''} en riesgo de bajo stock
+                </p>
+              </div>
+              <Link to={createPageUrl("Inventory")}>
+                <Button variant="ghost" size="sm" className="text-orange-700 hover:text-orange-800 hover:bg-orange-100/50">
+                  Ver <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
       )}
 
@@ -159,29 +181,29 @@ export default function Dashboard() {
 
         <div className="stat-card">
           <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center">
-              <CheckCircle2 className="h-5 w-5 text-sky-600" />
+            <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
+              <AlertCircle className="h-5 w-5 text-red-600" />
             </div>
           </div>
           <p className="text-2xl font-semibold text-foreground tracking-tight">
-            {projects.filter(p => p.status === "finalizado").length}
+            {lowStockProducts.length}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Proyectos finalizados
+            Productos debajo del stock mínimo
           </p>
         </div>
 
         <div className="stat-card">
           <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-emerald-600" />
+            <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
+              <TrendingUp className="h-5 w-5 text-orange-600" />
             </div>
           </div>
           <p className="text-2xl font-semibold text-foreground tracking-tight">
-            {products.length}
+            {riskStockProducts.length}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Productos en catálogo
+            Productos en riesgo de bajo stock
           </p>
         </div>
       </div>
