@@ -25,6 +25,7 @@ export default function MonthView({ currentDate, events, onEventClick, onDateCli
     if (event.type === "project") return "bg-purple-500";
     if (event.type === "phase") return "bg-blue-500";
     if (event.type === "task") return "bg-green-500";
+    if (event.type === "freeTask") return "bg-slate-400";
     if (event.type === "milestone") return "bg-amber-500";
     if (event.type === "campaign") return "bg-pink-500";
     return "bg-slate-500";
@@ -32,10 +33,10 @@ export default function MonthView({ currentDate, events, onEventClick, onDateCli
 
   return (
     <Card className="border-0 shadow-sm overflow-hidden">
-      <div className="bg-slate-50 border-b">
+      <div className="bg-secondary/50 border-b">
         <div className="grid grid-cols-7">
           {weekDays.map(day => (
-            <div key={day} className="p-3 text-center text-xs font-semibold text-slate-600 border-r last:border-r-0">
+            <div key={day} className="p-3 text-center text-xs font-semibold text-muted-foreground border-r last:border-r-0">
               {day}
             </div>
           ))}
@@ -52,8 +53,8 @@ export default function MonthView({ currentDate, events, onEventClick, onDateCli
             <div
               key={day.toString()}
               className={cn(
-                "min-h-[120px] border-r border-b p-2 cursor-pointer hover:bg-slate-50 transition-colors",
-                !isCurrentMonth && "bg-slate-50/50",
+                "min-h-[120px] border-r border-b p-2 cursor-pointer hover:bg-secondary/50 transition-colors",
+                !isCurrentMonth && "bg-secondary/20",
                 index % 7 === 6 && "border-r-0"
               )}
               onClick={() => onDateClick(day)}
@@ -61,8 +62,8 @@ export default function MonthView({ currentDate, events, onEventClick, onDateCli
               <div className="flex items-center justify-between mb-2">
                 <span className={cn(
                   "text-sm font-medium",
-                  !isCurrentMonth && "text-slate-400",
-                  isDayToday && "w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs"
+                  !isCurrentMonth && "text-muted-foreground/50",
+                  isDayToday && "w-7 h-7 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs"
                 )}>
                   {format(day, "d")}
                 </span>
@@ -90,7 +91,7 @@ export default function MonthView({ currentDate, events, onEventClick, onDateCli
                   </div>
                 ))}
                 {dayEvents.length > 3 && (
-                  <div className="text-[10px] text-slate-500 pl-2">
+                  <div className="text-[10px] text-muted-foreground pl-2">
                     +{dayEvents.length - 3} más
                   </div>
                 )}

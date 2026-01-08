@@ -300,6 +300,12 @@ export default function Calendar() {
     t.status !== "finalizada"
   );
 
+  const overdueFreeTasks = freeTasks.filter(t =>
+    t.date &&
+    new Date(t.date) < today &&
+    t.status !== "completada"
+  );
+
   const upcomingMilestones = milestones.filter(m => {
     const diff = Math.ceil((new Date(m.date) - today) / (1000 * 60 * 60 * 24));
     return diff >= 0 && diff <= 7 && m.status === "pendiente";
@@ -368,11 +374,13 @@ export default function Calendar() {
         setViewMode={setViewMode}
         onCreateEvent={handleCreateEvent}
         filteredEventsCount={events.length}
+        customDaysCount={customDaysCount}
+        onCustomRangeClick={() => setCustomRangeDialogOpen(true)}
       />
 
       {/* Alerts */}
-      {(overdueProjects.length > 0 || overdueTasks.length > 0 || upcomingMilestones.length > 0) && (
-        <div className="grid md:grid-cols-3 gap-4">
+      {(overdueProjects.length > 0 || overdueTasks.length > 0 || overdueFreeTasks.length > 0 || upcomingMilestones.length > 0) && (
+        <div className="grid md:grid-cols-4 gap-4">
           {overdueProjects.length > 0 && (
             <Alert className="border-red-200 bg-red-50">
               <AlertCircle className="h-4 w-4 text-red-600" />
@@ -387,8 +395,18 @@ export default function Calendar() {
             <Alert className="border-amber-200 bg-amber-50">
               <Clock className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-sm">
-                <strong className="text-amber-900">{overdueTasks.length} tarea{overdueTasks.length > 1 ? 's' : ''}</strong>
+                <strong className="text-amber-900">{overdueTasks.length} tarea{overdueTasks.length > 1 ? 's proyecto' : ' proyecto'}</strong>
                 <span className="text-amber-700"> vencida{overdueTasks.length > 1 ? 's' : ''}</span>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {overdueFreeTasks.length > 0 && (
+            <Alert className="border-slate-200 bg-slate-50">
+              <AlertCircle className="h-4 w-4 text-slate-600" />
+              <AlertDescription className="text-sm">
+                <strong className="text-slate-900">{overdueFreeTasks.length} tarea{overdueFreeTasks.length > 1 ? 's libres' : ' libre'}</strong>
+                <span className="text-slate-700"> vencida{overdueFreeTasks.length > 1 ? 's' : ''}</span>
               </AlertDescription>
             </Alert>
           )}
@@ -417,16 +435,16 @@ export default function Calendar() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase">Eventos visibles</p>
-            <p className="text-2xl font-bold text-slate-800 mt-1">{events.length}</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase">Eventos visibles</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{events.length}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase">Proyectos activos</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase">Proyectos activos</p>
             <p className="text-2xl font-bold text-blue-600 mt-1">
               {projects.filter(p => p.status === "activo").length}
             </p>
@@ -434,7 +452,7 @@ export default function Calendar() {
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase">Tareas pendientes</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase">Tareas proyecto</p>
             <p className="text-2xl font-bold text-green-600 mt-1">
               {tasks.filter(t => t.status !== "finalizada").length}
             </p>
@@ -442,7 +460,15 @@ export default function Calendar() {
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase">Próximos hitos</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase">Tareas libres</p>
+            <p className="text-2xl font-bold text-slate-600 mt-1">
+              {freeTasks.filter(t => t.status !== "completada").length}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-4">
+            <p className="text-xs font-medium text-muted-foreground uppercase">Próximos hitos</p>
             <p className="text-2xl font-bold text-amber-600 mt-1">
               {upcomingMilestones.length}
             </p>

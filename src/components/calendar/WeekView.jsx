@@ -23,6 +23,7 @@ export default function WeekView({ currentDate, events, onEventClick }) {
     if (event.type === "project") return "bg-purple-100 border-purple-300 text-purple-800";
     if (event.type === "phase") return "bg-blue-100 border-blue-300 text-blue-800";
     if (event.type === "task") return "bg-green-100 border-green-300 text-green-800";
+    if (event.type === "freeTask") return "bg-slate-50 border-slate-200 text-slate-700";
     if (event.type === "milestone") return "bg-amber-100 border-amber-300 text-amber-800";
     if (event.type === "campaign") return "bg-pink-100 border-pink-300 text-pink-800";
     return "bg-slate-100 border-slate-300 text-slate-800";
@@ -33,9 +34,9 @@ export default function WeekView({ currentDate, events, onEventClick }) {
       <div className="overflow-x-auto">
         <div className="min-w-[900px]">
           {/* Header */}
-          <div className="bg-slate-50 border-b sticky top-0 z-10">
+          <div className="bg-secondary/50 border-b sticky top-0 z-10">
             <div className="grid grid-cols-8">
-              <div className="p-3 border-r text-xs font-semibold text-slate-600">Hora</div>
+              <div className="p-3 border-r text-xs font-semibold text-muted-foreground">Hora</div>
               {days.map(day => {
                 const isDayToday = isToday(day);
                 return (
@@ -43,15 +44,15 @@ export default function WeekView({ currentDate, events, onEventClick }) {
                     key={day.toString()}
                     className={cn(
                       "p-3 border-r last:border-r-0 text-center",
-                      isDayToday && "bg-blue-50"
+                      isDayToday && "bg-primary/10"
                     )}
                   >
-                    <div className="text-xs font-semibold text-slate-600">
+                    <div className="text-xs font-semibold text-muted-foreground">
                       {format(day, "EEE", { locale: es })}
                     </div>
                     <div className={cn(
                       "text-lg font-bold mt-1",
-                      isDayToday ? "text-blue-600" : "text-slate-800"
+                      isDayToday ? "text-primary" : "text-foreground"
                     )}>
                       {format(day, "d")}
                     </div>
@@ -65,7 +66,7 @@ export default function WeekView({ currentDate, events, onEventClick }) {
           <div className="relative">
             {hours.map(hour => (
               <div key={hour} className="grid grid-cols-8 border-b">
-                <div className="p-2 border-r text-xs text-slate-500 text-right pr-3">
+                <div className="p-2 border-r text-xs text-muted-foreground text-right pr-3">
                   {format(new Date().setHours(hour, 0), "HH:mm")}
                 </div>
                 {days.map(day => {
@@ -75,7 +76,7 @@ export default function WeekView({ currentDate, events, onEventClick }) {
                       key={`${day}-${hour}`}
                       className={cn(
                         "min-h-[60px] border-r last:border-r-0 p-1",
-                        isDayToday && "bg-blue-50/30"
+                        isDayToday && "bg-primary/5"
                       )}
                     />
                   );

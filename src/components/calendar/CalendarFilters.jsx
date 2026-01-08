@@ -23,10 +23,11 @@ export default function CalendarFilters({
   const layerOptions = [
     { key: "projects", label: "Proyectos", icon: Briefcase, color: "text-purple-600" },
     { key: "phases", label: "Fases", icon: Target, color: "text-blue-600" },
-    { key: "tasks", label: "Tareas", icon: CheckSquare, color: "text-green-600" },
+    { key: "tasks", label: "Tareas Proyecto", icon: CheckSquare, color: "text-green-600" },
+    { key: "freeTasks", label: "Tareas Libres", icon: Calendar, color: "text-slate-600" },
     { key: "milestones", label: "Hitos", icon: Target, color: "text-amber-600" },
     { key: "campaigns", label: "Campañas", icon: Megaphone, color: "text-pink-600" },
-    { key: "events", label: "Eventos libres", icon: Calendar, color: "text-slate-600" }
+    { key: "events", label: "Eventos", icon: Calendar, color: "text-slate-400" }
   ];
 
   const activeLayersCount = Object.values(layers).filter(Boolean).length;
