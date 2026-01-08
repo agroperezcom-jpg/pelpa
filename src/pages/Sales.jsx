@@ -438,7 +438,17 @@ export default function Sales() {
       }
 
       // Determinar tipo de comprobante
-      const tipoComprobante = saleData.genera_iva ? "B" : "X";
+      let tipoComprobante;
+      if (saleData.genera_iva) {
+        // Factura A solo para Responsables Inscriptos
+        if (saleData.client_tipo_iva === "RESP_INSCRIPTO") {
+          tipoComprobante = "A";
+        } else {
+          tipoComprobante = "B";
+        }
+      } else {
+        tipoComprobante = "X";
+      }
       
       if (talonario.tipo_comprobante !== tipoComprobante) {
         throw new Error(`El talonario seleccionado es para comprobantes tipo ${talonario.tipo_comprobante}, pero la venta requiere tipo ${tipoComprobante}`);
@@ -1207,7 +1217,9 @@ export default function Sales() {
                     <div>
                       <Label className="text-sm font-semibold text-blue-900">Generar IVA Ventas</Label>
                       <p className="text-xs text-blue-700 mt-1">
-                        {currentSale.genera_iva ? "Factura B - IVA discriminado" : "Ticket X - Sin IVA"}
+                        {currentSale.genera_iva ? (
+                          currentSale.client_tipo_iva === "RESP_INSCRIPTO" ? "Factura A - IVA discriminado" : "Factura B - IVA discriminado"
+                        ) : "Ticket X - Sin IVA"}
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -1255,7 +1267,16 @@ export default function Sales() {
                     </SelectTrigger>
                     <SelectContent>
                       {talonarios
-                        .filter(t => t.activo && t.tipo_comprobante === (currentSale.genera_iva ? "B" : "X"))
+                        .filter(t => {
+                          if (!t.activo) return false;
+                          if (!currentSale.genera_iva) return t.tipo_comprobante === "X";
+                          // Con IVA: Factura A para RI, Factura B para el resto
+                          if (currentSale.client_tipo_iva === "RESP_INSCRIPTO") {
+                            return t.tipo_comprobante === "A";
+                          } else {
+                            return t.tipo_comprobante === "B";
+                          }
+                        })
                         .map(t => (
                           <SelectItem key={t.id} value={t.id}>
                             {t.nombre} ({t.prefijo}-{String(t.ultimo_numero_usado + 1).padStart(8, '0')})
@@ -1263,7 +1284,15 @@ export default function Sales() {
                         ))}
                     </SelectContent>
                   </Select>
-                  {talonarios.filter(t => t.activo && t.tipo_comprobante === (currentSale.genera_iva ? "B" : "X")).length === 0 && (
+                  {talonarios.filter(t => {
+                    if (!t.activo) return false;
+                    if (!currentSale.genera_iva) return t.tipo_comprobante === "X";
+                    if (currentSale.client_tipo_iva === "RESP_INSCRIPTO") {
+                      return t.tipo_comprobante === "A";
+                    } else {
+                      return t.tipo_comprobante === "B";
+                    }
+                  }).length === 0 && (
                     <p className="text-xs text-red-600">No hay talonarios activos para este tipo de comprobante</p>
                   )}
                 </div>

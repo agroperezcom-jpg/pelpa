@@ -442,12 +442,12 @@ export default function SettingsPage() {
                     </div>
                     <Badge className="bg-green-100 text-green-700">Activo</Badge>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg opacity-50">
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                     <div>
                       <p className="font-medium">Factura A</p>
-                      <p className="text-xs text-slate-500">No implementada</p>
+                      <p className="text-xs text-slate-500">Solo para Responsables Inscriptos con CUIT válido</p>
                     </div>
-                    <Badge className="bg-slate-100 text-slate-600">Inactivo</Badge>
+                    <Badge className="bg-green-100 text-green-700">Activo</Badge>
                   </div>
                 </div>
               </CardContent>

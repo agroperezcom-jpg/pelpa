@@ -196,7 +196,14 @@ export default function Presupuestos() {
         const netoGravado = generaIVA ? presupuesto.total_presupuesto / 1.21 : presupuesto.total_presupuesto;
         const ivaCalculado = generaIVA ? presupuesto.total_presupuesto - netoGravado : 0;
         
-        const tipoComprobante = generaIVA ? "B" : "X";
+        // Determinar tipo de comprobante
+        let tipoComprobante;
+        if (generaIVA) {
+          const cliente = clients.find(c => c.id === presupuesto.cliente_id);
+          tipoComprobante = cliente?.tipo_iva === "RESP_INSCRIPTO" ? "A" : "B";
+        } else {
+          tipoComprobante = "X";
+        }
         
         // Buscar o crear tipo de comprobante
         let tipoComprobanteRecord = tiposComprobante.find(tc => tc.codigo === tipoComprobante);
