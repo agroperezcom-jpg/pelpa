@@ -136,9 +136,8 @@ export default function Products() {
     mutationFn: async () => {
       // Obtener todos los productos sin límite
       const allProducts = await base44.entities.Product.filter({}, '-created_date', 10000);
-      for (const product of allProducts) {
-        await base44.entities.Product.delete(product.id);
-      }
+      // Borrar todos en paralelo (no secuencial)
+      await Promise.all(allProducts.map(product => base44.entities.Product.delete(product.id)));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
