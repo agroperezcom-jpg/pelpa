@@ -73,6 +73,14 @@ export default function Sales() {
   });
   const [productSearch, setProductSearch] = useState("");
   const [activeTab, setActiveTab] = useState("products");
+  const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
+  const [newClient, setNewClient] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    tipo_iva: "CONSUMIDOR_FINAL",
+    cuit_cuil: ""
+  });
 
   const queryClient = useQueryClient();
 
@@ -184,6 +192,41 @@ export default function Sales() {
   const { data: configuracionIIBB = [] } = useQuery({
     queryKey: ['configuracionIIBB'],
     queryFn: () => base44.entities.ConfiguracionIIBB.list()
+  });
+
+  const createClientMutation = useMutation({
+    mutationFn: async (clientData) => {
+      if (!clientData.name) {
+        throw new Error("El nombre del cliente es obligatorio");
+      }
+      return await base44.entities.Client.create({
+        ...clientData,
+        status: "active",
+        saldo_cc: 0
+      });
+    },
+    onSuccess: (newClient) => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      const shouldGenerateIVA = newClient.tipo_iva === "RESP_INSCRIPTO" || newClient.tipo_iva === "MONOTRIBUTO";
+      setCurrentSale({
+        ...currentSale,
+        client_id: newClient.id,
+        client_name: newClient.name,
+        client_tipo_iva: newClient.tipo_iva,
+        genera_iva: shouldGenerateIVA
+      });
+      setIsClientDialogOpen(false);
+      setNewClient({
+        name: "",
+        email: "",
+        phone: "",
+        tipo_iva: "CONSUMIDOR_FINAL",
+        cuit_cuil: ""
+      });
+    },
+    onError: (error) => {
+      alert(error.message);
+    }
   });
 
   const anularVentaMutation = useMutation({
@@ -1112,7 +1155,19 @@ export default function Sales() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs">Cliente</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Cliente</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsClientDialogOpen(true)}
+                      className="h-6 text-xs text-blue-600"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Nuevo
+                    </Button>
+                  </div>
                   <Select 
                     value={currentSale.client_id} 
                     onValueChange={(v) => {
@@ -1281,6 +1336,87 @@ export default function Sales() {
         onClose={() => setIsReportesDialogOpen(false)}
         user={user}
       />
+
+      {/* Nuevo Cliente Dialog */}
+      <Dialog open={isClientDialogOpen} onOpenChange={setIsClientDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nuevo Cliente</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nombre *</Label>
+              <Input
+                value={newClient.name}
+                onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
+                placeholder="Nombre completo"
+                autoFocus
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Teléfono</Label>
+                <Input
+                  value={newClient.phone}
+                  onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
+                  placeholder="261-1234567"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={newClient.email}
+                  onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
+                  placeholder="cliente@email.com"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tipo IVA *</Label>
+              <Select 
+                value={newClient.tipo_iva}
+                onValueChange={(v) => setNewClient({ ...newClient, tipo_iva: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CONSUMIDOR_FINAL">Consumidor Final</SelectItem>
+                  <SelectItem value="RESP_INSCRIPTO">Responsable Inscripto</SelectItem>
+                  <SelectItem value="MONOTRIBUTO">Monotributo</SelectItem>
+                  <SelectItem value="EXENTO">Exento</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {(newClient.tipo_iva === "RESP_INSCRIPTO" || newClient.tipo_iva === "MONOTRIBUTO") && (
+              <div className="space-y-2">
+                <Label>CUIT/CUIL</Label>
+                <Input
+                  value={newClient.cuit_cuil}
+                  onChange={(e) => setNewClient({ ...newClient, cuit_cuil: e.target.value })}
+                  placeholder="20-12345678-9"
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsClientDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => createClientMutation.mutate(newClient)}
+              className="bg-blue-600 hover:bg-blue-700"
+              disabled={!newClient.name}
+            >
+              Crear Cliente
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Ticket Dialog */}
       <Dialog open={isTicketDialogOpen} onOpenChange={setIsTicketDialogOpen}>
