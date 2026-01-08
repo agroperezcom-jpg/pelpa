@@ -134,7 +134,9 @@ export default function Products() {
 
   const deleteAllMutation = useMutation({
     mutationFn: async () => {
-      for (const product of products) {
+      // Obtener todos los productos sin límite
+      const allProducts = await base44.entities.Product.filter({}, '-created_date', 10000);
+      for (const product of allProducts) {
         await base44.entities.Product.delete(product.id);
       }
     },
