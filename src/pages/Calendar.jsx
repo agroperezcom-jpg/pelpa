@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -11,20 +11,36 @@ import CalendarFilters from "@/components/calendar/CalendarFilters";
 import MonthView from "@/components/calendar/MonthView";
 import WeekView from "@/components/calendar/WeekView";
 import TimelineView from "@/components/calendar/TimelineView";
+import CustomDaysView from "@/components/calendar/CustomDaysView";
+import FreeTaskDialog from "@/components/calendar/FreeTaskDialog";
+import CustomRangeDialog from "@/components/calendar/CustomRangeDialog";
 
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState("month");
+  const [customDaysCount, setCustomDaysCount] = useState(5);
   const [layers, setLayers] = useState({
     projects: true,
     phases: true,
     tasks: true,
+    freeTasks: true,
     milestones: true,
     campaigns: true,
     events: false
   });
   const [selectedProject, setSelectedProject] = useState("all");
   const [selectedUser, setSelectedUser] = useState("all");
+  const [currentUser, setCurrentUser] = useState(null);
+  const [freeTaskDialogOpen, setFreeTaskDialogOpen] = useState(false);
+  const [customRangeDialogOpen, setCustomRangeDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+  const [clickedDate, setClickedDate] = useState(null);
+
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser).catch(() => {});
+  }, []);
 
   // Fetch data
   const { data: projects = [] } = useQuery({
@@ -55,6 +71,56 @@ export default function Calendar() {
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
     queryFn: () => base44.entities.User.list()
+  });
+
+  const { data: freeTasks = [] } = useQuery({
+    queryKey: ['freeTasks'],
+    queryFn: () => base44.entities.FreeTask.list()
+  });
+
+  const { data: preferences = [] } = useQuery({
+    queryKey: ['calendarPreferences', currentUser?.email],
+    queryFn: async () => {
+      if (!currentUser?.email) return [];
+      return await base44.entities.CalendarPreferences.filter({ user_email: currentUser.email });
+    },
+    enabled: !!currentUser?.email
+  });
+
+  const userPreference = preferences[0];
+
+  const createFreeTaskMutation = useMutation({
+    mutationFn: (taskData) => base44.entities.FreeTask.create(taskData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['freeTasks'] });
+      setFreeTaskDialogOpen(false);
+      setEditingTask(null);
+    }
+  });
+
+  const updateFreeTaskMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.FreeTask.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['freeTasks'] });
+      setFreeTaskDialogOpen(false);
+      setEditingTask(null);
+    }
+  });
+
+  const updatePreferencesMutation = useMutation({
+    mutationFn: async (data) => {
+      if (userPreference?.id) {
+        return await base44.entities.CalendarPreferences.update(userPreference.id, data);
+      } else {
+        return await base44.entities.CalendarPreferences.create({
+          user_email: currentUser?.email,
+          ...data
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendarPreferences'] });
+    }
   });
 
   // Combine all events based on active layers
@@ -188,6 +254,32 @@ export default function Calendar() {
       });
     }
 
+    // Free Tasks
+    if (layers.freeTasks) {
+      freeTasks.forEach(task => {
+        if (task.date) {
+          const matchesUser = selectedUser === "all" || task.assigned_to === selectedUser;
+
+          if (matchesUser) {
+            events.push({
+              id: task.id,
+              name: task.name,
+              type: "freeTask",
+              date: task.date,
+              start_date: task.date,
+              estimated_end_date: task.date,
+              status: task.status,
+              priority: task.priority,
+              time: task.time,
+              duration: task.duration,
+              tags: task.tags,
+              data: task
+            });
+          }
+        }
+      });
+    }
+
     return events;
   };
 
@@ -214,7 +306,10 @@ export default function Calendar() {
   });
 
   const handleEventClick = (event) => {
-    if (event.type === "project") {
+    if (event.type === "freeTask") {
+      setEditingTask(event.data);
+      setFreeTaskDialogOpen(true);
+    } else if (event.type === "project") {
       window.location.href = `/Projects?id=${event.id}`;
     } else if (event.type === "task") {
       window.location.href = `/Projects?id=${event.project_id}`;
@@ -224,12 +319,44 @@ export default function Calendar() {
   };
 
   const handleDateClick = (date) => {
-    // Could open a dialog to create new event on this date
-    console.log("Clicked date:", date);
+    setClickedDate(date);
+    setEditingTask(null);
+    setFreeTaskDialogOpen(true);
   };
 
   const handleCreateEvent = () => {
-    window.location.href = `/Projects?action=new`;
+    setClickedDate(null);
+    setEditingTask(null);
+    setFreeTaskDialogOpen(true);
+  };
+
+  const handleSaveFreeTask = (taskData) => {
+    if (editingTask?.id) {
+      updateFreeTaskMutation.mutate({ id: editingTask.id, data: taskData });
+    } else {
+      createFreeTaskMutation.mutate(taskData);
+    }
+  };
+
+  const handleSaveCustomRange = (days, rangeName) => {
+    setCustomDaysCount(days);
+    setViewMode("custom");
+
+    if (rangeName) {
+      const currentRanges = userPreference?.saved_ranges || [];
+      updatePreferencesMutation.mutate({
+        saved_ranges: [...currentRanges, { name: rangeName, days }],
+        custom_days_range: days
+      });
+    }
+  };
+
+  const handleDeleteRange = (index) => {
+    const currentRanges = userPreference?.saved_ranges || [];
+    const newRanges = currentRanges.filter((_, i) => i !== index);
+    updatePreferencesMutation.mutate({
+      saved_ranges: newRanges
+    });
   };
 
   return (
@@ -402,6 +529,38 @@ export default function Calendar() {
           onEventClick={handleEventClick}
         />
       )}
+
+      {viewMode === "custom" && (
+        <CustomDaysView
+          currentDate={currentDate}
+          daysCount={customDaysCount}
+          events={events}
+          onEventClick={handleEventClick}
+          onDateClick={handleDateClick}
+        />
+      )}
+
+      {/* Dialogs */}
+      <FreeTaskDialog
+        isOpen={freeTaskDialogOpen}
+        onClose={() => {
+          setFreeTaskDialogOpen(false);
+          setEditingTask(null);
+          setClickedDate(null);
+        }}
+        onSave={handleSaveFreeTask}
+        initialData={editingTask || (clickedDate ? { date: clickedDate.toISOString().split('T')[0] } : null)}
+        users={users}
+        currentUser={currentUser}
+      />
+
+      <CustomRangeDialog
+        isOpen={customRangeDialogOpen}
+        onClose={() => setCustomRangeDialogOpen(false)}
+        onSave={handleSaveCustomRange}
+        savedRanges={userPreference?.saved_ranges || []}
+        onDeleteRange={handleDeleteRange}
+      />
     </div>
   );
 }
