@@ -208,6 +208,10 @@ export default function AdvancedCsvImporter({ isOpen, onClose, tiposArticulo, pr
             await base44.entities.Product.create(product);
             results.created++;
           }
+          // Pequeño delay para evitar rate limiting
+          if (i < dataToImport.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
         } catch (err) {
           results.errors.push(`${product.name}: ${err.message}`);
         }
