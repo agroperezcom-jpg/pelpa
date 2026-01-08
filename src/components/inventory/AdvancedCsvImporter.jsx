@@ -170,16 +170,16 @@ export default function AdvancedCsvImporter({ isOpen, onClose, tiposArticulo, pr
       if (hasName) {
         product.is_active = true;
         product.category = product.category || "otros";
-        product.stock = product.stock || 0;
-        product.min_stock = product.min_stock || 5;
-        product.costo_unitario = product.costo_unitario || 0;
+        product.stock = typeof product.stock === 'number' ? product.stock : 0;
+        product.min_stock = typeof product.min_stock === 'number' ? product.min_stock : 5;
+        product.costo_unitario = typeof product.costo_unitario === 'number' ? product.costo_unitario : 0;
 
         if (!product.tipo_articulo_id) {
           product.tipo_articulo_id = tiposArticulo[0]?.id || "";
           product.tipo_articulo_nombre = tiposArticulo[0]?.nombre || "Sin especificar";
         }
 
-        // Calcular precios
+        // Calcular precios si hay costo y tipo válido
         if (product.tipo_articulo_id && product.costo_unitario > 0) {
           const tipo = tiposArticulo.find(t => t.id === product.tipo_articulo_id);
           if (tipo) {
@@ -189,6 +189,12 @@ export default function AdvancedCsvImporter({ isOpen, onClose, tiposArticulo, pr
             product.precio_minimo_mayorista = costo * (1 + tipo.margen_mayorista);
             product.precio_lista_mayorista = product.precio_minimo_mayorista * (1 + tipo.descuento_efectivo);
           }
+        } else {
+          // Precios por defecto si no hay costo
+          product.precio_minimo_minorista = 0;
+          product.precio_lista_minorista = 0;
+          product.precio_minimo_mayorista = 0;
+          product.precio_lista_mayorista = 0;
         }
 
         transformed.push(product);
