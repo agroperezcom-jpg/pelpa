@@ -53,9 +53,9 @@ export default function CsvImportMapperDialog({
   const headers = csvData?.headers || [];
   const rows = csvData?.rows || [];
 
-  // Inicializar mapeo automático si es la primera vez
+  // Inicializar mapeo automático cuando se abre el diálogo
   React.useEffect(() => {
-    if (headers.length > 0 && Object.keys(fieldMapping).length === 0) {
+    if (isOpen && headers.length > 0 && Object.keys(fieldMapping).length === 0) {
       const autoMapping = {};
       headers.forEach(header => {
         const matched = PRODUCT_FIELDS.find(
@@ -68,7 +68,7 @@ export default function CsvImportMapperDialog({
       });
       setFieldMapping(autoMapping);
     }
-  }, [headers, fieldMapping]);
+  }, [isOpen]);
 
   // Validar mapeo
   const validateMapping = () => {
