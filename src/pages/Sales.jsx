@@ -990,12 +990,12 @@ export default function Sales() {
       {/* New Sale Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden p-0 flex flex-col">
-          <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-4 flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-3 text-white m-0">
-              <ShoppingCart className="h-6 w-6" />
+          <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-3 text-slate-800 m-0">
+              <ShoppingCart className="h-6 w-6 text-slate-600" />
               <span className="text-lg font-semibold">Nueva Venta</span>
             </DialogTitle>
-            <button onClick={() => setIsDialogOpen(false)} className="text-white hover:bg-emerald-500 rounded p-1">
+            <button onClick={() => setIsDialogOpen(false)} className="text-slate-400 hover:text-slate-600 rounded p-1">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -1008,12 +1008,12 @@ export default function Sales() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input placeholder="Buscar..." value={productSearch} onChange={(e) => setProductSearch(e.target.value)} className="pl-10 h-10" />
                 </div>
-                <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
-                  <Button variant={activeTab === 'products' ? 'default' : 'ghost'} size="sm" onClick={() => setActiveTab('products')} className="flex-1 h-8 text-xs">
+                <div className="flex gap-2">
+                  <Button variant={activeTab === 'products' ? 'default' : 'outline'} size="sm" onClick={() => setActiveTab('products')} className="flex-1 h-8 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border-0">
                     <Package className="h-3 w-3 mr-1" />
                     Productos
                   </Button>
-                  <Button variant={activeTab === 'services' ? 'default' : 'ghost'} size="sm" onClick={() => setActiveTab('services')} className="flex-1 h-8 text-xs">
+                  <Button variant={activeTab === 'services' ? 'default' : 'outline'} size="sm" onClick={() => setActiveTab('services')} className="flex-1 h-8 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border-0">
                     <Briefcase className="h-3 w-3 mr-1" />
                     Servicios
                   </Button>
@@ -1165,18 +1165,18 @@ export default function Sales() {
 
                 {/* Toggles */}
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <span className="text-xs font-semibold text-blue-900">IVA Ventas</span>
+                  <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg p-3">
+                    <span className="text-xs font-semibold text-slate-700">IVA Ventas</span>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input type="checkbox" checked={currentSale.genera_iva} onChange={(e) => setCurrentSale({...currentSale, genera_iva: e.target.checked})} className="sr-only peer" />
-                      <div className="w-10 h-6 bg-slate-300 peer-checked:bg-blue-600 rounded-full peer peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      <div className="w-10 h-6 bg-slate-300 peer-checked:bg-slate-600 rounded-full peer peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
                     </label>
                   </div>
-                  <div className="flex items-center justify-between bg-purple-50 border border-purple-200 rounded-lg p-3">
-                    <span className="text-xs font-semibold text-purple-900">IIBB</span>
+                  <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg p-3">
+                    <span className="text-xs font-semibold text-slate-700">IIBB</span>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input type="checkbox" checked={currentSale.genera_iibb} onChange={(e) => setCurrentSale({...currentSale, genera_iibb: e.target.checked})} className="sr-only peer" />
-                      <div className="w-10 h-6 bg-slate-300 peer-checked:bg-purple-600 rounded-full peer peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      <div className="w-10 h-6 bg-slate-300 peer-checked:bg-slate-600 rounded-full peer peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
                     </label>
                   </div>
                 </div>
@@ -1185,35 +1185,35 @@ export default function Sales() {
                 <textarea value={currentSale.notes || ""} onChange={(e) => setCurrentSale({...currentSale, notes: e.target.value})} placeholder="Notas..." className="w-full h-16 px-3 py-2 text-xs border border-slate-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500" />
 
                 {/* Total Summary */}
-                <div className="bg-emerald-600 rounded-xl p-4 space-y-3 text-white mt-4">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3 mt-4">
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="opacity-90">Subtotal</span>
-                      <span className="font-semibold">${subtotal.toFixed(2)}</span>
+                      <span className="text-slate-600">Subtotal</span>
+                      <span className="font-semibold text-slate-800">${subtotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="opacity-90">Descuento</span>
-                      <Input type="number" step="0.01" value={currentSale.discount || ""} onChange={(e) => setCurrentSale({...currentSale, discount: parseFloat(e.target.value) || 0})} className="w-24 h-7 bg-emerald-700 text-right text-sm font-semibold text-white placeholder-emerald-300 border-0 rounded" placeholder="0.00" />
+                      <span className="text-slate-600">Descuento</span>
+                      <Input type="number" step="0.01" value={currentSale.discount || ""} onChange={(e) => setCurrentSale({...currentSale, discount: parseFloat(e.target.value) || 0})} className="w-24 h-7 bg-white text-right text-sm font-semibold text-slate-800 border border-slate-200 rounded" placeholder="0.00" />
                     </div>
                     {currentSale.genera_iva && (
                       <>
-                        <div className="border-t border-emerald-400 pt-2">
+                        <div className="border-t border-slate-200 pt-2">
                           <div className="flex justify-between text-sm mb-1">
-                            <span className="opacity-90">Neto Gravado</span>
-                            <span className="font-semibold">${neto_gravado.toFixed(2)}</span>
+                            <span className="text-slate-600">Neto Gravado</span>
+                            <span className="font-semibold text-slate-800">${neto_gravado.toFixed(2)}</span>
                           </div>
                           <div className="flex justify-between text-sm">
-                            <span className="opacity-90">IVA 21%</span>
-                            <span className="font-semibold">${iva_21.toFixed(2)}</span>
+                            <span className="text-slate-600">IVA 21%</span>
+                            <span className="font-semibold text-slate-700">${iva_21.toFixed(2)}</span>
                           </div>
                         </div>
                       </>
                     )}
                   </div>
-                  <div className="border-t border-emerald-400 pt-3">
+                  <div className="border-t border-slate-200 pt-3 bg-white rounded px-3 py-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-lg font-bold">TOTAL</span>
-                      <Input type="number" step="0.01" value={currentSale.total_manual || total_final.toFixed(2)} onChange={(e) => setCurrentSale({...currentSale, total_manual: parseFloat(e.target.value) || total_final})} className="w-32 h-10 bg-emerald-700 text-right text-2xl font-bold text-white border-0 rounded placeholder-emerald-300" />
+                      <span className="text-lg font-bold text-slate-800">TOTAL</span>
+                      <Input type="number" step="0.01" value={currentSale.total_manual || total_final.toFixed(2)} onChange={(e) => setCurrentSale({...currentSale, total_manual: parseFloat(e.target.value) || total_final})} className="w-32 h-10 bg-white text-right text-2xl font-bold text-slate-800 border border-slate-300 rounded" />
                     </div>
                   </div>
                 </div>
@@ -1221,11 +1221,11 @@ export default function Sales() {
             </div>
           </div>
 
-          <div className="border-t border-slate-200 bg-white px-6 py-3 flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={handleCloseDialog} className="px-6">
+          <div className="border-t border-slate-200 bg-slate-50 px-6 py-3 flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={handleCloseDialog} className="px-6 text-slate-700">
               Cancelar
             </Button>
-            <Button onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-700 px-6" disabled={cart.length === 0 || tieneItemsInvalidos || !currentSale.talonario_id}>
+            <Button onClick={handleSubmit} className="bg-slate-700 hover:bg-slate-800 px-6 text-white" disabled={cart.length === 0 || tieneItemsInvalidos || !currentSale.talonario_id}>
               <DollarSign className="h-4 w-4 mr-2" />
               Confirmar y Pagar
             </Button>
