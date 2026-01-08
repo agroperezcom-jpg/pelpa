@@ -567,6 +567,18 @@ export default function Inventory() {
         products={products}
       />
 
+      {/* CSV Import Mapper Dialog */}
+      <CsvImportMapperDialog
+        isOpen={isMapperDialogOpen}
+        onClose={() => {
+          setIsMapperDialogOpen(false);
+          setCsvDataForMapper(null);
+        }}
+        csvData={csvDataForMapper}
+        tiposArticulo={tiposArticulo}
+        onConfirm={handleConfirmImport}
+      />
+
       {/* Movement Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-md">
