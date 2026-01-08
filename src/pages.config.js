@@ -8,6 +8,7 @@ import Expenses from './pages/Expenses';
 import Finance from './pages/Finance';
 import IVAMensual from './pages/IVAMensual';
 import IngresosBrutos from './pages/IngresosBrutos';
+import Inventory from './pages/Inventory';
 import Marketing from './pages/Marketing';
 import PagosProveedores from './pages/PagosProveedores';
 import Presupuestos from './pages/Presupuestos';
@@ -24,7 +25,6 @@ import Talonarios from './pages/Talonarios';
 import TesoreriaV2 from './pages/TesoreriaV2';
 import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
-import Inventory from './pages/Inventory';
 import __Layout from './Layout.jsx';
 
 
@@ -39,6 +39,7 @@ export const PAGES = {
     "Finance": Finance,
     "IVAMensual": IVAMensual,
     "IngresosBrutos": IngresosBrutos,
+    "Inventory": Inventory,
     "Marketing": Marketing,
     "PagosProveedores": PagosProveedores,
     "Presupuestos": Presupuestos,
@@ -55,7 +56,6 @@ export const PAGES = {
     "TesoreriaV2": TesoreriaV2,
     "TiposArticulo": TiposArticulo,
     "Treasury": Treasury,
-    "Inventory": Inventory,
 }
 
 export const pagesConfig = {
