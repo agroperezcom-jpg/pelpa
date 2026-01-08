@@ -4,6 +4,7 @@ import { createPageUrl } from "./utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { usePermissions } from "@/components/permissions/usePermissions";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -37,6 +38,7 @@ export default function Layout({ children, currentPageName }) {
   const [commandOpen, setCommandOpen] = useState(false);
   const [commandSearch, setCommandSearch] = useState("");
   const location = useLocation();
+  const { hasPermission, getAllowedModules, isAdmin, loading: permissionsLoading } = usePermissions();
 
   const { data: configuracionEmpresa = [] } = useQuery({
     queryKey: ['configuracionEmpresa'],
@@ -93,88 +95,130 @@ export default function Layout({ children, currentPageName }) {
     base44.auth.logout();
   };
 
-  const isAdmin = user?.role === 'admin';
+  const allowedModules = getAllowedModules();
 
-  const modules = [
+  const allModules = [
     {
       id: "general",
       name: "General",
+      permiso: null, // Siempre visible
       items: [
-        { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
+        { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard, permiso: null },
       ]
     },
     {
       id: "ventas",
       name: "Ventas",
+      permiso: "ventas",
       items: [
-        { name: "Ventas", page: "Sales", icon: ShoppingCart },
-        { name: "Presupuestos", page: "Presupuestos", icon: FileText },
-        { name: "Clientes", page: "Clients", icon: null },
-        { name: "Servicios", page: "Services", icon: null },
-        { name: "Talonarios", page: "Talonarios", icon: null },
+        { name: "Ventas", page: "Sales", icon: ShoppingCart, permiso: "ventas" },
+        { name: "Presupuestos", page: "Presupuestos", icon: FileText, permiso: "presupuestos" },
+        { name: "Clientes", page: "Clients", icon: null, permiso: "clientes" },
+        { name: "Servicios", page: "Services", icon: null, permiso: "ventas" },
+        { name: "Talonarios", page: "Talonarios", icon: null, permiso: "talonarios" },
       ]
     },
     {
       id: "compras",
       name: "Compras",
+      permiso: "compras",
       items: [
-        { name: "Compras", page: "Purchases", icon: ShoppingBag },
-        { name: "Proveedores", page: "Proveedores", icon: null },
-        { name: "Pagos Proveedores", page: "PagosProveedores", icon: null },
+        { name: "Compras", page: "Purchases", icon: ShoppingBag, permiso: "compras" },
+        { name: "Proveedores", page: "Proveedores", icon: null, permiso: "proveedores" },
+        { name: "Pagos Proveedores", page: "PagosProveedores", icon: null, permiso: "compras" },
       ]
     },
     {
       id: "inventario",
       name: "Inventario",
+      permiso: "inventario",
       items: [
-        { name: "Productos", page: "Products", icon: Package },
-        { name: "Inventario", page: "Inventory", icon: null },
+        { name: "Productos", page: "Products", icon: Package, permiso: "productos" },
+        { name: "Inventario", page: "Inventory", icon: null, permiso: "inventario" },
       ]
     },
     {
       id: "tesoreria",
       name: "Tesorería",
+      permiso: "tesoreria",
       items: [
-        { name: "Tesorería", page: "TesoreriaV2", icon: Landmark },
-        { name: "Cheques", page: "Cheques", icon: null },
-        { name: "Gastos", page: "Expenses", icon: null },
+        { name: "Tesorería", page: "TesoreriaV2", icon: Landmark, permiso: "tesoreria" },
+        { name: "Cheques", page: "Cheques", icon: null, permiso: "cheques" },
+        { name: "Gastos", page: "Expenses", icon: null, permiso: "gastos" },
       ]
     },
     {
       id: "analisis",
       name: "Análisis",
+      permiso: "analytics",
       items: [
-        { name: "Dashboard Ejecutivo", page: "DashboardEjecutivo", icon: BarChart3 },
-        { name: "Analytics", page: "Analytics", icon: null },
-        { name: "Tablero Fiscal", page: "TableroFiscal", icon: null },
-        { name: "IVA Mensual", page: "IVAMensual", icon: null },
-        { name: "Ingresos Brutos", page: "IngresosBrutos", icon: null },
-        { name: "Finanzas", page: "Finance", icon: null },
+        { name: "Dashboard Ejecutivo", page: "DashboardEjecutivo", icon: BarChart3, permiso: "analytics" },
+        { name: "Analytics", page: "Analytics", icon: null, permiso: "analytics" },
+        { name: "Tablero Fiscal", page: "TableroFiscal", icon: null, permiso: "tablero_fiscal" },
+        { name: "IVA Mensual", page: "IVAMensual", icon: null, permiso: "iva_mensual" },
+        { name: "Ingresos Brutos", page: "IngresosBrutos", icon: null, permiso: "ingresos_brutos" },
+        { name: "Finanzas", page: "Finance", icon: null, permiso: "analytics" },
       ]
     },
     {
       id: "proyectos",
       name: "Proyectos",
+      permiso: "proyectos",
       items: [
-        { name: "Proyectos", page: "Projects", icon: Briefcase },
+        { name: "Proyectos", page: "Projects", icon: Briefcase, permiso: "proyectos" },
       ]
     },
     {
       id: "calendario",
       name: "Agenda",
+      permiso: "calendario",
       items: [
-        { name: "Calendario", page: "Calendar", icon: CalendarIcon },
+        { name: "Calendario", page: "Calendar", icon: CalendarIcon, permiso: "calendario" },
       ]
     },
     ...(isAdmin ? [{
       id: "config",
       name: "Sistema",
+      permiso: null, // Admin siempre lo ve
       items: [
-        { name: "Configuración", page: "Settings", icon: Settings },
-        { name: "Roles y Permisos", page: "RolesPermisos", icon: Shield },
+        { name: "Configuración", page: "Settings", icon: Settings, permiso: "configuracion" },
+        { name: "Roles y Permisos", page: "RolesPermisos", icon: Shield, permiso: "usuarios" },
       ]
     }] : [])
   ];
+
+  // Filtrar módulos según permisos
+  const modules = allModules
+    .map(module => {
+      // Si el módulo no requiere permiso específico, mantenerlo
+      if (!module.permiso) {
+        return module;
+      }
+
+      // Verificar si el usuario tiene acceso al módulo
+      const hasModuleAccess = isAdmin || allowedModules.includes(module.permiso);
+      
+      if (!hasModuleAccess) {
+        return null;
+      }
+
+      // Filtrar items dentro del módulo
+      const filteredItems = module.items.filter(item => {
+        if (!item.permiso) return true;
+        return isAdmin || allowedModules.includes(item.permiso);
+      });
+
+      // Si no quedan items después del filtro, ocultar el módulo
+      if (filteredItems.length === 0) {
+        return null;
+      }
+
+      return {
+        ...module,
+        items: filteredItems
+      };
+    })
+    .filter(Boolean); // Eliminar módulos null
 
   const allPages = modules.flatMap(m => m.items);
 

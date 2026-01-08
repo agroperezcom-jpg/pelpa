@@ -33,25 +33,25 @@ import { Shield, Plus, Edit, Users, Lock, CheckCircle2 } from "lucide-react";
 import PermissionGuard from "@/components/permissions/PermissionGuard";
 
 const MODULOS = [
-  { id: "ventas", nombre: "Ventas", critico: true },
-  { id: "presupuestos", nombre: "Presupuestos", critico: false },
-  { id: "compras", nombre: "Compras", critico: true },
-  { id: "inventario", nombre: "Inventario", critico: true },
-  { id: "productos", nombre: "Productos", critico: false },
-  { id: "tesoreria", nombre: "Tesorería", critico: true },
-  { id: "cheques", nombre: "Cheques", critico: true },
-  { id: "proyectos", nombre: "Proyectos", critico: false },
-  { id: "calendario", nombre: "Calendario", critico: false },
-  { id: "clientes", nombre: "Clientes", critico: false },
-  { id: "proveedores", nombre: "Proveedores", critico: false },
-  { id: "gastos", nombre: "Gastos", critico: false },
-  { id: "analytics", nombre: "Analytics", critico: false },
-  { id: "tablero_fiscal", nombre: "Tablero Fiscal", critico: true },
-  { id: "iva_mensual", nombre: "IVA Mensual", critico: true },
-  { id: "ingresos_brutos", nombre: "Ingresos Brutos", critico: true },
-  { id: "talonarios", nombre: "Talonarios", critico: true },
-  { id: "configuracion", nombre: "Configuración", critico: true },
-  { id: "usuarios", nombre: "Usuarios", critico: true }
+  { id: "ventas", nombre: "Ventas", categoria: "Operativa", critico: true },
+  { id: "presupuestos", nombre: "Presupuestos", categoria: "Operativa", critico: false },
+  { id: "compras", nombre: "Compras", categoria: "Operativa", critico: true },
+  { id: "inventario", nombre: "Inventario", categoria: "Operativa", critico: true },
+  { id: "productos", nombre: "Productos", categoria: "Operativa", critico: false },
+  { id: "tesoreria", nombre: "Tesorería", categoria: "Finanzas", critico: true },
+  { id: "cheques", nombre: "Cheques", categoria: "Finanzas", critico: true },
+  { id: "gastos", nombre: "Gastos", categoria: "Finanzas", critico: false },
+  { id: "proyectos", nombre: "Proyectos", categoria: "Gestión", critico: false },
+  { id: "calendario", nombre: "Calendario", categoria: "Gestión", critico: false },
+  { id: "clientes", nombre: "Clientes", categoria: "Contactos", critico: false },
+  { id: "proveedores", nombre: "Proveedores", categoria: "Contactos", critico: false },
+  { id: "analytics", nombre: "Analytics", categoria: "Análisis", critico: false },
+  { id: "tablero_fiscal", nombre: "Tablero Fiscal", categoria: "Análisis", critico: true },
+  { id: "iva_mensual", nombre: "IVA Mensual", categoria: "Análisis", critico: true },
+  { id: "ingresos_brutos", nombre: "Ingresos Brutos", categoria: "Análisis", critico: true },
+  { id: "talonarios", nombre: "Talonarios", categoria: "Sistema", critico: true },
+  { id: "configuracion", nombre: "Configuración", categoria: "Sistema", critico: true },
+  { id: "usuarios", nombre: "Usuarios y Permisos", categoria: "Sistema", critico: true }
 ];
 
 const ACCIONES = [
@@ -397,51 +397,69 @@ export default function RolesPermisos() {
               </DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-4">
-              {MODULOS.map(modulo => {
-                const hasAll = ACCIONES.every(a => selectedPermisos[`${modulo.id}_${a.id}`]);
-                
+            <div className="space-y-6">
+              {/* Agrupar por categoría */}
+              {['Operativa', 'Finanzas', 'Gestión', 'Contactos', 'Análisis', 'Sistema'].map(categoria => {
+                const modulosCategoria = MODULOS.filter(m => m.categoria === categoria);
+                if (modulosCategoria.length === 0) return null;
+
                 return (
-                  <Card key={modulo.id} className="border-0 shadow-sm">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Checkbox
-                            checked={hasAll}
-                            onCheckedChange={(checked) => toggleModuloCompleto(modulo.id, checked)}
-                          />
-                          <div>
-                            <p className="font-semibold flex items-center gap-2">
-                              {modulo.nombre}
-                              {modulo.critico && (
-                                <Badge variant="destructive" className="text-xs">Crítico</Badge>
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                        {ACCIONES.map(accion => (
-                          <div key={accion.id} className="flex items-start gap-2">
-                            <Checkbox
-                              id={`${modulo.id}_${accion.id}`}
-                              checked={selectedPermisos[`${modulo.id}_${accion.id}`] || false}
-                              onCheckedChange={() => togglePermiso(modulo.id, accion.id)}
-                            />
-                            <label
-                              htmlFor={`${modulo.id}_${accion.id}`}
-                              className="text-sm cursor-pointer"
-                            >
-                              <div className="font-medium">{accion.nombre}</div>
-                              <div className="text-xs text-muted-foreground">{accion.desc}</div>
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div key={categoria} className="space-y-3">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="h-px flex-1 bg-border"></div>
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                        {categoria}
+                      </h3>
+                      <div className="h-px flex-1 bg-border"></div>
+                    </div>
+
+                    {modulosCategoria.map(modulo => {
+                      const hasAll = ACCIONES.every(a => selectedPermisos[`${modulo.id}_${a.id}`]);
+                      
+                      return (
+                        <Card key={modulo.id} className="border-0 shadow-sm">
+                          <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <Checkbox
+                                  checked={hasAll}
+                                  onCheckedChange={(checked) => toggleModuloCompleto(modulo.id, checked)}
+                                />
+                                <div>
+                                  <p className="font-semibold flex items-center gap-2">
+                                    {modulo.nombre}
+                                    {modulo.critico && (
+                                      <Badge variant="destructive" className="text-xs">Crítico</Badge>
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                              {ACCIONES.map(accion => (
+                                <div key={accion.id} className="flex items-start gap-2">
+                                  <Checkbox
+                                    id={`${modulo.id}_${accion.id}`}
+                                    checked={selectedPermisos[`${modulo.id}_${accion.id}`] || false}
+                                    onCheckedChange={() => togglePermiso(modulo.id, accion.id)}
+                                  />
+                                  <label
+                                    htmlFor={`${modulo.id}_${accion.id}`}
+                                    className="text-sm cursor-pointer"
+                                  >
+                                    <div className="font-medium">{accion.nombre}</div>
+                                    <div className="text-xs text-muted-foreground">{accion.desc}</div>
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
                 );
               })}
             </div>
