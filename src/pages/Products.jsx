@@ -335,26 +335,14 @@ export default function Products() {
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
-          <label htmlFor="import-csv">
-            <Button 
-              variant="outline" 
-              asChild 
-              disabled={isImporting}
-              className={isDragging ? 'ring-2 ring-blue-500 bg-blue-50' : ''}
-            >
-              <span className="cursor-pointer">
-                <Upload className="h-4 w-4 mr-2" />
-                {isImporting ? 'Importando...' : 'Importar'}
-              </span>
-            </Button>
-          </label>
-          <input
-            id="import-csv"
-            type="file"
-            accept=".csv"
-            className="hidden"
-            onChange={handleImportCSV}
-          />
+          <Button 
+            variant="outline"
+            onClick={() => setIsAdvancedImporterOpen(true)}
+            className={isDragging ? 'ring-2 ring-blue-500 bg-blue-50' : ''}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Importar
+          </Button>
           <Button onClick={() => setDeleteAllOpen(true)} variant="destructive" className="w-full sm:w-auto whitespace-nowrap">
             <Trash2 className="h-4 w-4 mr-2" />
             Borrar Todo
