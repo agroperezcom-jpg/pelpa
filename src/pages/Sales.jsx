@@ -1091,10 +1091,10 @@ export default function Sales() {
                 </h3>
               </div>
 
-              <div className="h-48 overflow-y-auto border rounded-lg">
+              <div className="h-96 overflow-y-auto border rounded-lg">
                 {cart.length === 0 ? (
-                  <div className="flex items-center justify-center h-full text-slate-400">
-                    Carrito vacío
+                  <div className="flex items-center justify-center h-full text-slate-400 text-sm">
+                    Selecciona productos o servicios para agregar al carrito
                   </div>
                 ) : (
                   <div className="divide-y">
