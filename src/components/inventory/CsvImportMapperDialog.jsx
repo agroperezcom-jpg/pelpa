@@ -233,17 +233,9 @@ export default function CsvImportMapperDialog({
                       </p>
                     ))}
                   </div>
-                  <label className="flex items-center gap-2 mt-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={importOnlyValid}
-                      onChange={(e) => setImportOnlyValid(e.target.checked)}
-                      className="rounded"
-                    />
-                    <span className="text-sm font-medium text-orange-900">
-                      Importar solo las filas válidas ({previewData.length} productos)
-                    </span>
-                  </label>
+                  <p className="text-sm font-medium text-orange-900 mt-3">
+                    El sistema importará {previewData.length} productos válidos. Puedes editar los campos incompletos después de la importación.
+                  </p>
                 </div>
               </div>
             </div>
