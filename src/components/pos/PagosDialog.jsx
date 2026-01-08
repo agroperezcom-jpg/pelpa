@@ -122,7 +122,12 @@ export default function PagosDialog({ isOpen, onClose, total, onConfirm, cliente
   }, [isOpen, nuevoPago, mediosPago, onClose]);
 
   const agregarPago = () => {
-    if (!nuevoPago.medio_pago_id || !nuevoPago.importe || parseFloat(nuevoPago.importe) <= 0) {
+    if (nuevoPago.es_cheque) {
+      if (!nuevoPago.cheque_numero || !nuevoPago.cheque_banco_id || !nuevoPago.importe || parseFloat(nuevoPago.importe) <= 0) {
+        alert("Complete todos los campos del cheque");
+        return;
+      }
+    } else if (!nuevoPago.medio_pago_id || !nuevoPago.importe || parseFloat(nuevoPago.importe) <= 0) {
       return;
     }
 
