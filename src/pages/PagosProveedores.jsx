@@ -284,6 +284,8 @@ export default function PagosProveedores() {
       queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
       queryClient.invalidateQueries({ queryKey: ['bancos'] });
       queryClient.invalidateQueries({ queryKey: ['cajas'] });
+      queryClient.invalidateQueries({ queryKey: ['cheques'] });
+      queryClient.invalidateQueries({ queryKey: ['chequesDisponibles'] });
       handleCloseDialog();
       alert("✅ Pago confirmado exitosamente");
     },
@@ -320,7 +322,12 @@ export default function PagosProveedores() {
       medio_pago_id: "",
       importe: "",
       banco_id: "",
-      caja_id: ""
+      caja_id: "",
+      tipo_pago: "MEDIO",
+      cheque_id: "",
+      cheque_propio_numero: "",
+      cheque_propio_banco_id: "",
+      cheque_propio_vencimiento: ""
     });
     setIsDialogOpen(true);
   };
