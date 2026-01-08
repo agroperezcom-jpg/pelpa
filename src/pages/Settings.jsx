@@ -79,12 +79,17 @@ export default function SettingsPage() {
 
   const inviteUserMutation = useMutation({
     mutationFn: async ({ email, role }) => {
-      await base44.users.inviteUser(email, role);
+      const result = await base44.users.inviteUser(email, role);
+      return result;
     },
     onSuccess: () => {
+      alert("✓ Invitación enviada correctamente");
       setInviteEmail("");
       setInviteRole("user");
       setIsDialogOpen(false);
+    },
+    onError: (error) => {
+      alert("Error al enviar invitación: " + error.message);
     }
   });
 
@@ -130,7 +135,10 @@ export default function SettingsPage() {
 
   const handleInvite = (e) => {
     e.preventDefault();
-    if (!inviteEmail.trim()) return;
+    if (!inviteEmail.trim()) {
+      alert("Por favor ingresa un email válido");
+      return;
+    }
     inviteUserMutation.mutate({ email: inviteEmail, role: inviteRole });
   };
 
@@ -511,7 +519,7 @@ export default function SettingsPage() {
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={inviteUserMutation.isPending}>
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={inviteUserMutation.isPending || !inviteEmail.trim()}>
                 {inviteUserMutation.isPending ? 'Enviando...' : 'Enviar Invitación'}
               </Button>
             </DialogFooter>
