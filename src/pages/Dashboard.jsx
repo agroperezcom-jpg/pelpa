@@ -68,41 +68,21 @@ export default function Dashboard() {
   // Calculate stats
   const lowStockProducts = products.filter(p => p.stock <= p.min_stock);
   const activeProjects = projects.filter(p => p.status !== 'completado' && p.status !== 'cancelado');
-  
-  const today = new Date();
-  const todaySales = sales.filter(s => s.created_date?.startsWith(todayStr) && s.estado === "CONFIRMADA");
-  const totalTodaySales = todaySales.reduce((acc, s) => acc + (s.total || 0), 0);
-  const todayIVA = ivaVentas.filter(iv => iv.fecha === todayStr);
-  const totalIVAHoy = todayIVA.reduce((acc, iv) => acc + (iv.iva_21 || 0), 0);
-  
-  const thisMonth = sales.filter(s => {
-    const saleDate = new Date(s.created_date);
-    return saleDate.getMonth() === today.getMonth() && saleDate.getFullYear() === today.getFullYear() && s.estado === "CONFIRMADA";
-  });
-  const totalMonthSales = thisMonth.reduce((acc, s) => acc + (s.total || 0), 0);
 
-  // Yesterday comparison
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = format(yesterday, 'yyyy-MM-dd');
-  const yesterdaySales = sales.filter(s => s.created_date?.startsWith(yesterdayStr) && s.estado === "CONFIRMADA");
-  const totalYesterdaySales = yesterdaySales.reduce((acc, s) => acc + (s.total || 0), 0);
-  const salesChange = totalYesterdaySales > 0 ? ((totalTodaySales - totalYesterdaySales) / totalYesterdaySales * 100).toFixed(1) : 0;
-
-  // Sales chart data (last 7 days)
-  const last7Days = Array.from({ length: 7 }, (_, i) => {
+  // Project activity chart data (last 30 days)
+  const last30Days = Array.from({ length: 30 }, (_, i) => {
     const date = new Date();
-    date.setDate(date.getDate() - (6 - i));
+    date.setDate(date.getDate() - (29 - i));
     return date;
   });
 
-  const salesChartData = last7Days.map(date => {
+  const activityChartData = last30Days.map(date => {
     const dayStr = format(date, 'yyyy-MM-dd');
-    const daySales = sales.filter(s => s.created_date?.startsWith(dayStr) && s.estado === "CONFIRMADA");
+    const dayProjects = projects.filter(p => p.created_date?.startsWith(dayStr));
     return {
-      name: format(date, 'EEE', { locale: es }),
+      name: format(date, 'd', { locale: es }),
       date: format(date, 'd MMM', { locale: es }),
-      ventas: daySales.reduce((acc, s) => acc + (s.total || 0), 0)
+      proyectos: dayProjects.length
     };
   });
 
