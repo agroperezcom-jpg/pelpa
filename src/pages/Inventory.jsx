@@ -230,39 +230,67 @@ export default function Inventory() {
   };
 
   const processCSVFile = (file) => {
-    if (!file.name.endsWith('.csv')) {
-      alert('Por favor selecciona un archivo CSV');
+    const validExtensions = ['.csv', '.xlsx', '.xls'];
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    
+    if (!validExtensions.includes(fileExtension)) {
+      alert('Por favor selecciona un archivo CSV, Excel (.xlsx) o Excel antiguo (.xls)');
       return;
     }
 
     setIsImporting(true);
     const reader = new FileReader();
 
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
-        const text = event.target.result;
-        const lines = text.split('\n').filter(line => line.trim());
-        
-        if (lines.length < 2) {
-          alert('El archivo está vacío o no tiene datos');
-          setIsImporting(false);
-          return;
-        }
+        let headers = [];
+        let rows = [];
 
-        const headers = lines[0].split(',').map(h => h.trim());
-        const rows = lines.slice(1).map(line => line.split(',').map(v => v.trim()));
+        if (fileExtension === '.csv') {
+          const text = event.target.result;
+          const lines = text.split('\n').filter(line => line.trim());
+          
+          if (lines.length < 2) {
+            alert('El archivo está vacío o no tiene datos');
+            setIsImporting(false);
+            return;
+          }
+
+          headers = lines[0].split(',').map(h => h.trim());
+          rows = lines.slice(1).map(line => line.split(',').map(v => v.trim()));
+        } else {
+          // Excel files
+          const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js').then(m => m.default || m);
+          const data = new Uint8Array(event.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          
+          if (jsonData.length < 2) {
+            alert('El archivo está vacío o no tiene datos');
+            setIsImporting(false);
+            return;
+          }
+
+          headers = jsonData[0].map(h => String(h).trim());
+          rows = jsonData.slice(1).map(row => row.map(v => String(v || '').trim()));
+        }
 
         setCsvDataForMapper({ headers, rows });
         setIsMapperDialogOpen(true);
       } catch (error) {
         console.error('Error reading file:', error);
-        alert('Error al leer el archivo CSV');
+        alert('Error al leer el archivo: ' + error.message);
       } finally {
         setIsImporting(false);
       }
     };
 
-    reader.readAsText(file);
+    if (fileExtension === '.csv') {
+      reader.readAsText(file);
+    } else {
+      reader.readAsArrayBuffer(file);
+    }
   };
 
   const handleDragOver = (e) => {
