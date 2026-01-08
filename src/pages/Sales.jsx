@@ -843,7 +843,7 @@ export default function Sales() {
             <ShoppingCart className="h-6 w-6 text-emerald-600" />
             Ventas
           </h1>
-          <p className="text-slate-500 text-sm mt-1">
+          <p className="text-muted-foreground text-sm mt-1">
             Hoy: ${todayTotal.toLocaleString()} ({todaySales.length} ventas)
           </p>
         </div>
@@ -863,28 +863,28 @@ export default function Sales() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase">Ventas Hoy</p>
-            <p className="text-2xl font-bold text-slate-800 mt-1">{todaySales.length}</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase">Ventas Hoy</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{todaySales.length}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase">Ingresos Hoy</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase">Ingresos Hoy</p>
             <p className="text-2xl font-bold text-emerald-600 mt-1">${todayTotal.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase">Promedio</p>
-            <p className="text-2xl font-bold text-slate-800 mt-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase">Promedio</p>
+            <p className="text-2xl font-bold text-foreground mt-1">
               ${todaySales.length > 0 ? Math.round(todayTotal / todaySales.length).toLocaleString() : 0}
             </p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase">Total Histórico</p>
-            <p className="text-2xl font-bold text-slate-800 mt-1">{sales.length}</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase">Total Histórico</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{sales.length}</p>
           </CardContent>
         </Card>
       </div>

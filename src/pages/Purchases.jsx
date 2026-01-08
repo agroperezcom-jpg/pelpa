@@ -508,8 +508,8 @@ export default function Purchases() {
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             <ShoppingBag className="h-6 w-6 text-blue-600" />
             Compras
-          </h1>
-          <p className="text-slate-500 text-sm mt-1">
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
             Hoy: ${totalHoy.toLocaleString()} ({comprasHoy.length} compras)
           </p>
         </div>
@@ -548,19 +548,19 @@ export default function Purchases() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase">Compras Hoy</p>
-            <p className="text-2xl font-bold text-slate-800 mt-1">{comprasHoy.length}</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase">Compras Hoy</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{comprasHoy.length}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase">Total Hoy</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase">Total Hoy</p>
             <p className="text-2xl font-bold text-blue-600 mt-1">${totalHoy.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase">IVA Crédito</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase">IVA Crédito</p>
             <p className="text-2xl font-bold text-emerald-600 mt-1">
               ${comprasHoy.reduce((acc, c) => acc + (c.iva_21 || 0), 0).toLocaleString()}
             </p>
@@ -568,14 +568,14 @@ export default function Purchases() {
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase">Total Histórico</p>
-            <p className="text-2xl font-bold text-slate-800 mt-1">{compras.length}</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase">Total Histórico</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{compras.length}</p>
           </CardContent>
         </Card>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="bg-white border shadow-sm">
+        <TabsList className="bg-card border shadow-sm">
           <TabsTrigger value="compras">Compras</TabsTrigger>
           <TabsTrigger value="reportes">Reportes</TabsTrigger>
         </TabsList>
