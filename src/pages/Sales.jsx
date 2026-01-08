@@ -75,6 +75,7 @@ export default function Sales() {
   const [productSearch, setProductSearch] = useState("");
   const [activeTab, setActiveTab] = useState("products");
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
+  const [clientSearch, setClientSearch] = useState("");
   const [newClient, setNewClient] = useState({
     name: "",
     email: "",
@@ -828,6 +829,11 @@ export default function Sales() {
     s.name?.toLowerCase().includes(productSearch.toLowerCase())
   );
 
+  const filteredClients = clients.filter(c =>
+    c.name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+    c.email?.toLowerCase().includes(clientSearch.toLowerCase())
+  );
+
   const filteredSales = sales.filter(sale => 
     sale.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     sale.employee_name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -1117,19 +1123,31 @@ export default function Sales() {
                 {/* Cliente */}
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold text-slate-700">Cliente</Label>
-                  <Select value={currentSale.client_id} onValueChange={(v) => {
-                    const cliente = clients.find(c => c.id === v);
-                    const shouldGenerateIVA = cliente?.tipo_iva === "RESP_INSCRIPTO" || cliente?.tipo_iva === "MONOTRIBUTO";
-                    setCurrentSale({...currentSale, client_id: v, client_name: cliente?.name || "", client_tipo_iva: cliente?.tipo_iva || "", genera_iva: shouldGenerateIVA});
-                  }}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="Consumidor Final" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={null}>Consumidor Final</SelectItem>
-                      {clients.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 text-slate-400 pointer-events-none" />
+                      <Input
+                        placeholder="Buscar cliente..."
+                        value={clientSearch}
+                        onChange={(e) => setClientSearch(e.target.value)}
+                        className="pl-8 h-9 text-sm"
+                      />
+                    </div>
+                    <Select value={currentSale.client_id} onValueChange={(v) => {
+                      const cliente = clients.find(c => c.id === v);
+                      const shouldGenerateIVA = cliente?.tipo_iva === "RESP_INSCRIPTO" || cliente?.tipo_iva === "MONOTRIBUTO";
+                      setCurrentSale({...currentSale, client_id: v, client_name: cliente?.name || "", client_tipo_iva: cliente?.tipo_iva || "", genera_iva: shouldGenerateIVA});
+                      setClientSearch("");
+                    }}>
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue placeholder="Consumidor Final" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={null}>Consumidor Final</SelectItem>
+                        {filteredClients.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <Button type="button" variant="outline" onClick={() => setIsClientDialogOpen(true)} className="w-full h-8 text-xs">
                     <Plus className="h-3 w-3 mr-1" />
                     Nuevo
