@@ -140,7 +140,8 @@ export default function AdvancedCsvImporter({ isOpen, onClose, tiposArticulo, pr
         const fieldKey = fieldMapping[header];
         if (!fieldKey) return;
 
-        const value = row[colIdx];
+        const rawValue = row[colIdx];
+        const value = rawValue ? rawValue.toString().trim() : "";
         if (!value) return;
 
         if (fieldKey === "name") hasName = true;
@@ -155,8 +156,12 @@ export default function AdvancedCsvImporter({ isOpen, onClose, tiposArticulo, pr
             product.tipo_articulo_nombre = tipo.nombre;
           }
         } else if (fieldKey === "costo_unitario" || fieldKey === "stock" || fieldKey === "min_stock") {
-          const num = parseFloat(value);
-          if (!isNaN(num)) product[fieldKey] = num;
+          const num = parseFloat(value.replace(/[^\d.-]/g, ''));
+          if (!isNaN(num) && num >= 0) {
+            product[fieldKey] = num;
+          }
+        } else if (fieldKey === "barcode") {
+          product.barcode = value;
         } else {
           product[fieldKey] = value;
         }
