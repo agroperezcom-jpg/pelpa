@@ -45,6 +45,7 @@ import {
   Trash2
 } from "lucide-react";
 import DeleteProductsDialog from "../components/inventory/DeleteProductsDialog";
+import CsvImportMapperDialog from "../components/inventory/CsvImportMapperDialog";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
