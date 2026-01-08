@@ -68,7 +68,8 @@ export default function Sales() {
     genera_iva: false,
     genera_iibb: false,
     discount: 0,
-    notes: ""
+    notes: "",
+    talonario_id: ""
   });
   const [productSearch, setProductSearch] = useState("");
   const [activeTab, setActiveTab] = useState("products");
@@ -119,9 +120,9 @@ export default function Sales() {
     queryFn: () => base44.entities.Banco.list()
   });
 
-  const { data: tiposComprobante = [] } = useQuery({
-    queryKey: ['tiposComprobante'],
-    queryFn: () => base44.entities.TipoComprobante.list()
+  const { data: talonarios = [] } = useQuery({
+    queryKey: ['talonarios'],
+    queryFn: () => base44.entities.Talonario.list()
   });
 
   const calcularPrecioYMargen = (product, quantity) => {
@@ -231,40 +232,66 @@ export default function Sales() {
         }
       }
 
+      // Validar talonario
+      if (!saleData.talonario_id) {
+        throw new Error("Debe seleccionar un talonario para emitir el comprobante");
+      }
+
+      const talonario = talonarios.find(t => t.id === saleData.talonario_id);
+      if (!talonario) {
+        throw new Error("Talonario no encontrado");
+      }
+
+      if (!talonario.activo) {
+        throw new Error("El talonario seleccionado está inactivo");
+      }
+
       // Determinar tipo de comprobante
       const tipoComprobante = saleData.genera_iva ? "B" : "X";
       
-      // Buscar tipo de comprobante
-      let tipoComprobanteRecord = tiposComprobante.find(tc => tc.codigo === tipoComprobante);
-      
-      // Si no existe, crear tipo de comprobante
-      if (!tipoComprobanteRecord) {
-        tipoComprobanteRecord = await base44.entities.TipoComprobante.create({
-          codigo: tipoComprobante,
-          descripcion: tipoComprobante === "B" ? "Factura B - Con IVA" : "Ticket X - Sin IVA",
-          prefijo: tipoComprobante,
-          longitud_numero: 4,
-          ultimo_numero: 0,
-          is_active: true
+      if (talonario.tipo_comprobante !== tipoComprobante) {
+        throw new Error(`El talonario seleccionado es para comprobantes tipo ${talonario.tipo_comprobante}, pero la venta requiere tipo ${tipoComprobante}`);
+      }
+
+      // Asignar número de comprobante
+      let numeroAsignado;
+      let numeroComprobante;
+
+      // Verificar si hay números liberados para reutilizar
+      if (talonario.permite_reutilizar && talonario.numeros_liberados?.length > 0) {
+        // Usar el número liberado más bajo
+        numeroAsignado = Math.min(...talonario.numeros_liberados);
+        numeroComprobante = `${talonario.prefijo}-${String(numeroAsignado).padStart(6, '0')}`;
+        
+        // Remover el número de la lista de liberados
+        const nuevosLiberados = talonario.numeros_liberados.filter(n => n !== numeroAsignado);
+        await base44.entities.Talonario.update(talonario.id, {
+          numeros_liberados: nuevosLiberados
+        });
+      } else {
+        // Usar el siguiente número correlativo
+        numeroAsignado = talonario.ultimo_numero_usado + 1;
+
+        // Validar que no exceda el límite del talonario
+        if (talonario.numero_hasta && numeroAsignado > talonario.numero_hasta) {
+          throw new Error(`El talonario "${talonario.nombre}" ha alcanzado su límite de numeración`);
+        }
+
+        numeroComprobante = `${talonario.prefijo}-${String(numeroAsignado).padStart(6, '0')}`;
+
+        // Actualizar último número usado
+        await base44.entities.Talonario.update(talonario.id, {
+          ultimo_numero_usado: numeroAsignado
         });
       }
 
-      // Incrementar número
-      const nuevoNumero = tipoComprobanteRecord.ultimo_numero + 1;
-      const numeroFormateado = String(nuevoNumero).padStart(tipoComprobanteRecord.longitud_numero, '0');
-      const numeroComprobante = `${tipoComprobanteRecord.prefijo}-${numeroFormateado}`;
-
-      // Actualizar tipo de comprobante
-      await base44.entities.TipoComprobante.update(tipoComprobanteRecord.id, {
-        ultimo_numero: nuevoNumero
-      });
-
-      // Crear venta con IVA
+      // Crear venta confirmada
       const sale = await base44.entities.Sale.create({
         ...saleData,
         tipo_venta: tipoVenta,
         estado: "CONFIRMADA",
         tipo_comprobante: tipoComprobante,
+        talonario_nombre: talonario.nombre,
         numero_comprobante: numeroComprobante
       });
 
@@ -413,7 +440,7 @@ export default function Sales() {
       queryClient.invalidateQueries({ queryKey: ['cajas'] });
       queryClient.invalidateQueries({ queryKey: ['bancos'] });
       queryClient.invalidateQueries({ queryKey: ['clients'] });
-      queryClient.invalidateQueries({ queryKey: ['tiposComprobante'] });
+      queryClient.invalidateQueries({ queryKey: ['talonarios'] });
       queryClient.invalidateQueries({ queryKey: ['ivaVentas'] });
       queryClient.invalidateQueries({ queryKey: ['iibbVentas'] });
       queryClient.invalidateQueries({ queryKey: ['cheques'] });
@@ -437,7 +464,8 @@ export default function Sales() {
       genera_iva: false,
       genera_iibb: false,
       discount: 0,
-      notes: ""
+      notes: "",
+      talonario_id: ""
     });
     setProductSearch("");
     setIsDialogOpen(true);
@@ -992,6 +1020,31 @@ export default function Sales() {
                   </div>
                 </div>
 
+                {/* Selección de Talonario */}
+                <div className="space-y-1">
+                  <Label className="text-xs">Talonario *</Label>
+                  <Select 
+                    value={currentSale.talonario_id} 
+                    onValueChange={(v) => setCurrentSale({ ...currentSale, talonario_id: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar talonario" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {talonarios
+                        .filter(t => t.activo && t.tipo_comprobante === (currentSale.genera_iva ? "B" : "X"))
+                        .map(t => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.nombre} ({t.prefijo}-{String(t.ultimo_numero_usado + 1).padStart(6, '0')})
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  {talonarios.filter(t => t.activo && t.tipo_comprobante === (currentSale.genera_iva ? "B" : "X")).length === 0 && (
+                    <p className="text-xs text-red-600">No hay talonarios activos para este tipo de comprobante</p>
+                  )}
+                </div>
+
                 <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-6 border-2">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -1038,7 +1091,7 @@ export default function Sales() {
             <Button 
               onClick={handleSubmit} 
               className="bg-emerald-600 hover:bg-emerald-700"
-              disabled={cart.length === 0 || tieneItemsInvalidos}
+              disabled={cart.length === 0 || tieneItemsInvalidos || !currentSale.talonario_id}
             >
               <DollarSign className="h-4 w-4 mr-2" />
               Siguiente: Pagos

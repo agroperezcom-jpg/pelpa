@@ -23,6 +23,7 @@ import TableroFiscal from './pages/TableroFiscal';
 import TesoreriaV2 from './pages/TesoreriaV2';
 import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
+import Talonarios from './pages/Talonarios';
 import __Layout from './Layout.jsx';
 
 
@@ -52,6 +53,7 @@ export const PAGES = {
     "TesoreriaV2": TesoreriaV2,
     "TiposArticulo": TiposArticulo,
     "Treasury": Treasury,
+    "Talonarios": Talonarios,
 }
 
 export const pagesConfig = {
