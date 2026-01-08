@@ -422,32 +422,32 @@ export default function Analytics() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-indigo-600" />
-            Análisis y KPIs
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-0">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-2 flex-wrap">
+            <BarChart3 className="h-5 sm:h-6 w-5 sm:w-6 text-indigo-600 flex-shrink-0" />
+            <span>Análisis y KPIs</span>
           </h1>
-          <p className="text-slate-500 text-sm mt-1">
+          <p className="text-slate-500 text-xs sm:text-sm mt-1">
             Indicadores clave de rendimiento
           </p>
         </div>
-        <Button variant="outline" onClick={exportData}>
+        <Button variant="outline" onClick={exportData} className="w-full sm:w-auto whitespace-nowrap">
           <Download className="h-4 w-4 mr-2" />
           Exportar
         </Button>
       </div>
 
       {/* Filtros de Fecha */}
-      <Card className="border-0 shadow-sm">
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-end">
-            <div className="space-y-2">
-              <Label>Período</Label>
+      <Card className="border-0 shadow-sm overflow-x-auto">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex flex-col gap-3 items-start sm:flex-row sm:items-end sm:gap-4 w-full">
+            <div className="space-y-2 w-full sm:w-auto">
+              <Label className="text-xs sm:text-sm">Período</Label>
               <Select value={dateRange} onValueChange={handleDateRangeChange}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full sm:w-40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -459,26 +459,28 @@ export default function Analytics() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Desde</Label>
+            <div className="space-y-2 w-full sm:w-auto">
+              <Label className="text-xs sm:text-sm">Desde</Label>
               <Input
                 type="date"
                 value={startDate}
                 onChange={(e) => { setStartDate(e.target.value); setDateRange('custom'); }}
+                className="text-xs sm:text-sm"
               />
             </div>
-            <div className="space-y-2">
-              <Label>Hasta</Label>
+            <div className="space-y-2 w-full sm:w-auto">
+              <Label className="text-xs sm:text-sm">Hasta</Label>
               <Input
                 type="date"
                 value={endDate}
                 onChange={(e) => { setEndDate(e.target.value); setDateRange('custom'); }}
+                className="text-xs sm:text-sm"
               />
             </div>
-            <div className="space-y-2">
-              <Label>Categoría</Label>
+            <div className="space-y-2 w-full sm:w-auto">
+              <Label className="text-xs sm:text-sm">Categoría</Label>
               <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full sm:w-40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -491,10 +493,10 @@ export default function Analytics() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Empleado</Label>
+            <div className="space-y-2 w-full sm:w-auto">
+              <Label className="text-xs sm:text-sm">Empleado</Label>
               <Select value={filtroEmpleado} onValueChange={setFiltroEmpleado}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full sm:w-40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -542,7 +544,7 @@ export default function Analytics() {
           <Target className="h-5 w-5 text-indigo-600" />
           Dashboard Ejecutivo
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4">
           <KPICard
             titulo="Ventas Totales"
             valor={totalVentas}
@@ -581,8 +583,8 @@ export default function Analytics() {
         </div>
       </div>
 
-      <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="bg-white border shadow-sm flex-wrap h-auto">
+      <Tabs defaultValue="dashboard" className="space-y-4 w-full">
+        <TabsList className="bg-white border shadow-sm flex-wrap h-auto overflow-x-auto w-full justify-start sm:justify-start">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="comerciales">KPI Comerciales</TabsTrigger>
           <TabsTrigger value="stock">KPI Stock</TabsTrigger>
@@ -599,7 +601,7 @@ export default function Analytics() {
 
         {/* DASHBOARD EJECUTIVO */}
         <TabsContent value="dashboard" className="space-y-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
             <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white">
               <CardContent className="p-6">
                 <p className="text-xs font-medium opacity-90 uppercase">Ventas Total</p>
@@ -648,10 +650,10 @@ export default function Analytics() {
             </Card>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-4">
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base">Tendencia de Ventas (Últimos 30 días)</CardTitle>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
+           <Card className="border-0 shadow-sm w-full">
+             <CardHeader>
+               <CardTitle className="text-sm sm:text-base">Tendencia de Ventas (Últimos 30 días)</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-64">
@@ -794,10 +796,10 @@ export default function Analytics() {
             </Card>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-4">
-            <Card className="border-0 shadow-sm">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full">
+            <Card className="border-0 shadow-sm w-full">
               <CardHeader>
-                <CardTitle className="text-base">Top 5 Productos</CardTitle>
+                <CardTitle className="text-sm sm:text-base">Top 5 Productos</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -865,8 +867,8 @@ export default function Analytics() {
         </TabsContent>
 
         {/* KPI COMERCIALES */}
-        <TabsContent value="comerciales" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+         <TabsContent value="comerciales" className="space-y-4 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 w-full">
             <KPICard
               titulo="Ticket Promedio"
               valor={ticketPromedio}
@@ -889,10 +891,10 @@ export default function Analytics() {
             />
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-4">
-            <Card className="border-0 shadow-sm">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
+            <Card className="border-0 shadow-sm w-full">
               <CardHeader>
-                <CardTitle className="text-base">Margen por Categoría</CardTitle>
+                <CardTitle className="text-sm sm:text-base">Margen por Categoría</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-64">
