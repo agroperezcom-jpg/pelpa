@@ -193,6 +193,8 @@ export default function RolesPermisos() {
 
   const savePermisosMutation = useMutation({
     mutationFn: async ({ rolId, permisos }) => {
+      if (!rolId) throw new Error("Rol no seleccionado");
+      
       // Eliminar permisos existentes
       const existing = rolPermisos.filter(rp => rp.rol_id === rolId);
       for (const rp of existing) {
@@ -202,7 +204,12 @@ export default function RolesPermisos() {
       // Crear nuevos permisos
       for (const [key, value] of Object.entries(permisos)) {
         if (value) {
-          const [modulo, accion] = key.split('_');
+          const parts = key.split('_');
+          if (parts.length < 2) continue; // Skip invalid keys
+          
+          const accion = parts[parts.length - 1];
+          const modulo = parts.slice(0, -1).join('_');
+          
           const permiso = await base44.entities.Permiso.filter({ modulo, accion });
           
           if (permiso.length === 0) {
@@ -215,7 +222,7 @@ export default function RolesPermisos() {
             
             await base44.entities.RolPermiso.create({
               rol_id: rolId,
-              rol_nombre: selectedRol.nombre,
+              rol_nombre: selectedRol?.nombre || "",
               permiso_id: nuevoPermiso.id,
               modulo,
               accion
@@ -223,7 +230,7 @@ export default function RolesPermisos() {
           } else {
             await base44.entities.RolPermiso.create({
               rol_id: rolId,
-              rol_nombre: selectedRol.nombre,
+              rol_nombre: selectedRol?.nombre || "",
               permiso_id: permiso[0].id,
               modulo,
               accion
@@ -237,6 +244,9 @@ export default function RolesPermisos() {
       setPermisosDialogOpen(false);
       setSelectedRol(null);
       setSelectedPermisos({});
+    },
+    onError: (error) => {
+      alert("Error al guardar permisos: " + error.message);
     }
   });
 
@@ -547,10 +557,11 @@ export default function RolesPermisos() {
                   rolId: selectedRol.id, 
                   permisos: selectedPermisos 
                 })}
+                disabled={savePermisosMutation.isPending || !selectedRol}
                 className="bg-primary hover:bg-[hsl(var(--primary-hover))]"
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                Guardar permisos
+                {savePermisosMutation.isPending ? "Guardando..." : "Guardar permisos"}
               </Button>
             </DialogFooter>
           </DialogContent>
