@@ -41,8 +41,10 @@ import {
   History,
   Download,
   Upload,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Trash2
 } from "lucide-react";
+import DeleteProductsDialog from "../components/inventory/DeleteProductsDialog";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -59,6 +61,7 @@ export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [stockFilter, setStockFilter] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [movementType, setMovementType] = useState("entrada");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState("");
@@ -281,11 +284,15 @@ export default function Inventory() {
             className="hidden"
             onChange={handleImportCSV}
           />
-          <Button variant="outline" onClick={() => handleOpenDialog('salida')} className="border-red-200 text-red-600 hover:bg-red-50">
+          <Button variant="outline" onClick={() => handleOpenDialog('salida')} className="border-red-200 text-red-600 hover:bg-red-50 w-full sm:w-auto whitespace-nowrap">
             <Minus className="h-4 w-4 mr-2" />
             Salida
           </Button>
-          <Button onClick={() => handleOpenDialog('entrada')} className="bg-emerald-600 hover:bg-emerald-700">
+          <Button onClick={() => setIsDeleteDialogOpen(true)} variant="destructive" className="w-full sm:w-auto whitespace-nowrap">
+            <Trash2 className="h-4 w-4 mr-2" />
+            Eliminar
+          </Button>
+          <Button onClick={() => handleOpenDialog('entrada')} className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto whitespace-nowrap">
             <Plus className="h-4 w-4 mr-2" />
             Entrada
           </Button>
@@ -541,6 +548,13 @@ export default function Inventory() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Products Dialog */}
+      <DeleteProductsDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        products={products}
+      />
 
       {/* Movement Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
