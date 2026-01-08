@@ -410,7 +410,7 @@ export default function Products() {
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {paginatedProducts.map((product) => (
-            <Card key={product.id} className="border-0 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+              <Card key={product.id} className="border-0 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
               <div className="aspect-square bg-slate-100 relative">
                 {product.image_url ? (
                   <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
@@ -470,10 +470,51 @@ export default function Products() {
                   </div>
                 )}
               </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
+              </Card>
+              ))}
+              </div>
+              {filteredProducts.length > 0 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 bg-slate-50 rounded-b-lg">
+              <p className="text-xs text-slate-600">
+               Mostrando <span className="font-medium">{((currentPage - 1) * itemsPerPage) + 1}</span> a <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredProducts.length)}</span> de <span className="font-medium">{filteredProducts.length}</span> productos
+              </p>
+              <div className="flex gap-1">
+               <Button
+                 variant="outline"
+                 size="sm"
+                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                 disabled={currentPage === 1}
+                 className="h-8 px-3 text-xs"
+               >
+                 ← Anterior
+               </Button>
+               <div className="flex items-center gap-1 px-2">
+                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                   <Button
+                     key={page}
+                     variant={currentPage === page ? "default" : "outline"}
+                     size="sm"
+                     onClick={() => setCurrentPage(page)}
+                     className="h-8 w-8 p-0 text-xs"
+                   >
+                     {page}
+                   </Button>
+                 ))}
+               </div>
+               <Button
+                 variant="outline"
+                 size="sm"
+                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                 disabled={currentPage === totalPages}
+                 className="h-8 px-3 text-xs"
+               >
+                 Siguiente →
+               </Button>
+              </div>
+              </div>
+              )}
+              </div>
+              ) : (
         <Card className="border-0 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
