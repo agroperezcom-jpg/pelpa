@@ -331,7 +331,7 @@ export default function Inventory() {
            <input
              id="import-csv"
              type="file"
-             accept=".csv,.xlsx,.xls"
+             accept=".csv"
              className="hidden"
              onChange={handleImportCSV}
            />
