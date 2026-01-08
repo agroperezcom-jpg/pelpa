@@ -837,22 +837,22 @@ export default function Sales() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <ShoppingCart className="h-6 w-6 text-emerald-600" />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-0">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-2 flex-wrap">
+            <ShoppingCart className="h-5 sm:h-6 w-5 sm:w-6 text-emerald-600 flex-shrink-0" />
             Ventas
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
             Hoy: ${todayTotal.toLocaleString()} ({todaySales.length} ventas)
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setIsReportesDialogOpen(true)} variant="outline">
+        <div className="flex gap-2 w-full sm:w-auto flex-col sm:flex-row">
+          <Button onClick={() => setIsReportesDialogOpen(true)} variant="outline" className="w-full sm:w-auto whitespace-nowrap">
             <FileText className="h-4 w-4 mr-2" />
             Reportes X/Z
           </Button>
-          <Button onClick={handleOpenDialog} className="bg-emerald-600 hover:bg-emerald-700">
+          <Button onClick={handleOpenDialog} className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto whitespace-nowrap">
             <Plus className="h-4 w-4 mr-2" />
             Nueva Venta
           </Button>
@@ -860,7 +860,7 @@ export default function Sales() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs font-medium text-muted-foreground uppercase">Ventas Hoy</p>

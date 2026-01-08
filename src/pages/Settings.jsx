@@ -145,24 +145,24 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Settings className="h-6 w-6 text-slate-600" />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-0">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-2 flex-wrap">
+            <Settings className="h-5 sm:h-6 w-5 sm:w-6 text-slate-600 flex-shrink-0" />
             Configuración
           </h1>
           <p className="text-slate-500 text-sm mt-1">
             Administración de empleados y sistema
           </p>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={() => setIsDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto whitespace-nowrap">
           <UserPlus className="h-4 w-4 mr-2" />
           Invitar Usuario
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-2 sm:gap-4">
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">

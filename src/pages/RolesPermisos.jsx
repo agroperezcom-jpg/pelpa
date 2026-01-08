@@ -375,7 +375,7 @@ export default function RolesPermisos() {
               Gestión de accesos y control de seguridad del sistema
             </p>
           </div>
-          <Button onClick={() => handleOpenDialog()} className="bg-primary hover:bg-[hsl(var(--primary-hover))]">
+          <Button onClick={() => handleOpenDialog()} className="bg-primary hover:bg-[hsl(var(--primary-hover))] w-full sm:w-auto whitespace-nowrap">
             <Plus className="h-4 w-4 mr-2" />
             Nuevo Rol
           </Button>
@@ -388,7 +388,7 @@ export default function RolesPermisos() {
           </TabsList>
 
           <TabsContent value="roles" className="space-y-4">
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
               {roles.map(rol => (
                 <Card key={rol.id} className="border-0 shadow-sm">
                   <CardHeader className="pb-3">
@@ -588,7 +588,7 @@ export default function RolesPermisos() {
                             </div>
                           </CardHeader>
                           <CardContent>
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
                               {ACCIONES.map(accion => (
                                 <div key={accion.id} className="flex items-start gap-2">
                                   <Checkbox
