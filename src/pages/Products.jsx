@@ -84,9 +84,7 @@ export default function Products() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
-  const [isMapperDialogOpen, setIsMapperDialogOpen] = useState(false);
-  const [csvDataForMapper, setCsvDataForMapper] = useState(null);
-  const [isImporting, setIsImporting] = useState(false);
+  const [isAdvancedImporterOpen, setIsAdvancedImporterOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
