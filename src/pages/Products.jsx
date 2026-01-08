@@ -83,6 +83,8 @@ export default function Products() {
   const [viewMode, setViewMode] = useState("grid");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [isAdvancedImporterOpen, setIsAdvancedImporterOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -244,6 +246,12 @@ export default function Products() {
     return matchesSearch && matchesCategory;
   });
 
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   const exportToCSV = () => {
     const headers = ["Nombre", "Tipo", "Categoría", "Costo", "P.Lista Minorista", "P.Lista Mayorista", "Stock", "Código"];
     const rows = filteredProducts.map(p => [
@@ -399,8 +407,9 @@ export default function Products() {
 
       {/* Products Grid/List */}
       {viewMode === "grid" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredProducts.map((product) => (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {paginatedProducts.map((product) => (
             <Card key={product.id} className="border-0 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
               <div className="aspect-square bg-slate-100 relative">
                 {product.image_url ? (
@@ -480,7 +489,7 @@ export default function Products() {
                 </tr>
               </thead>
               <tbody>
-                {filteredProducts.map((product) => (
+                {paginatedProducts.map((product) => (
                   <tr key={product.id} className="border-t hover:bg-slate-50">
                     <td className="p-4">
                       <div className="flex items-center gap-3">
@@ -535,6 +544,46 @@ export default function Products() {
               </tbody>
             </table>
           </div>
+          {filteredProducts.length > 0 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 bg-slate-50">
+              <p className="text-xs text-slate-600">
+                Mostrando <span className="font-medium">{((currentPage - 1) * itemsPerPage) + 1}</span> a <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredProducts.length)}</span> de <span className="font-medium">{filteredProducts.length}</span> productos
+              </p>
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="h-8 px-3 text-xs"
+                >
+                  ← Anterior
+                </Button>
+                <div className="flex items-center gap-1 px-2">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(page)}
+                      className="h-8 w-8 p-0 text-xs"
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="h-8 px-3 text-xs"
+                >
+                  Siguiente →
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
       )}
 
