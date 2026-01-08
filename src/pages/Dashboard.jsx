@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Users,
   Package,
   Briefcase,
   TrendingUp,
@@ -48,10 +47,7 @@ export default function Dashboard() {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
-  const { data: clients = [] } = useQuery({
-    queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list()
-  });
+
 
   const { data: products = [] } = useQuery({
     queryKey: ['products'],
@@ -63,12 +59,32 @@ export default function Dashboard() {
     queryFn: () => base44.entities.Project.list('-created_date', 50)
   });
 
+  const { data: freeTasks = [] } = useQuery({
+    queryKey: ['freeTasks'],
+    queryFn: () => base44.entities.FreeTask.list()
+  });
+
+  const { data: projectTasks = [] } = useQuery({
+    queryKey: ['projectTasks'],
+    queryFn: () => base44.entities.ProjectTask.list()
+  });
+
 
 
   // Calculate stats
   const lowStockProducts = products.filter(p => p.stock < p.min_stock);
   const riskStockProducts = products.filter(p => p.stock > 0 && p.stock <= (p.min_stock || 0) * 1.5);
   const activeProjects = projects.filter(p => p.status !== 'completado' && p.status !== 'cancelado');
+  
+  // Today's tasks
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const todayFreeTasks = freeTasks.filter(t => 
+    t.date === todayStr && t.status !== 'completada'
+  );
+  const todayProjectTasks = projectTasks.filter(t => 
+    t.due_date === todayStr && t.status !== 'completada'
+  );
+  const totalTodayTasks = todayFreeTasks.length + todayProjectTasks.length;
 
   // Project activity chart data (last 30 days)
   const last30Days = Array.from({ length: 30 }, (_, i) => {
@@ -168,14 +184,14 @@ export default function Dashboard() {
         <div className="stat-card">
           <div className="flex items-start justify-between mb-3">
             <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
-              <Users className="h-5 w-5 text-amber-600" />
+              <CheckCircle2 className="h-5 w-5 text-amber-600" />
             </div>
           </div>
           <p className="text-2xl font-semibold text-foreground tracking-tight">
-            {clients.length}
+            {totalTodayTasks}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Clientes registrados
+            Tareas pendientes hoy
           </p>
         </div>
 
@@ -316,13 +332,13 @@ export default function Dashboard() {
           </Link>
 
           <Link 
-            to={createPageUrl("Clients")} 
+            to={createPageUrl("Calendar")} 
             className="flex items-center gap-3 p-4 rounded-xl bg-secondary/40 hover:bg-secondary/70 transition-colors group"
           >
             <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
-              <Users className="h-4 w-4 text-emerald-600" />
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             </div>
-            <span className="text-sm font-medium text-foreground">Nuevo Cliente</span>
+            <span className="text-sm font-medium text-foreground">Nueva Tarea</span>
           </Link>
 
           <Link 
