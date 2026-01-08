@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -162,7 +163,8 @@ export default function Layout({ children, currentPageName }) {
   };
 
   return (
-    <div className="min-h-screen bg-[hsl(40,20%,98%)]">
+    <ThemeProvider>
+      <div className="min-h-screen bg-background transition-theme">
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white/90 backdrop-blur-sm border-b border-border/40 z-50 flex items-center justify-between px-4">
         <button 
@@ -382,6 +384,7 @@ export default function Layout({ children, currentPageName }) {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </ThemeProvider>
   );
 }
