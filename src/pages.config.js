@@ -1,5 +1,6 @@
 import Analytics from './pages/Analytics';
 import Calendar from './pages/Calendar';
+import Cheques from './pages/Cheques';
 import Clients from './pages/Clients';
 import Dashboard from './pages/Dashboard';
 import DashboardEjecutivo from './pages/DashboardEjecutivo';
@@ -22,13 +23,13 @@ import TableroFiscal from './pages/TableroFiscal';
 import TesoreriaV2 from './pages/TesoreriaV2';
 import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
-import Cheques from './pages/Cheques';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Analytics": Analytics,
     "Calendar": Calendar,
+    "Cheques": Cheques,
     "Clients": Clients,
     "Dashboard": Dashboard,
     "DashboardEjecutivo": DashboardEjecutivo,
@@ -51,7 +52,6 @@ export const PAGES = {
     "TesoreriaV2": TesoreriaV2,
     "TiposArticulo": TiposArticulo,
     "Treasury": Treasury,
-    "Cheques": Cheques,
 }
 
 export const pagesConfig = {
