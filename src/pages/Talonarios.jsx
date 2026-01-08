@@ -35,7 +35,8 @@ import {
   Power,
   PowerOff,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Trash2
 } from "lucide-react";
 
 export default function Talonarios() {
@@ -101,6 +102,22 @@ export default function Talonarios() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['talonarios'] });
+    }
+  });
+
+  const deleteTalonarioMutation = useMutation({
+    mutationFn: async (talonario) => {
+      const ventasEmitidas = getVentasPorTalonario(talonario.id);
+      if (ventasEmitidas > 0) {
+        throw new Error(`No se puede eliminar: el talonario tiene ${ventasEmitidas} venta(s) emitida(s)`);
+      }
+      return await base44.entities.Talonario.delete(talonario.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['talonarios'] });
+    },
+    onError: (error) => {
+      alert(error.message);
     }
   });
 
@@ -311,6 +328,19 @@ export default function Talonarios() {
                           <Power className="h-4 w-4 text-green-500" />
                         )}
                       </Button>
+                      {ventasEmitidas === 0 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            if (window.confirm(`¿Estás seguro de eliminar el talonario "${talonario.nombre}"?`)) {
+                              deleteTalonarioMutation.mutate(talonario);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
