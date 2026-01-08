@@ -259,6 +259,65 @@ export default function Inventory() {
     }
   };
 
+  const processCSVFile = (file) => {
+    if (!file.name.endsWith('.csv')) {
+      alert('Por favor selecciona un archivo CSV');
+      return;
+    }
+
+    setIsImporting(true);
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      try {
+        const text = event.target.result;
+        const lines = text.split('\n').filter(line => line.trim());
+        
+        if (lines.length < 2) {
+          alert('El archivo está vacío o no tiene datos');
+          setIsImporting(false);
+          return;
+        }
+
+        const headers = lines[0].split(',').map(h => h.trim());
+        const rows = lines.slice(1).map(line => line.split(',').map(v => v.trim()));
+
+        setCsvDataForMapper({ headers, rows });
+        setIsMapperDialogOpen(true);
+      } catch (error) {
+        console.error('Error reading file:', error);
+        alert('Error al leer el archivo CSV');
+      } finally {
+        setIsImporting(false);
+      }
+    };
+
+    reader.readAsText(file);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      processCSVFile(files[0]);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
