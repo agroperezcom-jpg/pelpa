@@ -255,7 +255,10 @@ export default function AdvancedCsvImporter({ isOpen, onClose, tiposArticulo, pr
   ).length;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) resetImporter();
+      else onClose();
+    }}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
