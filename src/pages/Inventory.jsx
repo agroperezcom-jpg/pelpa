@@ -301,30 +301,40 @@ export default function Inventory() {
             Control de stock y movimientos
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" onClick={exportTemplate}>
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Plantilla
-          </Button>
-          <Button variant="outline" onClick={exportToCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            Exportar
-          </Button>
-          <label htmlFor="import-csv">
-            <Button variant="outline" asChild disabled={isImporting}>
-              <span className="cursor-pointer">
-                <Upload className="h-4 w-4 mr-2" />
-                {isImporting ? 'Importando...' : 'Importar'}
-              </span>
-            </Button>
-          </label>
-          <input
-            id="import-csv"
-            type="file"
-            accept=".csv"
-            className="hidden"
-            onChange={handleImportCSV}
-          />
+        <div 
+          className="flex gap-2 flex-wrap"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+           <Button variant="outline" onClick={exportTemplate}>
+             <FileSpreadsheet className="h-4 w-4 mr-2" />
+             Plantilla
+           </Button>
+           <Button variant="outline" onClick={exportToCSV}>
+             <Download className="h-4 w-4 mr-2" />
+             Exportar
+           </Button>
+           <label htmlFor="import-csv">
+             <Button 
+               variant="outline" 
+               asChild 
+               disabled={isImporting}
+               className={isDragging ? 'ring-2 ring-blue-500 bg-blue-50' : ''}
+             >
+               <span className="cursor-pointer">
+                 <Upload className="h-4 w-4 mr-2" />
+                 {isImporting ? 'Importando...' : 'Importar'}
+               </span>
+             </Button>
+           </label>
+           <input
+             id="import-csv"
+             type="file"
+             accept=".csv"
+             className="hidden"
+             onChange={handleImportCSV}
+           />
           <Button variant="outline" onClick={() => handleOpenDialog('salida')} className="border-red-200 text-red-600 hover:bg-red-50 w-full sm:w-auto whitespace-nowrap">
             <Minus className="h-4 w-4 mr-2" />
             Salida
