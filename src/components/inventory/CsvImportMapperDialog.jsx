@@ -1,0 +1,311 @@
+import React, { useState, useMemo } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
+
+export default function CsvImportMapperDialog({
+  isOpen,
+  onClose,
+  csvData,
+  tiposArticulo,
+  onConfirm
+}) {
+  const [fieldMapping, setFieldMapping] = useState({});
+  const [errors, setErrors] = useState([]);
+
+  // Campos disponibles en Product
+  const PRODUCT_FIELDS = [
+    { key: "name", label: "Nombre *", required: true, type: "string" },
+    { key: "description", label: "Descripción", required: false, type: "string" },
+    { key: "tipo_articulo_nombre", label: "Tipo Artículo *", required: true, type: "string" },
+    { key: "costo_unitario", label: "Costo Unitario *", required: true, type: "number" },
+    { key: "category", label: "Categoría", required: false, type: "string" },
+    { key: "supplier", label: "Proveedor", required: false, type: "string" },
+    { key: "stock", label: "Stock", required: false, type: "number" },
+    { key: "min_stock", label: "Stock Mínimo", required: false, type: "number" },
+    { key: "barcode", label: "Código de Barras", required: false, type: "string" }
+  ];
+
+  const headers = csvData?.headers || [];
+  const rows = csvData?.rows || [];
+
+  // Inicializar mapeo automático si es la primera vez
+  React.useEffect(() => {
+    if (headers.length > 0 && Object.keys(fieldMapping).length === 0) {
+      const autoMapping = {};
+      headers.forEach(header => {
+        const matched = PRODUCT_FIELDS.find(
+          f => f.label.toLowerCase().includes(header.toLowerCase()) ||
+               header.toLowerCase().includes(f.label.toLowerCase())
+        );
+        if (matched) {
+          autoMapping[header] = matched.key;
+        }
+      });
+      setFieldMapping(autoMapping);
+    }
+  }, [headers, fieldMapping]);
+
+  // Validar mapeo
+  const validateMapping = () => {
+    const newErrors = [];
+    const mappedFields = Object.values(fieldMapping).filter(v => v);
+    
+    // Verificar campos obligatorios
+    PRODUCT_FIELDS.filter(f => f.required).forEach(field => {
+      if (!mappedFields.includes(field.key)) {
+        newErrors.push(`Campo requerido no mapeado: ${field.label}`);
+      }
+    });
+
+    if (newErrors.length > 0) {
+      setErrors(newErrors);
+      return false;
+    }
+
+    setErrors([]);
+    return true;
+  };
+
+  // Transformar datos según mapeo
+  const transformData = () => {
+    const transformedProducts = rows.map((row, rowIndex) => {
+      const product = {};
+      let hasData = false;
+
+      headers.forEach((header, colIndex) => {
+        const fieldKey = fieldMapping[header];
+        if (!fieldKey) return;
+
+        const value = row[colIndex];
+        if (!value) return;
+
+        hasData = true;
+
+        // Buscar el tipo de dato del campo
+        const fieldDef = PRODUCT_FIELDS.find(f => f.key === fieldKey);
+
+        if (fieldKey === "tipo_articulo_nombre") {
+          // Buscar el ID del tipo artículo por nombre
+          const tipo = tiposArticulo.find(t => 
+            t.nombre?.toLowerCase() === value.toString().toLowerCase()
+          );
+          if (!tipo) {
+            throw new Error(
+              `Fila ${rowIndex + 2}: Tipo Artículo "${value}" no encontrado en el sistema`
+            );
+          }
+          product.tipo_articulo_id = tipo.id;
+          product.tipo_articulo_nombre = tipo.nombre;
+        } else if (fieldDef?.type === "number") {
+          const num = parseFloat(value);
+          if (isNaN(num)) {
+            throw new Error(
+              `Fila ${rowIndex + 2}: Campo "${fieldDef.label}" debe ser un número, recibió "${value}"`
+            );
+          }
+          product[fieldKey] = num;
+        } else {
+          product[fieldKey] = value.toString();
+        }
+      });
+
+      // Validar que tenga al menos nombre y costo
+      if (hasData) {
+        if (!product.name) {
+          throw new Error(`Fila ${rowIndex + 2}: El nombre del producto es obligatorio`);
+        }
+        if (product.costo_unitario === undefined || product.costo_unitario === null) {
+          throw new Error(`Fila ${rowIndex + 2}: El costo unitario es obligatorio`);
+        }
+        if (!product.tipo_articulo_id) {
+          throw new Error(`Fila ${rowIndex + 2}: El tipo artículo es obligatorio`);
+        }
+
+        // Calcular precios según tipo artículo
+        const tipo = tiposArticulo.find(t => t.id === product.tipo_articulo_id);
+        if (tipo) {
+          const costo = product.costo_unitario;
+
+          // Minorista
+          product.precio_minimo_minorista = costo * (1 + tipo.margen_minorista);
+          product.precio_lista_minorista = product.precio_minimo_minorista * 
+            (1 + tipo.descuento_efectivo);
+
+          // Mayorista
+          product.precio_minimo_mayorista = costo * (1 + tipo.margen_mayorista);
+          product.precio_lista_mayorista = product.precio_minimo_mayorista * 
+            (1 + tipo.descuento_efectivo);
+        }
+
+        // Asignar defaults
+        product.is_active = true;
+        product.category = product.category || "otros";
+        product.stock = product.stock || 0;
+        product.min_stock = product.min_stock || 5;
+      }
+
+      return hasData ? product : null;
+    }).filter(Boolean);
+
+    return transformedProducts;
+  };
+
+  const handleConfirm = () => {
+    if (!validateMapping()) return;
+
+    try {
+      const transformedData = transformData();
+      if (transformedData.length === 0) {
+        setErrors(["No hay datos válidos para importar"]);
+        return;
+      }
+      onConfirm(transformedData);
+    } catch (error) {
+      setErrors([error.message]);
+    }
+  };
+
+  // Vista previa de datos transformados
+  const previewData = useMemo(() => {
+    if (!validateMapping() || headers.length === 0) return [];
+    try {
+      return transformData().slice(0, 3);
+    } catch {
+      return [];
+    }
+  }, [fieldMapping, rows]);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Mapear Columnas CSV a Campos de Producto</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Errores */}
+          {errors.length > 0 && (
+            <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
+              <div className="flex gap-2 items-start">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-red-900 mb-2">Errores de validación:</p>
+                  <ul className="text-sm text-red-800 space-y-1">
+                    {errors.map((error, i) => (
+                      <li key={i}>• {error}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Mapeo de columnas */}
+          <div className="space-y-3">
+            <h3 className="font-semibold">Selecciona a qué campo corresponde cada columna</h3>
+            <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-3">
+              {headers.map((header) => (
+                <div key={header} className="flex items-center gap-3">
+                  <span className="text-sm font-medium min-w-32 truncate">{header}</span>
+                  <Select 
+                    value={fieldMapping[header] || ""}
+                    onValueChange={(value) => 
+                      setFieldMapping(prev => ({
+                        ...prev,
+                        [header]: value || undefined
+                      }))
+                    }
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="No importar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={null}>No importar</SelectItem>
+                      {PRODUCT_FIELDS.map(field => (
+                        <SelectItem key={field.key} value={field.key}>
+                          {field.label}
+                          {field.required && <span className="text-red-600 ml-1">*</span>}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Vista previa */}
+          {previewData.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <h3 className="font-semibold">Vista previa de datos transformados</h3>
+              </div>
+              <div className="border rounded-lg overflow-auto max-h-48">
+                <Table className="text-sm">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nombre</TableHead>
+                      <TableHead>Tipo Artículo</TableHead>
+                      <TableHead className="text-right">Costo</TableHead>
+                      <TableHead className="text-right">P. Min. Minorista</TableHead>
+                      <TableHead className="text-right">Stock</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {previewData.map((product, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="max-w-32 truncate">{product.name}</TableCell>
+                        <TableCell>{product.tipo_articulo_nombre}</TableCell>
+                        <TableCell className="text-right">${product.costo_unitario?.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">${product.precio_minimo_minorista?.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{product.stock || 0}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <p className="text-xs text-slate-500">Mostrando primeras {previewData.length} filas de {rows.length}</p>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleConfirm}
+            disabled={headers.length === 0}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            Confirmar Importación
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
