@@ -69,7 +69,8 @@ export default function Sales() {
     genera_iibb: false,
     discount: 0,
     notes: "",
-    talonario_id: ""
+    talonario_id: "",
+    total_manual: null
   });
   const [productSearch, setProductSearch] = useState("");
   const [activeTab, setActiveTab] = useState("products");
@@ -666,7 +667,8 @@ export default function Sales() {
       genera_iibb: false,
       discount: 0,
       notes: "",
-      talonario_id: ""
+      talonario_id: "",
+      total_manual: null
     });
     setProductSearch("");
     setIsDialogOpen(true);
@@ -792,6 +794,7 @@ export default function Sales() {
 
   const handleConfirmarPagos = (pagos, tipoVenta) => {
     const cliente = clients.find(c => c.id === currentSale.client_id);
+    const finalTotal = currentSale.total_manual !== null ? currentSale.total_manual : total_final;
 
     createSaleMutation.mutate({
       saleData: {
@@ -808,7 +811,7 @@ export default function Sales() {
         genera_iibb: currentSale.genera_iibb,
         neto_gravado: neto_gravado,
         iva_21: iva_21,
-        total: total_final,
+        total: finalTotal,
         notes: currentSale.notes
       },
       pagos,
@@ -1026,7 +1029,7 @@ export default function Sales() {
                 </Button>
               </div>
 
-              <div className="h-64 overflow-y-auto space-y-2 border rounded-lg p-2">
+              <div className="h-96 overflow-y-auto space-y-2 border rounded-lg p-2">
                 {activeTab === 'products' && filteredProducts.map((product) => {
                   const calc = calcularPrecioYMargen(product, 1);
                   return (
@@ -1328,7 +1331,13 @@ export default function Sales() {
                     )}
                     <div className="col-span-2 border-t pt-4">
                       <p className="text-sm font-medium text-slate-600 uppercase mb-2">Total Final</p>
-                      <p className="text-4xl font-bold text-emerald-600">${total_final.toFixed(2)}</p>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={currentSale.total_manual || total_final.toFixed(2)}
+                        onChange={(e) => setCurrentSale({ ...currentSale, total_manual: parseFloat(e.target.value) || total_final })}
+                        className="text-3xl font-bold h-12 text-emerald-600"
+                      />
                     </div>
                   </div>
                 </div>
@@ -1355,7 +1364,7 @@ export default function Sales() {
       <PagosDialog
         isOpen={isPagosDialogOpen}
         onClose={() => setIsPagosDialogOpen(false)}
-        total={total_final}
+        total={currentSale.total_manual !== null ? currentSale.total_manual : total_final}
         onConfirm={handleConfirmarPagos}
         clienteId={currentSale.client_id}
       />
