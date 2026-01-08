@@ -383,17 +383,46 @@ export default function Products() {
             {products.length} producto{products.length !== 1 ? 's' : ''} en catálogo
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div 
+          className="flex gap-2 flex-wrap"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
           <Link to={createPageUrl("TiposArticulo")}>
             <Button variant="outline" className="w-full sm:w-auto whitespace-nowrap">
               <Settings className="h-4 w-4 mr-2" />
               Tipos de Artículo
             </Button>
           </Link>
+          <Button variant="outline" onClick={exportTemplate} className="w-full sm:w-auto whitespace-nowrap">
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Plantilla
+          </Button>
           <Button variant="outline" onClick={exportToCSV} className="w-full sm:w-auto whitespace-nowrap">
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
+          <label htmlFor="import-csv">
+            <Button 
+              variant="outline" 
+              asChild 
+              disabled={isImporting}
+              className={isDragging ? 'ring-2 ring-blue-500 bg-blue-50' : ''}
+            >
+              <span className="cursor-pointer">
+                <Upload className="h-4 w-4 mr-2" />
+                {isImporting ? 'Importando...' : 'Importar'}
+              </span>
+            </Button>
+          </label>
+          <input
+            id="import-csv"
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={handleImportCSV}
+          />
           <Button onClick={() => setDeleteAllOpen(true)} variant="destructive" className="w-full sm:w-auto whitespace-nowrap">
             <Trash2 className="h-4 w-4 mr-2" />
             Borrar Todo
