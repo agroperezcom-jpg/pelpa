@@ -181,9 +181,14 @@ export default function Inventory() {
     link.click();
   };
 
+  const { data: tiposArticulo = [] } = useQuery({
+    queryKey: ['tiposArticulo'],
+    queryFn: () => base44.entities.TipoArticulo.filter({ is_active: true })
+  });
+
   const exportTemplate = () => {
-    const headers = ["nombre", "descripcion", "precio", "costo", "categoria", "proveedor", "stock", "stock_minimo", "codigo_barras"];
-    const example = ["Ejemplo: Cuaderno A5", "Cuaderno rayado 100 hojas", "5.99", "3.50", "papeleria", "Proveedor XYZ", "50", "10", "7891234567890"];
+    const headers = ["nombre", "descripcion", "tipo_articulo", "costo_unitario", "categoria", "proveedor", "stock", "stock_minimo", "codigo_barras"];
+    const example = ["Ejemplo: Cuaderno A5", "Cuaderno rayado 100 hojas", "Papelería", "3.50", "papeleria", "Proveedor XYZ", "50", "10", "7891234567890"];
     
     const csvContent = [headers, example].map(row => row.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -208,17 +213,46 @@ export default function Inventory() {
         const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
 
         const productsToCreate = [];
+        const errors = [];
 
         for (let i = 1; i < lines.length; i++) {
           const values = lines[i].split(',').map(v => v.trim());
           
           if (values.length < headers.length || !values[0]) continue;
 
+          const nombre = values[headers.indexOf('nombre')] || '';
+          const tipoArticuloNombre = values[headers.indexOf('tipo_articulo')] || '';
+          const costoUnitario = parseFloat(values[headers.indexOf('costo_unitario')]) || 0;
+
+          // Buscar tipo de artículo
+          const tipo = tiposArticulo.find(t => t.nombre.toLowerCase() === tipoArticuloNombre.toLowerCase());
+          
+          if (!tipo) {
+            errors.push(`Fila ${i + 1}: Tipo de artículo "${tipoArticuloNombre}" no encontrado`);
+            continue;
+          }
+
+          if (costoUnitario <= 0) {
+            errors.push(`Fila ${i + 1}: Costo unitario debe ser mayor a 0`);
+            continue;
+          }
+
+          // Calcular precios basados en margen del tipo
+          const precioMinimoMinorista = costoUnitario * (1 + tipo.margen_minorista);
+          const precioListaMinorista = precioMinimoMinorista / (1 - tipo.descuento_efectivo);
+          const precioMinimoMayorista = costoUnitario * (1 + tipo.margen_mayorista);
+          const precioListaMayorista = precioMinimoMayorista / (1 - tipo.descuento_efectivo);
+
           const product = {
-            name: values[headers.indexOf('nombre')] || '',
+            name: nombre,
             description: values[headers.indexOf('descripcion')] || '',
-            price: parseFloat(values[headers.indexOf('precio')]) || 0,
-            cost: parseFloat(values[headers.indexOf('costo')]) || 0,
+            tipo_articulo_id: tipo.id,
+            tipo_articulo_nombre: tipo.nombre,
+            costo_unitario: costoUnitario,
+            precio_minimo_minorista: precioMinimoMinorista,
+            precio_lista_minorista: precioListaMinorista,
+            precio_minimo_mayorista: precioMinimoMayorista,
+            precio_lista_mayorista: precioListaMayorista,
             category: values[headers.indexOf('categoria')] || 'otros',
             supplier: values[headers.indexOf('proveedor')] || '',
             stock: parseInt(values[headers.indexOf('stock')]) || 0,
@@ -233,11 +267,20 @@ export default function Inventory() {
         if (productsToCreate.length > 0) {
           await base44.entities.Product.bulkCreate(productsToCreate);
           queryClient.invalidateQueries({ queryKey: ['products'] });
-          alert(`${productsToCreate.length} productos importados exitosamente`);
+          
+          let message = `✓ ${productsToCreate.length} producto${productsToCreate.length !== 1 ? 's' : ''} importado${productsToCreate.length !== 1 ? 's' : ''} exitosamente`;
+          if (errors.length > 0) {
+            message += `\n\n⚠️ ${errors.length} fila${errors.length !== 1 ? 's' : ''} omitida${errors.length !== 1 ? 's' : ''}:\n${errors.join('\n')}`;
+          }
+          alert(message);
+        } else if (errors.length > 0) {
+          alert(`❌ No se importaron productos:\n${errors.join('\n')}`);
+        } else {
+          alert('El archivo no contiene datos válidos');
         }
       } catch (error) {
         console.error('Error importing:', error);
-        alert('Error al importar productos. Verifica el formato del archivo.');
+        alert('Error al importar productos. Verifica que:\n• Los tipos de artículos existan\n• El costo unitario sea un número válido\n• El archivo use formato CSV correcto');
       } finally {
         setIsImporting(false);
         e.target.value = '';
