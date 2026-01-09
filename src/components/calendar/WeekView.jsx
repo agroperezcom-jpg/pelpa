@@ -1,13 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, isToday, isSameDay, addHours, setHours, setMinutes } from "date-fns";
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, isToday, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import DraggableEventItem from "./DraggableEventItem";
 
-export default function WeekView({ currentDate, events, onEventClick, onEventDrop, onEventResize, singleDay = false }) {
-  const [draggingEvent, setDraggingEvent] = useState(null);
+export default function WeekView({ currentDate, events, onEventClick, singleDay = false }) {
   const weekStart = singleDay ? currentDate : startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = singleDay ? currentDate : endOfWeek(currentDate, { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
@@ -29,25 +27,6 @@ export default function WeekView({ currentDate, events, onEventClick, onEventDro
     if (event.type === "milestone") return "bg-amber-100 border-amber-300 text-amber-800";
     if (event.type === "campaign") return "bg-pink-100 border-pink-300 text-pink-800";
     return "bg-slate-100 border-slate-300 text-slate-800";
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDrop = (e, day, hour) => {
-    e.preventDefault();
-    if (!onEventDrop) return;
-
-    try {
-      const eventData = JSON.parse(e.dataTransfer.getData("application/json"));
-      const newDate = setHours(setMinutes(day, 0), hour);
-      onEventDrop(eventData, newDate);
-    } catch (err) {
-      console.error("Error dropping event:", err);
-    }
-    setDraggingEvent(null);
   };
 
   return (
@@ -104,11 +83,8 @@ export default function WeekView({ currentDate, events, onEventClick, onEventDro
                        key={`${day}-${hour}`}
                        className={cn(
                          "min-h-[60px] border-r last:border-r-0 p-1",
-                         isDayToday && "bg-primary/5",
-                         draggingEvent && "bg-slate-100/50"
+                         isDayToday && "bg-primary/5"
                        )}
-                       onDragOver={handleDragOver}
-                       onDrop={(e) => handleDrop(e, day, hour)}
                      />
                    );
                  })}
@@ -130,37 +106,13 @@ export default function WeekView({ currentDate, events, onEventClick, onEventDro
                         {dayEvents.map((event, idx) => (
                           <div
                             key={idx}
-                            draggable
-                            onDragStart={(e) => {
-                              e.stopPropagation();
-                              const eventPayload = {
-                                id: event.id,
-                                type: event.type,
-                                name: event.name,
-                                date: event.date,
-                                start_date: event.start_date,
-                                due_date: event.due_date,
-                                end_date: event.end_date,
-                                estimated_end_date: event.estimated_end_date,
-                                time: event.time,
-                                duration: event.duration,
-                                project_id: event.project_id,
-                                phase_id: event.phase_id,
-                                ...event
-                              };
-                              e.dataTransfer.effectAllowed = "move";
-                              e.dataTransfer.setData("application/json", JSON.stringify(eventPayload));
-                              setDraggingEvent(event);
-                            }}
-                            onDragEnd={() => setDraggingEvent(null)}
                             onClick={(e) => {
                               e.stopPropagation();
                               onEventClick(event);
                             }}
                             className={cn(
-                              "border rounded px-2 py-1 text-xs cursor-move hover:shadow-md transition-shadow",
-                              getEventColor(event),
-                              draggingEvent?.id === event.id && "opacity-50"
+                              "border rounded px-2 py-1 text-xs cursor-pointer hover:shadow-md transition-shadow",
+                              getEventColor(event)
                             )}
                           >
                             <div className="font-medium truncate">{event.name || event.title}</div>
