@@ -56,8 +56,10 @@ export default function ControlStockDialog({ isOpen, onClose, products }) {
 
   // Auto-focus en input de código de barras
   useEffect(() => {
-    if (step === 2 && barcodeInputRef.current) {
-      barcodeInputRef.current.focus();
+    if (step === 2) {
+      setTimeout(() => {
+        barcodeInputRef.current?.focus();
+      }, 100);
     }
   }, [step]);
 
