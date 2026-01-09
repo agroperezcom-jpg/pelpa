@@ -398,7 +398,7 @@ export default function Layout({ children, currentPageName }) {
       </aside>
 
       {/* Main Content */}
-      <main className="lg:pl-64 min-h-screen">
+      <main className={cn("min-h-screen transition-all duration-300", sidebarPinned ? "lg:pl-64" : "")}>
         <div className="pt-14 lg:pt-0">
           {/* Desktop Header */}
           <header className="hidden lg:flex h-14 items-center justify-between px-6 border-b border-border/40 bg-card/60 backdrop-blur-sm sticky top-0 z-30 transition-theme">
