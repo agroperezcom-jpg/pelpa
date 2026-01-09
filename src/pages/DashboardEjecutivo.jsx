@@ -309,6 +309,22 @@ export default function DashboardEjecutivo() {
     };
   });
 
+  const colorStyles = {
+    blue: 'text-blue-600',
+    emerald: 'text-emerald-600',
+    purple: 'text-purple-600',
+    green: 'text-green-600',
+    red: 'text-red-600'
+  };
+
+  const bgColorStyles = {
+    blue: 'bg-blue-50',
+    emerald: 'bg-emerald-50',
+    purple: 'bg-purple-50',
+    green: 'bg-green-50',
+    red: 'bg-red-50'
+  };
+
   const KPICard = ({ titulo, valor, subtitulo, icon: Icon, color = "blue", trend, onClick }) => (
     <Card 
       className={`border-0 shadow-sm hover:shadow-md transition-all ${onClick ? 'cursor-pointer' : ''}`}
@@ -320,7 +336,7 @@ export default function DashboardEjecutivo() {
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
               {titulo}
             </p>
-            <p className={`text-3xl font-bold text-${color}-600`}>
+            <p className={`text-3xl font-bold ${colorStyles[color]}`}>
               {typeof valor === 'number' && valor >= 1000 
                 ? `$${valor.toLocaleString()}` 
                 : typeof valor === 'number' 
@@ -332,8 +348,8 @@ export default function DashboardEjecutivo() {
               <p className="text-xs text-slate-500 mt-1">{subtitulo}</p>
             )}
           </div>
-          <div className={`w-12 h-12 bg-${color}-50 rounded-xl flex items-center justify-center`}>
-            <Icon className={`h-6 w-6 text-${color}-600`} />
+          <div className={`w-12 h-12 ${bgColorStyles[color]} rounded-xl flex items-center justify-center`}>
+            <Icon className={`h-6 w-6 ${colorStyles[color]}`} />
           </div>
         </div>
         {trend !== undefined && (
