@@ -539,12 +539,7 @@ export default function Inventory() {
         onConfirm={handleConfirmImport}
       />
 
-      {/* Control de Stock Dialog */}
-      <ControlStockDialog
-        isOpen={isControlStockOpen}
-        onClose={() => setIsControlStockOpen(false)}
-        products={products}
-      />
+
 
 
     </div>
