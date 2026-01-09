@@ -735,20 +735,6 @@ export default function Sales() {
   useEffect(() => {
     if (cart.length === 0) return;
     
-    // Evitar re-renders infinitos: solo recalcular si realmente cambió
-    const needsUpdate = cart.some(item => {
-      if (item.type === 'product') {
-        const product = products.find(p => p.id === item.item_id);
-        if (product) {
-          const calc = calcularPrecioYMargen(product, item.quantity);
-          return calc.precio_venta !== item.precio_venta;
-        }
-      }
-      return false;
-    });
-    
-    if (!needsUpdate) return;
-    
     const newCart = cart.map(item => {
       const updatedItem = { ...item };
       if (updatedItem.type === 'product') {
@@ -765,7 +751,8 @@ export default function Sales() {
       return updatedItem;
     });
     setCart(newCart);
-  }, [currentSale.tipo_lista, products, tiposArticulo]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSale.tipo_lista]);
 
   const updateCartQuantity = (index, quantity) => {
     if (quantity <= 0) {
