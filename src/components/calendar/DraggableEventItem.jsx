@@ -18,13 +18,14 @@ export default function DraggableEventItem({
   const dragRef = useRef(null);
 
   const handleDragStart = (e) => {
-    e.preventDefault();
+    if (!e.dataTransfer) return;
     dragRef.current = {
       startX: e.clientX || e.touches?.[0]?.clientX,
       startY: e.clientY || e.touches?.[0]?.clientY,
       startTime: new Date()
     };
     e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("application/json", JSON.stringify(event));
   };
 
   const handleResizeStart = (e, direction) => {
@@ -40,18 +41,32 @@ export default function DraggableEventItem({
   const handleResizeMove = (e) => {
     if (!isResizing || !dragRef.current || !onEventResize) return;
 
-    const deltaX = (e.clientX || e.touches?.[0]?.clientX) - dragRef.current.startX;
-    const deltaY = (e.clientY || e.touches?.[0]?.clientY) - dragRef.current.startY;
+    const currentX = e.clientX || e.touches?.[0]?.clientX;
+    const currentY = e.clientY || e.touches?.[0]?.clientY;
+    
+    if (!currentX || !currentY) return;
+
+    const deltaY = currentY - dragRef.current.startY;
 
     // Calcular delta en horas (aprox 60px = 1 hora en week view)
     const pixelsPerHour = 60;
     const hoursDelta = Math.round(deltaY / pixelsPerHour);
 
+    if (hoursDelta === 0) return;
+
+    const currentStartDate = new Date(event.start_date || event.date || event.created_date);
+    const currentEndDate = new Date(event.due_date || event.end_date || event.estimated_end_date || addHours(currentStartDate, 1));
+
     if (isResizing === "end") {
-      onEventResize(event, addHours(event.due_date || event.end_date || new Date(), hoursDelta));
+      const newEndDate = addHours(currentEndDate, hoursDelta);
+      onEventResize(event, newEndDate, "end");
     } else if (isResizing === "start") {
-      onEventResize(event, addHours(event.start_date || new Date(), hoursDelta), "start");
+      const newStartDate = addHours(currentStartDate, hoursDelta);
+      onEventResize(event, newStartDate, "start");
     }
+
+    // Actualizar referencia para el próximo movimiento
+    dragRef.current.startY = currentY;
   };
 
   const handleResizeEnd = () => {
@@ -121,14 +136,14 @@ export default function DraggableEventItem({
             <div
               onMouseDown={(e) => handleResizeStart(e, "start")}
               onTouchStart={(e) => handleResizeStart(e, "start")}
-              className="absolute top-0 left-0 right-0 h-1.5 cursor-n-resize opacity-0 group-hover:opacity-100 bg-blue-400/20 hover:bg-blue-400/40 transition-all"
-              title="Arrastra para cambiar fecha de inicio"
+              className="absolute top-0 left-0 right-0 h-2 cursor-n-resize opacity-0 group-hover:opacity-100 bg-blue-500/30 hover:bg-blue-500/50 transition-all rounded-t"
+              title="Arrastra para cambiar hora de inicio"
             />
             <div
               onMouseDown={(e) => handleResizeStart(e, "end")}
               onTouchStart={(e) => handleResizeStart(e, "end")}
-              className="absolute bottom-0 left-0 right-0 h-1.5 cursor-s-resize opacity-0 group-hover:opacity-100 bg-blue-400/20 hover:bg-blue-400/40 transition-all"
-              title="Arrastra para cambiar fecha de fin"
+              className="absolute bottom-0 left-0 right-0 h-2 cursor-s-resize opacity-0 group-hover:opacity-100 bg-blue-500/30 hover:bg-blue-500/50 transition-all rounded-b"
+              title="Arrastra para cambiar hora de fin"
             />
           </>
         )}

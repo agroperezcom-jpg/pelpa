@@ -31,11 +31,6 @@ export default function WeekView({ currentDate, events, onEventClick, onEventDro
     return "bg-slate-100 border-slate-300 text-slate-800";
   };
 
-  const handleDragStart = (e, event) => {
-    setDraggingEvent(event);
-    e.dataTransfer.effectAllowed = "move";
-  };
-
   const handleDragOver = (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
@@ -43,10 +38,15 @@ export default function WeekView({ currentDate, events, onEventClick, onEventDro
 
   const handleDrop = (e, day, hour) => {
     e.preventDefault();
-    if (!draggingEvent || !onEventDrop) return;
+    if (!onEventDrop) return;
 
-    const newDate = setHours(setMinutes(day, 0), hour);
-    onEventDrop(draggingEvent, newDate);
+    try {
+      const eventData = JSON.parse(e.dataTransfer.getData("application/json"));
+      const newDate = setHours(setMinutes(day, 0), hour);
+      onEventDrop(eventData, newDate);
+    } catch (err) {
+      console.error("Error dropping event:", err);
+    }
     setDraggingEvent(null);
   };
 
