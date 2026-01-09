@@ -26,12 +26,14 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
   const [newTag, setNewTag] = useState("");
 
   useEffect(() => {
-    if (initialData) {
+    if (initialData && initialData.id) {
+      // Editando tarea existente
       setFormData({
         ...initialData,
         tags: initialData.tags || []
       });
     } else {
+      // Nueva tarea (con o sin fecha pre-seleccionada)
       setFormData({
         name: "",
         description: "",
