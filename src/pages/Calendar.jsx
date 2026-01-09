@@ -10,15 +10,11 @@ import CalendarHeader from "@/components/calendar/CalendarHeader";
 import CalendarFilters from "@/components/calendar/CalendarFilters";
 import MonthView from "@/components/calendar/MonthView";
 import WeekView from "@/components/calendar/WeekView";
-import TimelineView from "@/components/calendar/TimelineView";
-import CustomDaysView from "@/components/calendar/CustomDaysView";
 import FreeTaskDialog from "@/components/calendar/FreeTaskDialog";
-import CustomRangeDialog from "@/components/calendar/CustomRangeDialog";
 
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState("month");
-  const [customDaysCount, setCustomDaysCount] = useState(5);
   const [layers, setLayers] = useState({
     projects: true,
     phases: true,
@@ -32,7 +28,6 @@ export default function Calendar() {
   const [selectedUser, setSelectedUser] = useState("all");
   const [currentUser, setCurrentUser] = useState(null);
   const [freeTaskDialogOpen, setFreeTaskDialogOpen] = useState(false);
-  const [customRangeDialogOpen, setCustomRangeDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [clickedDate, setClickedDate] = useState(null);
 
@@ -78,17 +73,6 @@ export default function Calendar() {
     queryFn: () => base44.entities.FreeTask.list()
   });
 
-  const { data: preferences = [] } = useQuery({
-    queryKey: ['calendarPreferences', currentUser?.email],
-    queryFn: async () => {
-      if (!currentUser?.email) return [];
-      return await base44.entities.CalendarPreferences.filter({ user_email: currentUser.email });
-    },
-    enabled: !!currentUser?.email
-  });
-
-  const userPreference = preferences[0];
-
   const createFreeTaskMutation = useMutation({
     mutationFn: (taskData) => base44.entities.FreeTask.create(taskData),
     onSuccess: () => {
@@ -104,45 +88,6 @@ export default function Calendar() {
       queryClient.invalidateQueries({ queryKey: ['freeTasks'] });
       setFreeTaskDialogOpen(false);
       setEditingTask(null);
-    }
-  });
-
-  const updateTaskMutation = useMutation({
-    mutationFn: ({ id, type, data }) => {
-      const entityMap = {
-        task: base44.entities.ProjectTask,
-        phase: base44.entities.ProjectPhase,
-        project: base44.entities.Project,
-        milestone: base44.entities.ProjectMilestone,
-        campaign: base44.entities.Campaign
-      };
-      return entityMap[type].update(id, data);
-    },
-    onSuccess: (_, { type }) => {
-      const keyMap = {
-        task: 'projectTasks',
-        phase: 'projectPhases',
-        project: 'projects',
-        milestone: 'projectMilestones',
-        campaign: 'campaigns'
-      };
-      queryClient.invalidateQueries({ queryKey: [keyMap[type]] });
-    }
-  });
-
-  const updatePreferencesMutation = useMutation({
-    mutationFn: async (data) => {
-      if (userPreference?.id) {
-        return await base44.entities.CalendarPreferences.update(userPreference.id, data);
-      } else {
-        return await base44.entities.CalendarPreferences.create({
-          user_email: currentUser?.email,
-          ...data
-        });
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['calendarPreferences'] });
     }
   });
 
@@ -367,173 +312,6 @@ export default function Calendar() {
     }
   };
 
-  const handleSaveCustomRange = (days, rangeName) => {
-    setCustomDaysCount(days);
-    setViewMode("custom");
-
-    if (rangeName) {
-      const currentRanges = userPreference?.saved_ranges || [];
-      updatePreferencesMutation.mutate({
-        saved_ranges: [...currentRanges, { name: rangeName, days }],
-        custom_days_range: days
-      });
-    }
-  };
-
-  const handleDeleteRange = (index) => {
-    const currentRanges = userPreference?.saved_ranges || [];
-    const newRanges = currentRanges.filter((_, i) => i !== index);
-    updatePreferencesMutation.mutate({
-      saved_ranges: newRanges
-    });
-  };
-
-  const handleEventDrop = (event, newDate) => {
-    if (!event || !event.id) {
-      console.error("Event drop failed: missing event or id", event);
-      return;
-    }
-
-    console.log("Dropping event:", event.id, "to:", newDate);
-
-    const dateStr = newDate.toISOString().split('T')[0];
-    const timeStr = `${String(newDate.getHours()).padStart(2, '0')}:${String(newDate.getMinutes()).padStart(2, '0')}`;
-
-    if (event.type === "freeTask") {
-      updateFreeTaskMutation.mutate({
-        id: event.id,
-        data: { date: dateStr, time: timeStr }
-      });
-    } else if (event.type === "task") {
-      // Calcular la duración si existe due_date
-      const originalStart = new Date(event.start_date);
-      const originalEnd = event.due_date ? new Date(event.due_date) : null;
-      const duration = originalEnd ? originalEnd - originalStart : null;
-
-      const updateData = { start_date: newDate.toISOString() };
-      if (duration && originalEnd) {
-        updateData.due_date = new Date(newDate.getTime() + duration).toISOString();
-      }
-
-      updateTaskMutation.mutate({
-        id: event.id,
-        type: "task",
-        data: updateData
-      });
-    } else if (event.type === "phase") {
-      // Calcular la duración si existe end_date
-      const originalStart = new Date(event.start_date);
-      const originalEnd = event.end_date ? new Date(event.end_date) : null;
-      const duration = originalEnd ? originalEnd - originalStart : null;
-
-      const updateData = { start_date: newDate.toISOString() };
-      if (duration && originalEnd) {
-        updateData.end_date = new Date(newDate.getTime() + duration).toISOString();
-      }
-
-      updateTaskMutation.mutate({
-        id: event.id,
-        type: "phase",
-        data: updateData
-      });
-    } else if (event.type === "project") {
-      // Calcular la duración si existe estimated_end_date
-      const originalStart = new Date(event.start_date);
-      const originalEnd = event.estimated_end_date ? new Date(event.estimated_end_date) : null;
-      const duration = originalEnd ? originalEnd - originalStart : null;
-
-      const updateData = { start_date: newDate.toISOString() };
-      if (duration && originalEnd) {
-        updateData.estimated_end_date = new Date(newDate.getTime() + duration).toISOString();
-      }
-
-      updateTaskMutation.mutate({
-        id: event.id,
-        type: "project",
-        data: updateData
-      });
-    } else if (event.type === "milestone") {
-      updateTaskMutation.mutate({
-        id: event.id,
-        type: "milestone",
-        data: { date: dateStr }
-      });
-    } else if (event.type === "campaign") {
-      // Calcular la duración si existe end_date
-      const originalStart = new Date(event.start_date);
-      const originalEnd = event.end_date ? new Date(event.end_date) : null;
-      const duration = originalEnd ? originalEnd - originalStart : null;
-
-      const updateData = { start_date: newDate.toISOString() };
-      if (duration && originalEnd) {
-        updateData.end_date = new Date(newDate.getTime() + duration).toISOString();
-      }
-
-      updateTaskMutation.mutate({
-        id: event.id,
-        type: "campaign",
-        data: updateData
-      });
-    }
-  };
-
-  const handleEventResize = (event, newDate, direction = "end") => {
-    if (!event || !event.id) return;
-    
-    if (event.type === "freeTask") {
-      // Para free tasks solo actualizamos si es el end
-      if (direction === "end") {
-        const timeStr = `${String(newDate.getHours()).padStart(2, '0')}:${String(newDate.getMinutes()).padStart(2, '0')}`;
-        updateFreeTaskMutation.mutate({
-          id: event.id,
-          data: { end_time: timeStr }
-        });
-      }
-    } else if (event.type === "task") {
-      if (direction === "end") {
-        updateTaskMutation.mutate({
-          id: event.id,
-          type: "task",
-          data: { due_date: newDate.toISOString() }
-        });
-      } else {
-        updateTaskMutation.mutate({
-          id: event.id,
-          type: "task",
-          data: { start_date: newDate.toISOString() }
-        });
-      }
-    } else if (event.type === "phase" || event.type === "project") {
-      if (direction === "end") {
-        updateTaskMutation.mutate({
-          id: event.id,
-          type: event.type,
-          data: { estimated_end_date: newDate.toISOString() }
-        });
-      } else {
-        updateTaskMutation.mutate({
-          id: event.id,
-          type: event.type,
-          data: { start_date: newDate.toISOString() }
-        });
-      }
-    } else if (event.type === "campaign") {
-      if (direction === "end") {
-        updateTaskMutation.mutate({
-          id: event.id,
-          type: "campaign",
-          data: { end_date: newDate.toISOString() }
-        });
-      } else {
-        updateTaskMutation.mutate({
-          id: event.id,
-          type: "campaign",
-          data: { start_date: newDate.toISOString() }
-        });
-      }
-    }
-  };
-
   return (
     <div className="space-y-6">
       <CalendarHeader
@@ -543,8 +321,6 @@ export default function Calendar() {
         setViewMode={setViewMode}
         onCreateEvent={handleCreateEvent}
         filteredEventsCount={events.length}
-        customDaysCount={customDaysCount}
-        onCustomRangeClick={() => setCustomRangeDialogOpen(true)}
       />
 
       {/* Alerts */}
@@ -652,8 +428,6 @@ export default function Calendar() {
           events={events}
           onEventClick={handleEventClick}
           onDateClick={handleDateClick}
-          onEventDrop={handleEventDrop}
-          onEventResize={handleEventResize}
         />
       )}
 
@@ -662,8 +436,6 @@ export default function Calendar() {
           currentDate={currentDate}
           events={events}
           onEventClick={handleEventClick}
-          onEventDrop={handleEventDrop}
-          onEventResize={handleEventResize}
         />
       )}
 
@@ -675,31 +447,7 @@ export default function Calendar() {
             return eventDate.toDateString() === currentDate.toDateString();
           })}
           onEventClick={handleEventClick}
-          onEventDrop={handleEventDrop}
-          onEventResize={handleEventResize}
           singleDay={true}
-        />
-      )}
-
-      {viewMode === "timeline" && (
-        <TimelineView
-          currentDate={currentDate}
-          events={events}
-          onEventClick={handleEventClick}
-          onEventDrop={handleEventDrop}
-          onEventResize={handleEventResize}
-        />
-      )}
-
-      {viewMode === "custom" && (
-        <CustomDaysView
-          currentDate={currentDate}
-          daysCount={customDaysCount}
-          events={events}
-          onEventClick={handleEventClick}
-          onDateClick={handleDateClick}
-          onEventDrop={handleEventDrop}
-          onEventResize={handleEventResize}
         />
       )}
 
@@ -715,14 +463,6 @@ export default function Calendar() {
         initialData={editingTask || (clickedDate ? { date: clickedDate.toISOString().split('T')[0] } : null)}
         users={users}
         currentUser={currentUser}
-      />
-
-      <CustomRangeDialog
-        isOpen={customRangeDialogOpen}
-        onClose={() => setCustomRangeDialogOpen(false)}
-        onSave={handleSaveCustomRange}
-        savedRanges={userPreference?.saved_ranges || []}
-        onDeleteRange={handleDeleteRange}
       />
     </div>
   );
