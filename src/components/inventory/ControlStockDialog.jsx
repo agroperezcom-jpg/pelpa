@@ -277,44 +277,17 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
   };
 
   const handleGuardarConteo = async () => {
-    // Validación: al menos 1 producto contado
-    const productosContadosCount = Object.keys(conteo).filter(id => conteo[id] > 0).length;
-    if (productosContadosCount === 0) {
+    if (productosContados === 0) {
       alert("⚠️ Debe contar al menos 1 producto antes de continuar");
       return;
     }
 
-    // Guardar todos los detalles del conteo para revisión
-    for (const product of products) {
-      const cantidad = conteo[product.id] || 0;
-      const diferencia = cantidad - (product.stock || 0);
-      const valorDif = diferencia * (product.costo_unitario || 0);
-
-      // Verificar si ya existe detalle
-      const detalleExistente = detallesEnCurso.find(d => d.product_id === product.id);
-      
-      if (detalleExistente) {
-        await base44.entities.ControlStockDetalle.update(detalleExistente.id, {
-          stock_contado: cantidad,
-          diferencia: diferencia,
-          valor_diferencia: valorDif
-        });
-      } else {
-        await base44.entities.ControlStockDetalle.create({
-          control_stock_id: currentControl.id,
-          product_id: product.id,
-          product_name: product.name,
-          barcode: product.barcode,
-          stock_teorico: product.stock || 0,
-          stock_contado: cantidad,
-          diferencia: diferencia,
-          costo_unitario: product.costo_unitario || 0,
-          valor_diferencia: valorDif,
-          ajuste_aplicado: false
-        });
-      }
-    }
+    const detallesAGuardar = products.map(p => ({ 
+      product: p, 
+      cantidad: conteo[p.id] || 0 
+    }));
     
+    await saveDetalles(detallesAGuardar);
     setStep(3);
   };
 
