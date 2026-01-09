@@ -46,7 +46,6 @@ import {
 } from "lucide-react";
 import DeleteProductsDialog from "../components/inventory/DeleteProductsDialog";
 import CsvImportMapperDialog from "../components/inventory/CsvImportMapperDialog";
-import ControlStockDialog from "../components/inventory/ControlStockDialog";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -63,7 +62,6 @@ export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [stockFilter, setStockFilter] = useState("all");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isControlStockOpen, setIsControlStockOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isMapperDialogOpen, setIsMapperDialogOpen] = useState(false);
   const [csvDataForMapper, setCsvDataForMapper] = useState(null);
@@ -281,10 +279,7 @@ export default function Inventory() {
              className="hidden"
              onChange={handleImportCSV}
            />
-          <Button variant="outline" onClick={() => setIsControlStockOpen(true)} className="border-blue-200 text-blue-600 hover:bg-blue-50 w-full sm:w-auto whitespace-nowrap">
-            <History className="h-4 w-4 mr-2" />
-            Control de Stock
-          </Button>
+
           <Button onClick={() => setIsDeleteDialogOpen(true)} variant="destructive" className="w-full sm:w-auto whitespace-nowrap">
             <Trash2 className="h-4 w-4 mr-2" />
             Eliminar

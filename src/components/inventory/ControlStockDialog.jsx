@@ -39,7 +39,7 @@ import {
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
-export default function ControlStockDialog({ isOpen, onClose, products }) {
+export default function ControlStockDialog({ isOpen, onClose, products, controlEnCurso = null }) {
   const [step, setStep] = useState(1); // 1: Crear, 2: Contar, 3: Comparar, 4: Confirmar
   const [currentControl, setCurrentControl] = useState(null);
   const [conteo, setConteo] = useState({}); // { product_id: cantidad_contada }
@@ -53,6 +53,29 @@ export default function ControlStockDialog({ isOpen, onClose, products }) {
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
+
+  // Cargar control en curso si existe
+  const { data: detallesEnCurso = [] } = useQuery({
+    queryKey: ['controlStockDetalle', controlEnCurso?.id],
+    queryFn: () => base44.entities.ControlStockDetalle.filter({
+      control_stock_id: controlEnCurso.id
+    }),
+    enabled: !!controlEnCurso && isOpen
+  });
+
+  useEffect(() => {
+    if (controlEnCurso && isOpen) {
+      setCurrentControl(controlEnCurso);
+      setStep(2);
+      
+      // Cargar conteo previo
+      const conteoInicial = {};
+      detallesEnCurso.forEach(det => {
+        conteoInicial[det.product_id] = det.stock_contado;
+      });
+      setConteo(conteoInicial);
+    }
+  }, [controlEnCurso, detallesEnCurso, isOpen]);
 
   // Auto-focus en input de código de barras
   useEffect(() => {
@@ -185,25 +208,74 @@ export default function ControlStockDialog({ isOpen, onClose, products }) {
     }));
   };
 
+  const handleGuardarParcial = async () => {
+    // Guardar progreso parcial sin finalizar
+    for (const product of products) {
+      const cantidad = conteo[product.id];
+      if (cantidad === undefined) continue; // Solo guardar productos contados
+      
+      const diferencia = cantidad - (product.stock || 0);
+      const valorDif = diferencia * (product.costo_unitario || 0);
+
+      // Verificar si ya existe detalle
+      const detalleExistente = detallesEnCurso.find(d => d.product_id === product.id);
+      
+      if (detalleExistente) {
+        await base44.entities.ControlStockDetalle.update(detalleExistente.id, {
+          stock_contado: cantidad,
+          diferencia: diferencia,
+          valor_diferencia: valorDif
+        });
+      } else {
+        await base44.entities.ControlStockDetalle.create({
+          control_stock_id: currentControl.id,
+          product_id: product.id,
+          product_name: product.name,
+          barcode: product.barcode,
+          stock_teorico: product.stock || 0,
+          stock_contado: cantidad,
+          diferencia: diferencia,
+          costo_unitario: product.costo_unitario || 0,
+          valor_diferencia: valorDif,
+          ajuste_aplicado: false
+        });
+      }
+    }
+    
+    queryClient.invalidateQueries({ queryKey: ['controlStock'] });
+    handleClose();
+  };
+
   const handleGuardarConteo = async () => {
-    // Guardar detalles del conteo
+    // Guardar todos los detalles del conteo para revisión
     for (const product of products) {
       const cantidad = conteo[product.id] || 0;
       const diferencia = cantidad - (product.stock || 0);
       const valorDif = diferencia * (product.costo_unitario || 0);
 
-      await base44.entities.ControlStockDetalle.create({
-        control_stock_id: currentControl.id,
-        product_id: product.id,
-        product_name: product.name,
-        barcode: product.barcode,
-        stock_teorico: product.stock || 0,
-        stock_contado: cantidad,
-        diferencia: diferencia,
-        costo_unitario: product.costo_unitario || 0,
-        valor_diferencia: valorDif,
-        ajuste_aplicado: false
-      });
+      // Verificar si ya existe detalle
+      const detalleExistente = detallesEnCurso.find(d => d.product_id === product.id);
+      
+      if (detalleExistente) {
+        await base44.entities.ControlStockDetalle.update(detalleExistente.id, {
+          stock_contado: cantidad,
+          diferencia: diferencia,
+          valor_diferencia: valorDif
+        });
+      } else {
+        await base44.entities.ControlStockDetalle.create({
+          control_stock_id: currentControl.id,
+          product_id: product.id,
+          product_name: product.name,
+          barcode: product.barcode,
+          stock_teorico: product.stock || 0,
+          stock_contado: cantidad,
+          diferencia: diferencia,
+          costo_unitario: product.costo_unitario || 0,
+          valor_diferencia: valorDif,
+          ajuste_aplicado: false
+        });
+      }
     }
     
     setStep(3);
@@ -503,6 +575,14 @@ export default function ControlStockDialog({ isOpen, onClose, products }) {
               <DialogFooter>
                 <Button variant="outline" onClick={handleClose}>
                   Cancelar
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleGuardarParcial}
+                  disabled={productosContados === 0}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Guardar Parcial
                 </Button>
                 <Button
                   onClick={handleGuardarConteo}

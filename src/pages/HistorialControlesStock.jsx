@@ -32,15 +32,26 @@ import {
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import ControlStockPDF from "../components/inventory/ControlStockPDF";
+import ControlStockDialog from "../components/inventory/ControlStockDialog";
 
 export default function HistorialControlesStock() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedControl, setSelectedControl] = useState(null);
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [isControlDialogOpen, setIsControlDialogOpen] = useState(false);
+  const [controlToResume, setControlToResume] = useState(null);
+  const [detalleSearchTerm, setDetalleSearchTerm] = useState("");
+  const [detallePage, setDetallePage] = useState(0);
+  const ITEMS_PER_PAGE = 20;
 
   const { data: controles = [] } = useQuery({
     queryKey: ['controlStock'],
     queryFn: () => base44.entities.ControlStock.list('-fecha_inicio')
+  });
+
+  const { data: products = [] } = useQuery({
+    queryKey: ['products'],
+    queryFn: () => base44.entities.Product.list()
   });
 
   const { data: detalles = [] } = useQuery({
@@ -55,6 +66,25 @@ export default function HistorialControlesStock() {
     c.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.usuario_nombre?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const controlEnCurso = controles.find(c => c.estado === "EN_CURSO");
+
+  const handleResumeControl = (control) => {
+    setControlToResume(control);
+    setIsControlDialogOpen(true);
+  };
+
+  const filteredDetalles = detalles.filter(d =>
+    d.product_name?.toLowerCase().includes(detalleSearchTerm.toLowerCase()) ||
+    d.barcode?.includes(detalleSearchTerm)
+  );
+
+  const paginatedDetalles = filteredDetalles.slice(
+    detallePage * ITEMS_PER_PAGE,
+    (detallePage + 1) * ITEMS_PER_PAGE
+  );
+
+  const totalPages = Math.ceil(filteredDetalles.length / ITEMS_PER_PAGE);
 
   const estadoConfig = {
     EN_CURSO: { color: "bg-blue-100 text-blue-700", icon: Clock, label: "En Curso" },
@@ -75,6 +105,15 @@ export default function HistorialControlesStock() {
             Registro completo de inventarios físicos realizados
           </p>
         </div>
+        {controlEnCurso && (
+          <Button 
+            onClick={() => handleResumeControl(controlEnCurso)}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Clock className="h-4 w-4 mr-2" />
+            Continuar Control en Curso
+          </Button>
+        )}
       </div>
 
       {/* Stats */}
@@ -187,27 +226,44 @@ export default function HistorialControlesStock() {
                     ${(control.valor_diferencias || 0).toLocaleString()}
                   </TableCell>
                   <TableCell className="text-center">
-                    <div className="flex justify-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setSelectedControl(control)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      {control.estado === "FINALIZADO" && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setSelectedControl(control);
-                            setIsPrintDialogOpen(true);
-                          }}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
+                   <div className="flex justify-center gap-2">
+                     {control.estado === "EN_CURSO" ? (
+                       <Button
+                         size="sm"
+                         variant="default"
+                         className="bg-blue-600 hover:bg-blue-700"
+                         onClick={() => handleResumeControl(control)}
+                       >
+                         Continuar
+                       </Button>
+                     ) : (
+                       <>
+                         <Button
+                           size="sm"
+                           variant="ghost"
+                           onClick={() => {
+                             setSelectedControl(control);
+                             setDetalleSearchTerm("");
+                             setDetallePage(0);
+                           }}
+                         >
+                           <Eye className="h-4 w-4" />
+                         </Button>
+                         {control.estado === "FINALIZADO" && (
+                           <Button
+                             size="sm"
+                             variant="ghost"
+                             onClick={() => {
+                               setSelectedControl(control);
+                               setIsPrintDialogOpen(true);
+                             }}
+                           >
+                             <Download className="h-4 w-4" />
+                           </Button>
+                         )}
+                       </>
+                     )}
+                   </div>
                   </TableCell>
                 </TableRow>
               );
@@ -283,55 +339,115 @@ export default function HistorialControlesStock() {
                 </div>
               </div>
 
-              {/* Detalles */}
+              {/* Detalles con búsqueda y paginación */}
               {detalles.length > 0 && (
                 <div>
-                  <p className="font-semibold mb-3">Detalle de Productos</p>
-                  <div className="border rounded-lg max-h-96 overflow-y-auto">
-                    <Table>
-                      <TableHeader className="bg-slate-50 sticky top-0">
-                        <TableRow>
-                          <TableHead>Producto</TableHead>
-                          <TableHead className="text-center">Stock Teórico</TableHead>
-                          <TableHead className="text-center">Stock Contado</TableHead>
-                          <TableHead className="text-center">Diferencia</TableHead>
-                          <TableHead className="text-right">Valor Dif.</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {detalles.map((detalle) => (
-                          <TableRow key={detalle.id} className={
-                            detalle.diferencia > 0 ? "bg-green-50" :
-                            detalle.diferencia < 0 ? "bg-red-50" : ""
-                          }>
-                            <TableCell className="font-medium">{detalle.product_name}</TableCell>
-                            <TableCell className="text-center">{detalle.stock_teorico}</TableCell>
-                            <TableCell className="text-center font-bold">{detalle.stock_contado}</TableCell>
-                            <TableCell className="text-center">
-                              {detalle.diferencia !== 0 ? (
-                                <Badge className={
-                                  detalle.diferencia > 0
-                                    ? "bg-green-100 text-green-700"
-                                    : "bg-red-100 text-red-700"
-                                }>
-                                  {detalle.diferencia > 0 ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
-                                  {detalle.diferencia > 0 ? '+' : ''}{detalle.diferencia}
-                                </Badge>
-                              ) : (
-                                <span className="text-slate-400">—</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right font-medium">
-                              {detalle.diferencia !== 0 ? (
-                                `$${Math.abs(detalle.valor_diferencia).toLocaleString()}`
-                              ) : (
-                                <span className="text-slate-400">—</span>
-                              )}
-                            </TableCell>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="font-semibold">Detalle de Productos ({detalles.length})</p>
+                  </div>
+                  
+                  {/* Búsqueda */}
+                  <div className="relative mb-4">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      placeholder="Buscar producto o código..."
+                      value={detalleSearchTerm}
+                      onChange={(e) => {
+                        setDetalleSearchTerm(e.target.value);
+                        setDetallePage(0);
+                      }}
+                      className="pl-10"
+                    />
+                  </div>
+
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="max-h-96 overflow-y-auto">
+                      <Table>
+                        <TableHeader className="bg-slate-50 sticky top-0">
+                          <TableRow>
+                            <TableHead>Producto</TableHead>
+                            <TableHead className="text-center">Stock Teórico</TableHead>
+                            <TableHead className="text-center">Stock Contado</TableHead>
+                            <TableHead className="text-center">Diferencia</TableHead>
+                            <TableHead className="text-right">Valor Dif.</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {paginatedDetalles.map((detalle) => (
+                            <TableRow key={detalle.id} className={
+                              detalle.diferencia > 0 ? "bg-green-50" :
+                              detalle.diferencia < 0 ? "bg-red-50" : ""
+                            }>
+                              <TableCell>
+                                <div>
+                                  <p className="font-medium">{detalle.product_name}</p>
+                                  {detalle.barcode && (
+                                    <p className="text-xs text-slate-400">{detalle.barcode}</p>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center">{detalle.stock_teorico}</TableCell>
+                              <TableCell className="text-center font-bold">{detalle.stock_contado}</TableCell>
+                              <TableCell className="text-center">
+                                {detalle.diferencia !== 0 ? (
+                                  <Badge className={
+                                    detalle.diferencia > 0
+                                      ? "bg-green-100 text-green-700"
+                                      : "bg-red-100 text-red-700"
+                                  }>
+                                    {detalle.diferencia > 0 ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
+                                    {detalle.diferencia > 0 ? '+' : ''}{detalle.diferencia}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-slate-400">—</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right font-medium">
+                                {detalle.diferencia !== 0 ? (
+                                  `$${Math.abs(detalle.valor_diferencia).toLocaleString()}`
+                                ) : (
+                                  <span className="text-slate-400">—</span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          {paginatedDetalles.length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-center py-8 text-slate-500">
+                                No se encontraron productos
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    
+                    {/* Paginación */}
+                    {totalPages > 1 && (
+                      <div className="border-t bg-slate-50 px-4 py-3 flex items-center justify-between">
+                        <p className="text-sm text-slate-600">
+                          Mostrando {detallePage * ITEMS_PER_PAGE + 1} - {Math.min((detallePage + 1) * ITEMS_PER_PAGE, filteredDetalles.length)} de {filteredDetalles.length}
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setDetallePage(Math.max(0, detallePage - 1))}
+                            disabled={detallePage === 0}
+                          >
+                            Anterior
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setDetallePage(Math.min(totalPages - 1, detallePage + 1))}
+                            disabled={detallePage >= totalPages - 1}
+                          >
+                            Siguiente
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -365,6 +481,17 @@ export default function HistorialControlesStock() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Control Stock Dialog */}
+      <ControlStockDialog
+        isOpen={isControlDialogOpen}
+        onClose={() => {
+          setIsControlDialogOpen(false);
+          setControlToResume(null);
+        }}
+        products={products}
+        controlEnCurso={controlToResume}
+      />
     </div>
   );
 }
