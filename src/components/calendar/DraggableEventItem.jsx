@@ -19,13 +19,30 @@ export default function DraggableEventItem({
 
   const handleDragStart = (e) => {
     if (!e.dataTransfer) return;
+    e.stopPropagation();
     dragRef.current = {
       startX: e.clientX || e.touches?.[0]?.clientX,
       startY: e.clientY || e.touches?.[0]?.clientY,
       startTime: new Date()
     };
     e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("application/json", JSON.stringify(event));
+    // Asegurar que todos los datos necesarios estén en el evento
+    const eventPayload = {
+      id: event.id,
+      type: event.type,
+      name: event.name,
+      date: event.date,
+      start_date: event.start_date,
+      due_date: event.due_date,
+      end_date: event.end_date,
+      estimated_end_date: event.estimated_end_date,
+      time: event.time,
+      duration: event.duration,
+      project_id: event.project_id,
+      phase_id: event.phase_id,
+      ...event
+    };
+    e.dataTransfer.setData("application/json", JSON.stringify(eventPayload));
   };
 
   const handleResizeStart = (e, direction) => {
@@ -96,9 +113,12 @@ export default function DraggableEventItem({
         ref={containerRef}
         draggable
         onDragStart={handleDragStart}
-        onClick={() => onEventClick(event)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onEventClick(event);
+        }}
         className={cn(
-          "text-[10px] px-2 py-1 rounded text-white truncate cursor-pointer hover:opacity-80 transition-opacity",
+          "text-[10px] px-2 py-1 rounded text-white truncate cursor-move hover:opacity-80 transition-opacity",
           eventColor,
           isDragging && "opacity-50"
         )}
@@ -114,7 +134,10 @@ export default function DraggableEventItem({
         ref={containerRef}
         draggable
         onDragStart={handleDragStart}
-        onClick={() => onEventClick(event)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onEventClick(event);
+        }}
         className={cn(
           "border rounded px-2 py-1 text-xs cursor-move hover:shadow-md transition-shadow relative group",
           eventColor,
@@ -156,9 +179,12 @@ export default function DraggableEventItem({
       <div
         draggable
         onDragStart={handleDragStart}
-        onClick={() => onEventClick(event)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onEventClick(event);
+        }}
         className={cn(
-          "absolute h-full rounded cursor-pointer hover:opacity-80 transition-opacity flex items-center px-2 sm:px-3 group",
+          "absolute h-full rounded cursor-move hover:opacity-80 transition-opacity flex items-center px-2 sm:px-3 group",
           eventColor,
           isDragging && "opacity-50"
         )}
