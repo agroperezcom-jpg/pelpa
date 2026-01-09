@@ -389,28 +389,17 @@ export default function Analytics() {
     };
 
     const colorClass = color || getColor();
-    
-    const colorStyles = {
-      slate: { bg: 'bg-slate-50', text: 'text-slate-600', icon: 'text-slate-600' },
-      green: { bg: 'bg-green-50', text: 'text-green-600', icon: 'text-green-600' },
-      red: { bg: 'bg-red-50', text: 'text-red-600', icon: 'text-red-600' },
-      blue: { bg: 'bg-blue-50', text: 'text-blue-600', icon: 'text-blue-600' },
-      amber: { bg: 'bg-amber-50', text: 'text-amber-600', icon: 'text-amber-600' },
-      purple: { bg: 'bg-purple-50', text: 'text-purple-600', icon: 'text-purple-600' }
-    };
-
-    const styles = colorStyles[colorClass] || colorStyles.slate;
 
     return (
       <Card className="border-0 shadow-sm">
         <CardContent className="p-6">
           <div className="flex items-start justify-between mb-4">
             <p className="text-xs font-medium text-slate-500 uppercase">{titulo}</p>
-            <div className={`w-10 h-10 ${styles.bg} rounded-xl flex items-center justify-center`}>
-              {Icon && <Icon className={`h-5 w-5 ${styles.icon}`} />}
+            <div className={`w-10 h-10 bg-${colorClass}-50 rounded-xl flex items-center justify-center`}>
+              {Icon && <Icon className={`h-5 w-5 text-${colorClass}-600`} />}
             </div>
           </div>
-          <p className={`text-3xl font-bold ${styles.text} mb-2`}>
+          <p className={`text-3xl font-bold text-${colorClass}-600 mb-2`}>
             {formato === 'moneda' && '$'}
             {typeof valor === 'number' ? valor.toLocaleString(undefined, { maximumFractionDigits: formato === 'porcentaje' ? 1 : 0 }) : valor}
             {formato === 'porcentaje' && '%'}
