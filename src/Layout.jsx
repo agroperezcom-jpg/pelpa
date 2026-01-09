@@ -93,10 +93,17 @@ export default function Layout({ children, currentPageName }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Close sidebar on route change (mobile)
+  // Close sidebar on route change (mobile) - excepto si está fijada
   useEffect(() => {
-    setSidebarOpen(false);
-  }, [location]);
+    if (!sidebarPinned) {
+      setSidebarOpen(false);
+    }
+  }, [location, sidebarPinned]);
+
+  // Guardar estado de pinned en localStorage
+  useEffect(() => {
+    localStorage.setItem('sidebarPinned', JSON.stringify(sidebarPinned));
+  }, [sidebarPinned]);
 
   const handleLogout = async () => {
     base44.auth.logout();
