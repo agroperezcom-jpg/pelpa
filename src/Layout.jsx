@@ -93,9 +93,9 @@ export default function Layout({ children, currentPageName }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Close sidebar on route change (mobile) - excepto si está fijada
+  // Close sidebar on route change (mobile) excepto si está pinned
   useEffect(() => {
-    if (!sidebarPinned) {
+    if (window.innerWidth < 1024 && !sidebarPinned) {
       setSidebarOpen(false);
     }
   }, [location, sidebarPinned]);
