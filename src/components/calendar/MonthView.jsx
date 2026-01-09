@@ -1,13 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, format, isToday } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import DraggableEventItem from "./DraggableEventItem";
 
-export default function MonthView({ currentDate, events, onEventClick, onDateClick, onEventDrop, onEventResize }) {
-  const [draggingEvent, setDraggingEvent] = useState(null);
+export default function MonthView({ currentDate, events, onEventClick, onDateClick }) {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -15,25 +13,6 @@ export default function MonthView({ currentDate, events, onEventClick, onDateCli
 
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   const weekDays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDrop = (e, day) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!onEventDrop) return;
-
-    try {
-      const eventData = JSON.parse(e.dataTransfer.getData("application/json"));
-      onEventDrop(eventData, day);
-    } catch (err) {
-      console.error("Error dropping event:", err);
-    }
-    setDraggingEvent(null);
-  };
 
   const getEventsForDay = (day) => {
     return events.filter(event => {
@@ -79,8 +58,6 @@ export default function MonthView({ currentDate, events, onEventClick, onDateCli
                 index % 7 === 6 && "border-r-0"
               )}
               onClick={() => onDateClick(day)}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, day)}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className={cn(
@@ -99,18 +76,19 @@ export default function MonthView({ currentDate, events, onEventClick, onDateCli
 
               <div className="space-y-1">
                 {dayEvents.slice(0, 3).map((event, idx) => (
-                  <DraggableEventItem
+                  <div
                     key={idx}
-                    event={event}
-                    onEventClick={(e) => {
-                      onEventClick(e);
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEventClick(event);
                     }}
-                    onEventDrop={onEventDrop}
-                    onEventResize={onEventResize}
-                    eventColor={getEventColor(event)}
-                    isDragging={draggingEvent?.id === event.id}
-                    layout="inline"
-                  />
+                    className={cn(
+                      "text-[10px] px-2 py-1 rounded text-white truncate cursor-pointer hover:opacity-80 transition-opacity",
+                      getEventColor(event)
+                    )}
+                  >
+                    {event.name || event.title}
+                  </div>
                 ))}
                 {dayEvents.length > 3 && (
                   <div className="text-[10px] text-muted-foreground pl-2">
