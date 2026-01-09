@@ -623,57 +623,17 @@ export default function Calendar() {
       )}
 
       {viewMode === "day" && (
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-6">
-            <div className="space-y-4">
-              {events.filter(e => {
-                const eventDate = new Date(e.date || e.start_date);
-                return eventDate.toDateString() === currentDate.toDateString();
-              }).length === 0 ? (
-                <div className="text-center py-12 text-slate-500">
-                  <Clock className="h-16 w-16 mx-auto mb-4 text-slate-300" />
-                  <p>No hay eventos este día</p>
-                </div>
-              ) : (
-                events.filter(e => {
-                  const eventDate = new Date(e.date || e.start_date);
-                  return eventDate.toDateString() === currentDate.toDateString();
-                }).map(event => (
-                  <div
-                    key={event.id}
-                    onClick={() => handleEventClick(event)}
-                    className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-semibold text-lg">{event.name}</h3>
-                      <Badge variant="outline" className="capitalize">
-                        {event.type}
-                      </Badge>
-                    </div>
-                    {event.data?.description && (
-                      <p className="text-sm text-slate-600 mb-2">{event.data.description}</p>
-                    )}
-                    <div className="flex items-center gap-4 text-xs text-slate-500">
-                      {event.status && (
-                        <Badge variant="secondary" className="text-xs">
-                          {event.status.replace('_', ' ')}
-                        </Badge>
-                      )}
-                      {event.priority && (
-                        <Badge variant="outline" className="text-xs capitalize">
-                          {event.priority}
-                        </Badge>
-                      )}
-                      {event.progress_percentage !== undefined && (
-                        <span>{event.progress_percentage}% completado</span>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <WeekView
+          currentDate={currentDate}
+          events={events.filter(e => {
+            const eventDate = new Date(e.date || e.start_date || e.created_date);
+            return eventDate.toDateString() === currentDate.toDateString();
+          })}
+          onEventClick={handleEventClick}
+          onEventDrop={handleEventDrop}
+          onEventResize={handleEventResize}
+          singleDay={true}
+        />
       )}
 
       {viewMode === "timeline" && (
