@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { startOfWeek, endOfWeek, eachDayOfInterval, format, isToday, isSameDay, addHours, setHours, setMinutes } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import DraggableEventItem from "./DraggableEventItem";
 
 export default function WeekView({ currentDate, events, onEventClick, onEventDrop }) {
   const [draggingEvent, setDraggingEvent] = useState(null);
@@ -117,24 +118,16 @@ export default function WeekView({ currentDate, events, onEventClick, onEventDro
                     <div key={day.toString()} className="border-r last:border-r-0 relative">
                       <div className="absolute inset-0 p-1 space-y-1 pointer-events-auto">
                         {dayEvents.map((event, idx) => (
-                           <div
+                           <DraggableEventItem
                              key={idx}
-                             draggable
-                             onDragStart={(e) => handleDragStart(e, event)}
-                             onClick={() => onEventClick(event)}
-                             className={cn(
-                               "border rounded px-2 py-1 text-xs cursor-move hover:shadow-md transition-shadow",
-                               getEventColor(event),
-                               draggingEvent?.id === event.id && "opacity-50"
-                             )}
-                           >
-                             <div className="font-medium truncate">{event.name || event.title}</div>
-                             {event.type && (
-                               <Badge variant="outline" className="text-[9px] mt-1 h-4">
-                                 {event.type}
-                               </Badge>
-                             )}
-                           </div>
+                             event={event}
+                             onEventClick={onEventClick}
+                             onEventDrop={onEventDrop}
+                             onEventResize={onEventResize}
+                             eventColor={getEventColor(event)}
+                             isDragging={draggingEvent?.id === event.id}
+                             layout="block"
+                           />
                          ))}
                       </div>
                     </div>

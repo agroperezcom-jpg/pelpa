@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -6,8 +6,10 @@ import { differenceInDays, format, startOfMonth, endOfMonth, eachDayOfInterval }
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Briefcase, Target, CheckSquare } from "lucide-react";
+import DraggableEventItem from "./DraggableEventItem";
 
-export default function TimelineView({ currentDate, events, onEventClick }) {
+export default function TimelineView({ currentDate, events, onEventClick, onEventDrop, onEventResize }) {
+  const [draggingEvent, setDraggingEvent] = useState(null);
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
@@ -105,18 +107,16 @@ export default function TimelineView({ currentDate, events, onEventClick }) {
                   <div className="flex items-center gap-3 mb-1">
                     <span className="text-xs font-medium text-slate-600 w-32">Proyecto</span>
                     <div className="flex-1 relative h-8 bg-slate-100 rounded overflow-hidden">
-                      <div
-                        className={cn(
-                          "absolute h-full rounded cursor-pointer hover:opacity-80 transition-opacity flex items-center px-3",
-                          getEventColor(project)
-                        )}
-                        style={getEventPosition(project.start_date, project.estimated_end_date)}
-                        onClick={() => onEventClick(project)}
-                      >
-                        <span className="text-xs text-white font-medium truncate">
-                          {project.name}
-                        </span>
-                      </div>
+                    <DraggableEventItem
+                    event={project}
+                    onEventClick={onEventClick}
+                    onEventDrop={onEventDrop}
+                    onEventResize={onEventResize}
+                    eventColor={getEventColor(project)}
+                    isDragging={draggingEvent?.id === project.id}
+                    style={getEventPosition(project.start_date, project.estimated_end_date)}
+                    layout="timeline"
+                    />
                     </div>
                   </div>
                 </div>
@@ -135,18 +135,16 @@ export default function TimelineView({ currentDate, events, onEventClick }) {
                             Fase #{phase.order}
                           </span>
                           <div className="flex-1 relative h-7 bg-slate-50 rounded overflow-hidden">
-                            <div
-                              className={cn(
-                                "absolute h-full rounded cursor-pointer hover:opacity-80 transition-opacity flex items-center px-2",
-                                getEventColor(phase)
-                              )}
-                              style={getEventPosition(phase.start_date, phase.end_date)}
-                              onClick={() => onEventClick(phase)}
-                            >
-                              <span className="text-[11px] text-white font-medium truncate">
-                                {phase.name}
-                              </span>
-                            </div>
+                           <DraggableEventItem
+                             event={phase}
+                             onEventClick={onEventClick}
+                             onEventDrop={onEventDrop}
+                             onEventResize={onEventResize}
+                             eventColor={getEventColor(phase)}
+                             isDragging={draggingEvent?.id === phase.id}
+                             style={getEventPosition(phase.start_date, phase.end_date)}
+                             layout="timeline"
+                           />
                           </div>
                         </div>
                       </div>
@@ -168,18 +166,16 @@ export default function TimelineView({ currentDate, events, onEventClick }) {
                             Tarea
                           </span>
                           <div className="flex-1 relative h-6 bg-slate-50 rounded overflow-hidden">
-                            <div
-                              className={cn(
-                                "absolute h-full rounded cursor-pointer hover:opacity-80 transition-opacity flex items-center px-2",
-                                getEventColor(task)
-                              )}
-                              style={getEventPosition(task.start_date, task.due_date)}
-                              onClick={() => onEventClick(task)}
-                            >
-                              <span className="text-[10px] text-white truncate">
-                                {task.name}
-                              </span>
-                            </div>
+                           <DraggableEventItem
+                             event={task}
+                             onEventClick={onEventClick}
+                             onEventDrop={onEventDrop}
+                             onEventResize={onEventResize}
+                             eventColor={getEventColor(task)}
+                             isDragging={draggingEvent?.id === task.id}
+                             style={getEventPosition(task.start_date, task.due_date)}
+                             layout="timeline"
+                           />
                           </div>
                         </div>
                       </div>

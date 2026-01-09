@@ -78,19 +78,18 @@ export default function MonthView({ currentDate, events, onEventClick, onDateCli
 
               <div className="space-y-1">
                 {dayEvents.slice(0, 3).map((event, idx) => (
-                  <div
+                  <DraggableEventItem
                     key={idx}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEventClick(event);
+                    event={event}
+                    onEventClick={(e) => {
+                      onEventClick(e);
                     }}
-                    className={cn(
-                      "text-[10px] px-2 py-1 rounded text-white truncate cursor-pointer hover:opacity-80 transition-opacity",
-                      getEventColor(event)
-                    )}
-                  >
-                    {event.name || event.title}
-                  </div>
+                    onEventDrop={onEventDrop}
+                    onEventResize={onEventResize}
+                    eventColor={getEventColor(event)}
+                    isDragging={draggingEvent?.id === event.id}
+                    layout="inline"
+                  />
                 ))}
                 {dayEvents.length > 3 && (
                   <div className="text-[10px] text-muted-foreground pl-2">

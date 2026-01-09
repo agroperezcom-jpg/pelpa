@@ -603,6 +603,8 @@ export default function Calendar() {
           events={events}
           onEventClick={handleEventClick}
           onDateClick={handleDateClick}
+          onEventDrop={handleEventDrop}
+          onEventResize={handleEventResize}
         />
       )}
 
@@ -674,6 +676,8 @@ export default function Calendar() {
           currentDate={currentDate}
           events={events}
           onEventClick={handleEventClick}
+          onEventDrop={handleEventDrop}
+          onEventResize={handleEventResize}
         />
       )}
 
@@ -684,6 +688,8 @@ export default function Calendar() {
           events={events}
           onEventClick={handleEventClick}
           onDateClick={handleDateClick}
+          onEventDrop={handleEventDrop}
+          onEventResize={handleEventResize}
         />
       )}
 
