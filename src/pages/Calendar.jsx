@@ -11,6 +11,7 @@ import CalendarFilters from "@/components/calendar/CalendarFilters";
 import MonthView from "@/components/calendar/MonthView";
 import WeekView from "@/components/calendar/WeekView";
 import AgendaView from "@/components/calendar/AgendaView";
+import TimelineView from "@/components/calendar/TimelineView";
 import FreeTaskDialog from "@/components/calendar/FreeTaskDialog";
 import CalendarSettingsDialog from "@/components/calendar/CalendarSettingsDialog";
 import CalendarAuditDialog from "@/components/calendar/CalendarAuditDialog";
