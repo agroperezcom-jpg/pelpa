@@ -243,6 +243,11 @@ export default function Inventory() {
     }
   };
 
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
