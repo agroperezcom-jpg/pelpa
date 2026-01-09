@@ -349,10 +349,6 @@ export default function Inventory() {
             <Trash2 className="h-4 w-4 mr-2" />
             Eliminar
           </Button>
-          <Button onClick={() => handleOpenDialog('entrada')} className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto whitespace-nowrap">
-            <Plus className="h-4 w-4 mr-2" />
-            Entrada
-          </Button>
         </div>
       </div>
 
@@ -497,14 +493,6 @@ export default function Inventory() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          className="text-emerald-600 hover:bg-emerald-50"
-                          onClick={() => handleOpenDialog('entrada', product)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
                         <Button 
                           variant="ghost" 
                           size="icon"
