@@ -44,16 +44,20 @@ export default function TicketPrint({ venta, pagos, isCopia = false }) {
         </button>
 
         <div 
-          id="ticket-print"
-          style={{
-            width: '80mm',
-            fontFamily: 'Courier New, monospace',
-            fontSize: '12px',
-            padding: '10mm',
-            backgroundColor: 'white',
-            border: '1px solid #ccc'
-          }}
+          className="overflow-y-auto"
+          style={{ maxHeight: '65vh' }}
         >
+          <div 
+            id="ticket-print"
+            style={{
+              width: '80mm',
+              fontFamily: 'Courier New, monospace',
+              fontSize: '12px',
+              padding: '10mm',
+              backgroundColor: 'white',
+              border: '1px solid #ccc'
+            }}
+          >
           {/* Encabezado */}
           <div style={{ textAlign: 'center', marginBottom: '5mm' }}>
             <div style={{ fontSize: '16px', fontWeight: 'bold' }}>LIBRERÍA PAPELERÍA</div>
@@ -178,6 +182,7 @@ export default function TicketPrint({ venta, pagos, isCopia = false }) {
 
           {/* Espacio final */}
           <div style={{ height: '10mm' }}></div>
+          </div>
         </div>
       </div>
     </>
