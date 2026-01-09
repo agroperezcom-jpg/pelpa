@@ -1,10 +1,11 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Grid3x3, Palette, History } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Grid3x3, Palette, History, Search, Download, Cloud, Loader2, List } from "lucide-react";
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function CalendarHeader({ 
   currentDate, 
@@ -17,7 +18,11 @@ export default function CalendarHeader({
   snapMinutes = 30,
   setSnapMinutes,
   onOpenSettings,
-  onOpenAudit
+  onOpenAudit,
+  onOpenSearch,
+  onOpenExport,
+  onSyncGoogle,
+  isSyncing = false
 }) {
   const handlePrevious = () => {
     if (viewMode === "month") {
@@ -128,26 +133,90 @@ export default function CalendarHeader({
           </div>
         )}
 
-        <div className="flex items-center gap-2">
-          {onOpenSettings && (
-            <Button variant="outline" size="sm" onClick={onOpenSettings} title="Configuración visual">
-              <Palette className="h-4 w-4" />
-            </Button>
-          )}
-          
-          {onOpenAudit && (
-            <Button variant="outline" size="sm" onClick={onOpenAudit} title="Historial de cambios">
-              <History className="h-4 w-4" />
-            </Button>
-          )}
+        <TooltipProvider>
+          <div className="flex items-center gap-2">
+            {onOpenSearch && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={onOpenSearch}>
+                    <Search className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Buscar (Cmd/Ctrl + K)</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
-          {canCreateEvents && (
-            <Button onClick={onCreateEvent} className="bg-primary hover:bg-[hsl(var(--primary-hover))]">
-              <Plus className="h-4 w-4 mr-2" />
-              Nueva Tarea
-            </Button>
-          )}
-        </div>
+            {onOpenExport && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={onOpenExport}>
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Exportar PDF (Cmd/Ctrl + E)</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {onSyncGoogle && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={onSyncGoogle}
+                    disabled={isSyncing}
+                  >
+                    {isSyncing ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Cloud className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Sincronizar con Google Calendar</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            
+            {onOpenSettings && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={onOpenSettings}>
+                    <Palette className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Configuración visual</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            
+            {onOpenAudit && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={onOpenAudit}>
+                    <History className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Historial de cambios</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {canCreateEvents && (
+              <Button onClick={onCreateEvent} className="bg-primary hover:bg-[hsl(var(--primary-hover))]">
+                <Plus className="h-4 w-4 mr-2" />
+                Nueva Tarea
+              </Button>
+            )}
+          </div>
+        </TooltipProvider>
       </div>
     </div>
   );

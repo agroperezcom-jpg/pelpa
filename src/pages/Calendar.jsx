@@ -10,10 +10,15 @@ import CalendarHeader from "@/components/calendar/CalendarHeader";
 import CalendarFilters from "@/components/calendar/CalendarFilters";
 import MonthView from "@/components/calendar/MonthView";
 import WeekView from "@/components/calendar/WeekView";
+import AgendaView from "@/components/calendar/AgendaView";
 import FreeTaskDialog from "@/components/calendar/FreeTaskDialog";
 import CalendarSettingsDialog from "@/components/calendar/CalendarSettingsDialog";
 import CalendarAuditDialog from "@/components/calendar/CalendarAuditDialog";
+import CalendarSearchDialog from "@/components/calendar/CalendarSearchDialog";
+import CalendarExportDialog from "@/components/calendar/CalendarExportDialog";
 import { usePermissions } from "@/components/permissions/usePermissions";
+import { Loader2 } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -36,6 +41,10 @@ export default function Calendar() {
   const [snapMinutes, setSnapMinutes] = useState(30);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [auditDialogOpen, setAuditDialogOpen] = useState(false);
+  const [searchDialogOpen, setSearchDialogOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [dragGhost, setDragGhost] = useState(null);
 
   const queryClient = useQueryClient();
   const { hasPermission, isAdmin, loading: permissionsLoading } = usePermissions();
@@ -119,6 +128,11 @@ export default function Calendar() {
       queryClient.invalidateQueries({ queryKey: ['freeTasks'] });
       setFreeTaskDialogOpen(false);
       setEditingTask(null);
+      toast.success('Tarea actualizada');
+    },
+    onError: (error) => {
+      toast.error('Error al actualizar tarea');
+      console.error(error);
     }
   });
 
@@ -375,6 +389,11 @@ export default function Calendar() {
         freeTask: 'freeTasks'
       };
       queryClient.invalidateQueries({ queryKey: [keyMap[type]] });
+      toast.success('Evento actualizado');
+    },
+    onError: (error) => {
+      toast.error('Error al actualizar evento');
+      console.error(error);
     }
   });
 
@@ -392,6 +411,11 @@ export default function Calendar() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendarConfig'] });
       setSettingsDialogOpen(false);
+      toast.success('Configuración guardada');
+    },
+    onError: (error) => {
+      toast.error('Error al guardar configuración');
+      console.error(error);
     }
   });
 
@@ -640,6 +664,32 @@ export default function Calendar() {
     saveConfigMutation.mutate(configData);
   };
 
+  const handleSyncGoogleCalendar = async () => {
+    if (isSyncing) return;
+    
+    setIsSyncing(true);
+    const toastId = toast.loading('Sincronizando con Google Calendar...');
+    
+    try {
+      const response = await base44.functions.invoke('syncGoogleCalendar', {
+        events: events.filter(e => e.type === "freeTask" || e.type === "task")
+      });
+      
+      if (response.data.success) {
+        toast.success('Sincronización completada', { id: toastId });
+        queryClient.invalidateQueries({ queryKey: ['freeTasks'] });
+        queryClient.invalidateQueries({ queryKey: ['projectTasks'] });
+      } else {
+        toast.error('Error en sincronización', { id: toastId });
+      }
+    } catch (error) {
+      toast.error('Error al sincronizar: ' + error.message, { id: toastId });
+      console.error(error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const getEventColor = (event) => {
     // Usar color personalizado de proyecto si existe
     if (event.type === "project" && calendarConfig?.custom_project_colors?.[event.id]) {
@@ -709,6 +759,10 @@ export default function Calendar() {
         setSnapMinutes={setSnapMinutes}
         onOpenSettings={() => setSettingsDialogOpen(true)}
         onOpenAudit={() => setAuditDialogOpen(true)}
+        onOpenSearch={() => setSearchDialogOpen(true)}
+        onOpenExport={() => setExportDialogOpen(true)}
+        onSyncGoogle={handleSyncGoogleCalendar}
+        isSyncing={isSyncing}
       />
 
       {/* Alerts */}
@@ -859,6 +913,18 @@ export default function Calendar() {
         />
       )}
 
+      {viewMode === "agenda" && (
+        <AgendaView
+          currentDate={currentDate}
+          events={events}
+          onEventClick={handleEventClick}
+          canEditEvents={canEditEvents}
+          canEditTasks={canEditTasks}
+          canEditProjects={canEditProjects}
+          getEventColor={getEventColor}
+        />
+      )}
+
       {/* Dialogs */}
       <FreeTaskDialog
         isOpen={freeTaskDialogOpen}
@@ -887,6 +953,32 @@ export default function Calendar() {
         onClose={() => setAuditDialogOpen(false)}
         auditLogs={auditLogs}
       />
+
+      <CalendarSearchDialog
+        isOpen={searchDialogOpen}
+        onClose={() => setSearchDialogOpen(false)}
+        events={events}
+        onEventClick={handleEventClick}
+        getEventColor={getEventColor}
+      />
+
+      <CalendarExportDialog
+        isOpen={exportDialogOpen}
+        onClose={() => setExportDialogOpen(false)}
+        events={events}
+        currentDate={currentDate}
+        getEventColor={getEventColor}
+      />
+
+      {/* Loading overlay during sync */}
+      {isSyncing && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-card rounded-lg p-6 shadow-xl flex items-center gap-3">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <span className="text-sm font-medium">Sincronizando con Google Calendar...</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
