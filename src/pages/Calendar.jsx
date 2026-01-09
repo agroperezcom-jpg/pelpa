@@ -556,6 +556,7 @@ export default function Calendar() {
           currentDate={currentDate}
           events={events}
           onEventClick={handleEventClick}
+          onEventDrop={handleEventDrop}
         />
       )}
 
