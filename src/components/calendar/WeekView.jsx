@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, isToday, isSameDay } from "date-fns";
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, isToday, isSameDay, addHours, setHours, setMinutes } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-export default function WeekView({ currentDate, events, onEventClick }) {
+export default function WeekView({ currentDate, events, onEventClick, onEventDrop }) {
+  const [draggingEvent, setDraggingEvent] = useState(null);
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
