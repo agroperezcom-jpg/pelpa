@@ -50,12 +50,18 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
     }
   }, [initialData, isOpen, currentUser]);
 
-  const handleSave = () => {
-    if (!canEdit) return;
+  const handleSave = (e) => {
+    e?.preventDefault();
+    console.log("handleSave ejecutado", { canEdit, formData });
+    if (!canEdit) {
+      console.log("Sin permisos para editar");
+      return;
+    }
     if (!formData.name || !formData.date) {
       alert("Complete los campos obligatorios");
       return;
     }
+    console.log("Llamando onSave con:", formData);
     onSave(formData);
   };
 
@@ -229,7 +235,7 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
                     className="pl-10"
                   />
                 </div>
-                <Button type="button" onClick={addTag} variant="outline">
+                <Button type="button" onClick={(e) => { e.preventDefault(); addTag(); }} variant="outline">
                   Agregar
                 </Button>
               </div>
@@ -253,11 +259,11 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose}>
             {canEdit ? "Cancelar" : "Cerrar"}
           </Button>
           {canEdit && (
-            <Button onClick={handleSave} className="bg-primary hover:bg-[hsl(var(--primary-hover))]">
+            <Button type="button" onClick={handleSave} className="bg-primary hover:bg-[hsl(var(--primary-hover))]">
               {initialData?.id ? "Guardar cambios" : "Crear tarea"}
             </Button>
           )}
