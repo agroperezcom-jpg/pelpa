@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, format, isToday } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import DraggableEventItem from "./DraggableEventItem";
 
-export default function MonthView({ currentDate, events, onEventClick, onDateClick }) {
+export default function MonthView({ currentDate, events, onEventClick, onDateClick, onEventDrop, onEventResize }) {
+  const [draggingEvent, setDraggingEvent] = useState(null);
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
