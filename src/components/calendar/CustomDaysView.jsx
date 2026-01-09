@@ -155,7 +155,7 @@ export default function CustomDaysView({ currentDate, daysCount, events, onEvent
                               {event.name || event.title}
                             </div>
                             {event.time && (
-                              <div className="text-xs text-muted-foreground mt-1">
+                              <div className="text-xs text-white/80 mt-1">
                                 🕐 {event.time}
                               </div>
                             )}
@@ -172,17 +172,17 @@ export default function CustomDaysView({ currentDate, daysCount, events, onEvent
                             <Badge
                               variant="outline"
                               className={cn(
-                                "text-[10px] h-5",
-                                event.priority === "alta" || event.priority === "critica" ? "border-red-400 text-red-700" :
-                                event.priority === "media" ? "border-amber-400 text-amber-700" :
-                                "border-green-400 text-green-700"
+                                "text-[10px] h-5 border-white/40 text-white",
+                                event.priority === "alta" || event.priority === "critica" ? "bg-red-500/20" :
+                                event.priority === "media" ? "bg-amber-500/20" :
+                                "bg-green-500/20"
                               )}
                             >
                               {event.priority}
                             </Badge>
                           )}
                           {event.status && event.status !== "pendiente" && (
-                            <Badge variant="outline" className="text-[10px] h-5">
+                            <Badge variant="outline" className="text-[10px] h-5 border-white/40 text-white">
                               {event.status.replace('_', ' ')}
                             </Badge>
                           )}
