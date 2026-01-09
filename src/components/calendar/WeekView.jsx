@@ -34,6 +34,23 @@ export default function WeekView({
     });
   };
 
+  const hasConflict = (event, dayEvents) => {
+    if (!event.start_date || !event.estimated_end_date) return false;
+    
+    const start = new Date(event.start_date);
+    const end = new Date(event.estimated_end_date || event.due_date || event.end_date);
+    
+    return dayEvents.some(other => {
+      if (other.id === event.id) return false;
+      if (other.type !== event.type) return false;
+      
+      const otherStart = new Date(other.start_date || other.date);
+      const otherEnd = new Date(other.estimated_end_date || other.due_date || other.end_date || otherStart);
+      
+      return (start < otherEnd && end > otherStart);
+    });
+  };
+
   const getEventBgClass = (event) => {
     if (getEventColor) {
       return "border";
@@ -232,7 +249,8 @@ export default function WeekView({
                           const clickable = canClickEvent(event);
                           const draggable = canDragEvent(event);
                           const resizable = canResizeEvent(event);
-                          
+                          const conflict = hasConflict(event, dayEvents);
+
                           return (
                             <div
                               key={idx}
@@ -270,18 +288,22 @@ export default function WeekView({
                                 clickable && "cursor-pointer hover:shadow-md",
                                 draggable && "cursor-move",
                                 !clickable && !draggable && "cursor-default opacity-60",
-                                draggingEvent?.id === event.id && "opacity-50"
+                                draggingEvent?.id === event.id && "opacity-50",
+                                conflict && "ring-2 ring-red-500 ring-offset-1"
                               )}
                               style={getEventStyle(event)}
-                              title={!clickable && !draggable ? "No tienes permisos para editar" : undefined}
+                              title={!clickable && !draggable ? "No tienes permisos para editar" : conflict ? "⚠️ Conflicto de horario" : undefined}
                             >
+                              {conflict && (
+                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-white" />
+                              )}
                               <div className="font-medium truncate">{event.name || event.title}</div>
                               {event.type && (
                                 <Badge variant="outline" className="text-[9px] mt-1 h-4">
                                   {event.type}
                                 </Badge>
                               )}
-                              
+
                               {resizable && (
                                 <>
                                   <div

@@ -23,6 +23,7 @@ import { toast } from "react-hot-toast";
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState("month");
+  const [scheduleTasksCreated, setScheduleTasksCreated] = useState(false);
   const [layers, setLayers] = useState({
     projects: true,
     phases: true,
@@ -59,6 +60,49 @@ export default function Calendar() {
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
+
+  // Crear tareas programadas automáticamente (solo una vez)
+  useEffect(() => {
+    const createScheduledTasks = async () => {
+      if (!isAdmin || scheduleTasksCreated) return;
+
+      try {
+        const tasks = await base44.asServiceRole.scheduled_tasks.list();
+        const hasRecurrence = tasks.some(t => t.name === 'Procesar Tareas Recurrentes');
+        const hasReminders = tasks.some(t => t.name === 'Enviar Recordatorios Diarios');
+
+        if (!hasRecurrence) {
+          await base44.asServiceRole.scheduled_tasks.create({
+            name: 'Procesar Tareas Recurrentes',
+            function_name: 'processRecurrence',
+            description: 'Crea automáticamente instancias de tareas recurrentes',
+            repeat_interval: 1,
+            repeat_unit: 'days',
+            start_time: '00:00'
+          });
+        }
+
+        if (!hasReminders) {
+          await base44.asServiceRole.scheduled_tasks.create({
+            name: 'Enviar Recordatorios Diarios',
+            function_name: 'sendEventReminders',
+            description: 'Envía emails recordando eventos del día siguiente',
+            repeat_interval: 1,
+            repeat_unit: 'days',
+            start_time: '18:00'
+          });
+        }
+
+        setScheduleTasksCreated(true);
+      } catch (error) {
+        console.error('Error creating scheduled tasks:', error);
+      }
+    };
+
+    if (isAdmin) {
+      createScheduledTasks();
+    }
+  }, [isAdmin]);
 
   // Fetch data
   const { data: projects = [] } = useQuery({
@@ -924,6 +968,19 @@ export default function Calendar() {
           currentDate={currentDate}
           events={events}
           onEventClick={handleEventClick}
+          canEditEvents={canEditEvents}
+          canEditTasks={canEditTasks}
+          canEditProjects={canEditProjects}
+          getEventColor={getEventColor}
+        />
+      )}
+
+      {viewMode === "timeline" && (
+        <TimelineView
+          currentDate={currentDate}
+          events={events}
+          onEventClick={handleEventClick}
+          onEventDrop={handleEventDrop}
           canEditEvents={canEditEvents}
           canEditTasks={canEditTasks}
           canEditProjects={canEditProjects}

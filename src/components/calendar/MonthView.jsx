@@ -33,6 +33,23 @@ export default function MonthView({
     });
   };
 
+  const hasConflict = (event, dayEvents) => {
+    if (!event.start_date || !event.estimated_end_date) return false;
+    
+    const start = new Date(event.start_date);
+    const end = new Date(event.estimated_end_date || event.due_date || event.end_date);
+    
+    return dayEvents.some(other => {
+      if (other.id === event.id) return false;
+      if (other.type !== event.type) return false;
+      
+      const otherStart = new Date(other.start_date || other.date);
+      const otherEnd = new Date(other.estimated_end_date || other.due_date || other.end_date || otherStart);
+      
+      return (start < otherEnd && end > otherStart);
+    });
+  };
+
   const getEventBgClass = (event) => {
     if (getEventColor) {
       return "";
