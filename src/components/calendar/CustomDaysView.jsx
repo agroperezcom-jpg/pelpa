@@ -47,13 +47,13 @@ export default function CustomDaysView({ currentDate, daysCount, events, onEvent
   };
 
   const getEventColor = (event) => {
-    if (event.type === "project") return "bg-purple-100 border-purple-300 text-purple-800";
-    if (event.type === "phase") return "bg-blue-100 border-blue-300 text-blue-800";
-    if (event.type === "task") return "bg-green-100 border-green-300 text-green-800";
-    if (event.type === "freeTask") return "bg-slate-100 border-slate-300 text-slate-700";
-    if (event.type === "milestone") return "bg-amber-100 border-amber-300 text-amber-800";
-    if (event.type === "campaign") return "bg-pink-100 border-pink-300 text-pink-800";
-    return "bg-slate-100 border-slate-300 text-slate-800";
+    if (event.type === "project") return "bg-purple-500";
+    if (event.type === "phase") return "bg-blue-500";
+    if (event.type === "task") return "bg-green-500";
+    if (event.type === "freeTask") return "bg-slate-400";
+    if (event.type === "milestone") return "bg-amber-500";
+    if (event.type === "campaign") return "bg-pink-500";
+    return "bg-slate-500";
   };
 
   const getEventIcon = (event) => {
@@ -115,12 +115,7 @@ export default function CustomDaysView({ currentDate, daysCount, events, onEvent
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, day)}
                 >
-                  {dayEvents.map((event, idx) => {
-                    const eventWithData = {
-                      ...event,
-                      data: event
-                    };
-                    return (
+                  {dayEvents.map((event, idx) => (
                       <div
                         key={idx}
                         draggable
@@ -148,7 +143,7 @@ export default function CustomDaysView({ currentDate, daysCount, events, onEvent
                         onDragEnd={() => setDraggingEvent(null)}
                         onClick={() => onEventClick(event)}
                         className={cn(
-                          "border rounded-lg p-3 cursor-move hover:shadow-md transition-all",
+                          "border border-white/20 rounded-lg p-3 cursor-move hover:shadow-md transition-all text-white",
                           getEventColor(event),
                           draggingEvent?.id === event.id && "opacity-50"
                         )}
@@ -217,9 +212,8 @@ export default function CustomDaysView({ currentDate, daysCount, events, onEvent
                     </div>
                   )}
                 </div>
-              </div>
-            );
-          })}
+                </div>
+                ))}
         </div>
       </div>
     </Card>

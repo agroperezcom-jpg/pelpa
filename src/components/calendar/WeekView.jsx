@@ -121,23 +121,55 @@ export default function WeekView({ currentDate, events, onEventClick, onEventDro
                 className="grid h-full"
                 style={{ gridTemplateColumns: singleDay ? '80px 1fr' : '80px repeat(7, 1fr)' }}
               >
-                <div className="border-r" />
+                <div />
                 {days.map((day, dayIndex) => {
                   const dayEvents = getEventsForDay(day);
                   return (
-                    <div key={day.toString()} className="border-r last:border-r-0 relative">
+                    <div key={day.toString()} className="relative">
                       <div className="absolute inset-0 p-1 space-y-1 pointer-events-auto">
                         {dayEvents.map((event, idx) => (
-                           <DraggableEventItem
-                             key={idx}
-                             event={event}
-                             onEventClick={onEventClick}
-                             onEventDrop={onEventDrop}
-                             onEventResize={onEventResize}
-                             eventColor={getEventColor(event)}
-                             isDragging={draggingEvent?.id === event.id}
-                             layout="block"
-                           />
+                          <div
+                            key={idx}
+                            draggable
+                            onDragStart={(e) => {
+                              e.stopPropagation();
+                              const eventPayload = {
+                                id: event.id,
+                                type: event.type,
+                                name: event.name,
+                                date: event.date,
+                                start_date: event.start_date,
+                                due_date: event.due_date,
+                                end_date: event.end_date,
+                                estimated_end_date: event.estimated_end_date,
+                                time: event.time,
+                                duration: event.duration,
+                                project_id: event.project_id,
+                                phase_id: event.phase_id,
+                                ...event
+                              };
+                              e.dataTransfer.effectAllowed = "move";
+                              e.dataTransfer.setData("application/json", JSON.stringify(eventPayload));
+                              setDraggingEvent(event);
+                            }}
+                            onDragEnd={() => setDraggingEvent(null)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEventClick(event);
+                            }}
+                            className={cn(
+                              "border rounded px-2 py-1 text-xs cursor-move hover:shadow-md transition-shadow",
+                              getEventColor(event),
+                              draggingEvent?.id === event.id && "opacity-50"
+                            )}
+                          >
+                            <div className="font-medium truncate">{event.name || event.title}</div>
+                            {event.type && (
+                              <Badge variant="outline" className="text-[9px] mt-1 h-4">
+                                {event.type}
+                              </Badge>
+                            )}
+                          </div>
                          ))}
                       </div>
                     </div>

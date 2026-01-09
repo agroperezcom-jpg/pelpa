@@ -6,7 +6,6 @@ import { differenceInDays, format, startOfMonth, endOfMonth, eachDayOfInterval }
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Briefcase, Target, CheckSquare } from "lucide-react";
-import DraggableEventItem from "./DraggableEventItem";
 
 export default function TimelineView({ currentDate, events, onEventClick, onEventDrop, onEventResize }) {
   const [draggingEvent, setDraggingEvent] = useState(null);
@@ -133,16 +132,34 @@ export default function TimelineView({ currentDate, events, onEventClick, onEven
                      onDragOver={handleDragOver}
                      onDrop={handleDrop}
                     >
-                    <DraggableEventItem
-                    event={project}
-                    onEventClick={onEventClick}
-                    onEventDrop={onEventDrop}
-                    onEventResize={onEventResize}
-                    eventColor={getEventColor(project)}
-                    isDragging={draggingEvent?.id === project.id}
-                    style={getEventPosition(project.start_date, project.estimated_end_date)}
-                    layout="timeline"
-                    />
+                    <div
+                      draggable
+                      onDragStart={(e) => {
+                        e.stopPropagation();
+                        const eventPayload = {
+                          id: project.id,
+                          type: project.type,
+                          name: project.name,
+                          date: project.date,
+                          start_date: project.start_date,
+                          estimated_end_date: project.estimated_end_date,
+                          ...project
+                        };
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("application/json", JSON.stringify(eventPayload));
+                        setDraggingEvent(project);
+                      }}
+                      onDragEnd={() => setDraggingEvent(null)}
+                      onClick={() => onEventClick(project)}
+                      className={cn(
+                        "absolute h-full rounded cursor-move hover:opacity-80 transition-opacity flex items-center px-2 text-white text-xs font-medium truncate",
+                        getEventColor(project),
+                        draggingEvent?.id === project.id && "opacity-50"
+                      )}
+                      style={getEventPosition(project.start_date, project.estimated_end_date)}
+                    >
+                      {project.name}
+                    </div>
                     </div>
                   </div>
                 </div>
@@ -165,16 +182,36 @@ export default function TimelineView({ currentDate, events, onEventClick, onEven
                            onDragOver={handleDragOver}
                            onDrop={handleDrop}
                           >
-                          <DraggableEventItem
-                            event={phase}
-                            onEventClick={onEventClick}
-                            onEventDrop={onEventDrop}
-                            onEventResize={onEventResize}
-                            eventColor={getEventColor(phase)}
-                            isDragging={draggingEvent?.id === phase.id}
+                          <div
+                            draggable
+                            onDragStart={(e) => {
+                              e.stopPropagation();
+                              const eventPayload = {
+                                id: phase.id,
+                                type: phase.type,
+                                name: phase.name,
+                                date: phase.date,
+                                start_date: phase.start_date,
+                                due_date: phase.due_date,
+                                end_date: phase.end_date,
+                                estimated_end_date: phase.estimated_end_date,
+                                ...phase
+                              };
+                              e.dataTransfer.effectAllowed = "move";
+                              e.dataTransfer.setData("application/json", JSON.stringify(eventPayload));
+                              setDraggingEvent(phase);
+                            }}
+                            onDragEnd={() => setDraggingEvent(null)}
+                            onClick={() => onEventClick(phase)}
+                            className={cn(
+                              "absolute h-full rounded cursor-move hover:opacity-80 transition-opacity flex items-center px-2 text-white text-xs font-medium truncate",
+                              getEventColor(phase),
+                              draggingEvent?.id === phase.id && "opacity-50"
+                            )}
                             style={getEventPosition(phase.start_date, phase.end_date)}
-                            layout="timeline"
-                          />
+                          >
+                            {phase.name}
+                          </div>
                           </div>
                         </div>
                       </div>
@@ -200,16 +237,33 @@ export default function TimelineView({ currentDate, events, onEventClick, onEven
                            onDragOver={handleDragOver}
                            onDrop={handleDrop}
                           >
-                          <DraggableEventItem
-                            event={task}
-                            onEventClick={onEventClick}
-                            onEventDrop={onEventDrop}
-                            onEventResize={onEventResize}
-                            eventColor={getEventColor(task)}
-                            isDragging={draggingEvent?.id === task.id}
+                          <div
+                            draggable
+                            onDragStart={(e) => {
+                              e.stopPropagation();
+                              const eventPayload = {
+                                id: task.id,
+                                type: task.type,
+                                name: task.name,
+                                start_date: task.start_date,
+                                due_date: task.due_date,
+                                ...task
+                              };
+                              e.dataTransfer.effectAllowed = "move";
+                              e.dataTransfer.setData("application/json", JSON.stringify(eventPayload));
+                              setDraggingEvent(task);
+                            }}
+                            onDragEnd={() => setDraggingEvent(null)}
+                            onClick={() => onEventClick(task)}
+                            className={cn(
+                              "absolute h-full rounded cursor-move hover:opacity-80 transition-opacity flex items-center px-2 text-white text-[10px] font-medium truncate",
+                              getEventColor(task),
+                              draggingEvent?.id === task.id && "opacity-50"
+                            )}
                             style={getEventPosition(task.start_date, task.due_date)}
-                            layout="timeline"
-                          />
+                          >
+                            {task.name}
+                          </div>
                           </div>
                         </div>
                       </div>
