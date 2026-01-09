@@ -269,6 +269,13 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
   };
 
   const handleGuardarConteo = async () => {
+    // Validación: al menos 1 producto contado
+    const productosContadosCount = Object.keys(conteo).filter(id => conteo[id] > 0).length;
+    if (productosContadosCount === 0) {
+      alert("⚠️ Debe contar al menos 1 producto antes de continuar");
+      return;
+    }
+
     // Guardar todos los detalles del conteo para revisión
     for (const product of products) {
       const cantidad = conteo[product.id] || 0;
