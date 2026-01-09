@@ -56,7 +56,7 @@ export default function WeekView({ currentDate, events, onEventClick, onEventDro
         <div className="min-w-[900px]">
           {/* Header */}
           <div className="bg-secondary/50 border-b sticky top-0 z-10">
-            <div className="grid grid-cols-8">
+            <div className={cn("grid", singleDay ? "grid-cols-2" : "grid-cols-8")}>
               <div className="p-3 border-r text-xs font-semibold text-muted-foreground">Hora</div>
               {days.map(day => {
                 const isDayToday = isToday(day);
