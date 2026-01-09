@@ -415,6 +415,7 @@ export default function Analytics() {
             {typeof valor === 'number' ? valor.toLocaleString(undefined, { maximumFractionDigits: formato === 'porcentaje' ? 1 : 0 }) : valor}
             {formato === 'porcentaje' && '%'}
           </p>
+          
           {variacion !== undefined && (
             <div className="flex items-center gap-1">
               {variacion > 0 ? (
