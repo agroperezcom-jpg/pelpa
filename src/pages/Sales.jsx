@@ -697,6 +697,9 @@ export default function Sales() {
     setIsTicketDialogOpen(false);
     setVentaConfirmada(null);
     setPagosConfirmados([]);
+    
+    // Cerrar todo primero y resetear
+    setIsDialogOpen(false);
     setCart([]);
     setCurrentSale({
       client_id: "",
@@ -712,7 +715,11 @@ export default function Sales() {
     });
     setProductSearch("");
     setClientSearch("");
-    setIsDialogOpen(true);
+    
+    // Reabrir limpio después de un momento
+    setTimeout(() => {
+      setIsDialogOpen(true);
+    }, 100);
   };
 
   const addToCart = (item, type) => {
