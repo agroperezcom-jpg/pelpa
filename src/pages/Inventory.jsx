@@ -68,6 +68,7 @@ export default function Inventory() {
   const [isMapperDialogOpen, setIsMapperDialogOpen] = useState(false);
   const [csvDataForMapper, setCsvDataForMapper] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isControlStockDialogOpen, setIsControlStockDialogOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
