@@ -326,7 +326,6 @@ export default function Layout({ children, currentPageName }) {
               <X className="h-4 w-4 text-muted-foreground" />
             </button>
             </div>
-            </div>
 
           {/* Search */}
           <div className="px-4 py-3">
