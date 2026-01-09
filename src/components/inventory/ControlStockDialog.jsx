@@ -445,6 +445,7 @@ export default function ControlStockDialog({ isOpen, onClose, products }) {
                       <TableHeader className="bg-slate-50 sticky top-0">
                         <TableRow>
                           <TableHead>Producto</TableHead>
+                          <TableHead className="text-center">Stock Teórico</TableHead>
                           <TableHead className="text-center">Cantidad Contada</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -457,6 +458,11 @@ export default function ControlStockDialog({ isOpen, onClose, products }) {
                                 {product.barcode && (
                                   <p className="text-xs text-slate-400">{product.barcode}</p>
                                 )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div className="px-3 py-1 bg-slate-100 rounded-lg inline-block">
+                                <p className="text-sm font-semibold text-slate-700">{product.stock || 0}</p>
                               </div>
                             </TableCell>
                             <TableCell>
