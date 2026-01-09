@@ -42,10 +42,12 @@ import {
   Download,
   Upload,
   FileSpreadsheet,
-  Trash2
+  Trash2,
+  ClipboardList
 } from "lucide-react";
 import DeleteProductsDialog from "../components/inventory/DeleteProductsDialog";
 import CsvImportMapperDialog from "../components/inventory/CsvImportMapperDialog";
+import ControlStockDialog from "../components/inventory/ControlStockDialog";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
