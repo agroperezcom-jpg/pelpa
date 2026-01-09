@@ -30,6 +30,25 @@ export default function WeekView({ currentDate, events, onEventClick, onEventDro
     return "bg-slate-100 border-slate-300 text-slate-800";
   };
 
+  const handleDragStart = (e, event) => {
+    setDraggingEvent(event);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e, day, hour) => {
+    e.preventDefault();
+    if (!draggingEvent || !onEventDrop) return;
+
+    const newDate = setHours(setMinutes(day, 0), hour);
+    onEventDrop(draggingEvent, newDate);
+    setDraggingEvent(null);
+  };
+
   return (
     <Card className="border-0 shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
