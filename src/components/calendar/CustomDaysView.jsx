@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { eachDayOfInterval, format, isToday, isSameDay, addDays } from "date-fns";
+import { eachDayOfInterval, format, isToday, isSameDay, addDays, setHours, setMinutes } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import DraggableEventItem from "./DraggableEventItem";
 
 export default function CustomDaysView({ currentDate, daysCount, events, onEventClick, onDateClick, onEventDrop, onEventResize }) {
   const [draggingEvent, setDraggingEvent] = useState(null);
@@ -24,7 +25,15 @@ export default function CustomDaysView({ currentDate, daysCount, events, onEvent
 
     try {
       const eventData = JSON.parse(e.dataTransfer.getData("application/json"));
-      onEventDrop(eventData, day);
+      // Mantener la hora si el evento la tiene, sino usar mediodía
+      let newDate = day;
+      if (eventData.time) {
+        const [hours, minutes] = eventData.time.split(':').map(Number);
+        newDate = setHours(setMinutes(day, minutes || 0), hours || 12);
+      } else {
+        newDate = setHours(setMinutes(day, 0), 12);
+      }
+      onEventDrop(eventData, newDate);
     } catch (err) {
       console.error("Error dropping event:", err);
     }
@@ -108,71 +117,73 @@ export default function CustomDaysView({ currentDate, daysCount, events, onEvent
                   onDrop={(e) => handleDrop(e, day)}
                 >
                   {dayEvents.map((event, idx) => (
-                    <div
+                    <DraggableEventItem
                       key={idx}
-                      draggable
-                      onClick={() => onEventClick(event)}
-                      className={cn(
-                        "border rounded-lg p-3 cursor-move hover:shadow-md transition-all",
-                        getEventColor(event),
-                        draggingEvent?.id === event.id && "opacity-50"
-                      )}
+                      event={event}
+                      onEventClick={onEventClick}
+                      onEventDrop={onEventDrop}
+                      onEventResize={onEventResize}
+                      eventColor={getEventColor(event)}
+                      isDragging={draggingEvent?.id === event.id}
+                      layout="inline"
                     >
-                      <div className="flex items-start gap-2 mb-2">
-                        <span className="text-base">{getEventIcon(event)}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">
-                            {event.name || event.title}
-                          </div>
-                          {event.time && (
-                            <div className="text-xs text-muted-foreground mt-1">
-                              🕐 {event.time}
+                      <div className="border rounded-lg p-3 hover:shadow-md transition-all">
+                        <div className="flex items-start gap-2 mb-2">
+                          <span className="text-base">{getEventIcon(event)}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">
+                              {event.name || event.title}
                             </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-1">
-                        {event.type && (
-                          <Badge variant="secondary" className="text-[10px] h-5">
-                            {event.type === "freeTask" ? "Libre" : event.type}
-                          </Badge>
-                        )}
-                        {event.priority && (
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "text-[10px] h-5",
-                              event.priority === "alta" || event.priority === "critica" ? "border-red-400 text-red-700" :
-                              event.priority === "media" ? "border-amber-400 text-amber-700" :
-                              "border-green-400 text-green-700"
+                            {event.time && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                🕐 {event.time}
+                              </div>
                             )}
-                          >
-                            {event.priority}
-                          </Badge>
-                        )}
-                        {event.status && event.status !== "pendiente" && (
-                          <Badge variant="outline" className="text-[10px] h-5">
-                            {event.status.replace('_', ' ')}
-                          </Badge>
-                        )}
-                      </div>
+                          </div>
+                        </div>
 
-                      {event.tags && event.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {event.tags.slice(0, 2).map((tag, i) => (
-                            <Badge key={i} variant="secondary" className="text-[9px] h-4 px-1">
-                              #{tag}
+                        <div className="flex flex-wrap gap-1">
+                          {event.type && (
+                            <Badge variant="secondary" className="text-[10px] h-5">
+                              {event.type === "freeTask" ? "Libre" : event.type}
                             </Badge>
-                          ))}
-                          {event.tags.length > 2 && (
-                            <Badge variant="secondary" className="text-[9px] h-4 px-1">
-                              +{event.tags.length - 2}
+                          )}
+                          {event.priority && (
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px] h-5",
+                                event.priority === "alta" || event.priority === "critica" ? "border-red-400 text-red-700" :
+                                event.priority === "media" ? "border-amber-400 text-amber-700" :
+                                "border-green-400 text-green-700"
+                              )}
+                            >
+                              {event.priority}
+                            </Badge>
+                          )}
+                          {event.status && event.status !== "pendiente" && (
+                            <Badge variant="outline" className="text-[10px] h-5">
+                              {event.status.replace('_', ' ')}
                             </Badge>
                           )}
                         </div>
-                      )}
-                    </div>
+
+                        {event.tags && event.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {event.tags.slice(0, 2).map((tag, i) => (
+                              <Badge key={i} variant="secondary" className="text-[9px] h-4 px-1">
+                                #{tag}
+                              </Badge>
+                            ))}
+                            {event.tags.length > 2 && (
+                              <Badge variant="secondary" className="text-[9px] h-4 px-1">
+                                +{event.tags.length - 2}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </DraggableEventItem>
                   ))}
 
                   {dayEvents.length === 0 && (
