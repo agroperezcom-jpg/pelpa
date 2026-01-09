@@ -107,6 +107,29 @@ export default function Calendar() {
     }
   });
 
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ id, type, data }) => {
+      const entityMap = {
+        task: base44.entities.ProjectTask,
+        phase: base44.entities.ProjectPhase,
+        project: base44.entities.Project,
+        milestone: base44.entities.ProjectMilestone,
+        campaign: base44.entities.Campaign
+      };
+      return entityMap[type].update(id, data);
+    },
+    onSuccess: (_, { type }) => {
+      const keyMap = {
+        task: 'projectTasks',
+        phase: 'projectPhases',
+        project: 'projects',
+        milestone: 'projectMilestones',
+        campaign: 'campaigns'
+      };
+      queryClient.invalidateQueries({ queryKey: [keyMap[type]] });
+    }
+  });
+
   const updatePreferencesMutation = useMutation({
     mutationFn: async (data) => {
       if (userPreference?.id) {
