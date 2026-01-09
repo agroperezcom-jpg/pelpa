@@ -44,8 +44,8 @@ export default function TicketPrint({ venta, pagos, isCopia = false }) {
         </button>
 
         <div 
-          className="overflow-y-auto"
-          style={{ maxHeight: '65vh' }}
+          className="border rounded-lg bg-slate-50 p-4 mx-auto"
+          style={{ maxWidth: '80mm' }}
         >
           <div 
             id="ticket-print"

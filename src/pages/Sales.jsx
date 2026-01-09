@@ -1423,44 +1423,47 @@ export default function Sales() {
 
       {/* Ticket Dialog */}
       <Dialog open={isTicketDialogOpen} onOpenChange={setIsTicketDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="max-w-md max-h-[95vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="px-6 py-4 border-b">
             <DialogTitle className="flex items-center gap-2">
               <Receipt className="h-5 w-5 text-green-600" />
               Venta Confirmada
             </DialogTitle>
           </DialogHeader>
-          <div className="text-center py-4">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+
+          <div className="flex-1 overflow-y-auto px-6">
+            <div className="text-center py-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-green-600 mb-2">
+                ¡Venta Confirmada!
+              </h3>
+              <p className="text-slate-600 mb-1">
+                Total: ${ventaConfirmada?.total?.toFixed(2)}
+              </p>
+              <p className="text-sm text-slate-500">
+                Cliente: {ventaConfirmada?.client_name}
+              </p>
+              {ventaConfirmada?.genera_iva && (
+                <Badge className="bg-blue-100 text-blue-700 mt-2">
+                  <FileCheck className="h-3 w-3 mr-1" />
+                  Factura B generada
+                </Badge>
+              )}
             </div>
-            <h3 className="text-xl font-bold text-green-600 mb-2">
-              ¡Venta Confirmada!
-            </h3>
-            <p className="text-slate-600 mb-1">
-              Total: ${ventaConfirmada?.total?.toFixed(2)}
-            </p>
-            <p className="text-sm text-slate-500">
-              Cliente: {ventaConfirmada?.client_name}
-            </p>
-            {ventaConfirmada?.genera_iva && (
-              <Badge className="bg-blue-100 text-blue-700 mt-2">
-                <FileCheck className="h-3 w-3 mr-1" />
-                Factura B generada
-              </Badge>
+
+            {ventaConfirmada && (
+              <TicketPrint 
+                venta={ventaConfirmada} 
+                pagos={pagosConfirmados}
+              />
             )}
           </div>
 
-          {ventaConfirmada && (
-            <TicketPrint 
-              venta={ventaConfirmada} 
-              pagos={pagosConfirmados}
-            />
-          )}
-
-          <DialogFooter>
+          <DialogFooter className="px-6 py-4 border-t mt-0">
             <Button onClick={handleCloseTicket} className="w-full bg-emerald-600 hover:bg-emerald-700">
               Cerrar
             </Button>
