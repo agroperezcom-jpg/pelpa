@@ -836,7 +836,8 @@ export default function Sales() {
         neto_gravado: neto_gravado,
         iva_21: iva_21,
         total: finalTotal,
-        notes: currentSale.notes
+        notes: currentSale.notes,
+        talonario_id: currentSale.talonario_id
       },
       pagos,
       tipoVenta
