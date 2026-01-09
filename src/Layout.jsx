@@ -93,9 +93,9 @@ export default function Layout({ children, currentPageName }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Close sidebar on route change (mobile) excepto si está pinned
+  // Close sidebar on route change (mobile) - excepto si está fijada
   useEffect(() => {
-    if (window.innerWidth < 1024 && !sidebarPinned) {
+    if (!sidebarPinned) {
       setSidebarOpen(false);
     }
   }, [location, sidebarPinned]);
@@ -250,42 +250,54 @@ export default function Layout({ children, currentPageName }) {
     <ThemeProvider>
       <div className="min-h-screen bg-background transition-theme">
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card/90 backdrop-blur-sm border-b border-border/40 z-40 flex items-center justify-between px-4 transition-theme">
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card/90 backdrop-blur-sm border-b border-border/40 z-50 flex items-center justify-between px-4 transition-theme">
+        <button 
+          onClick={() => setSidebarOpen(true)}
+          className="p-2 -ml-2 rounded-lg hover:bg-secondary transition-colors"
+        >
+          <Menu className="h-5 w-5 text-muted-foreground" />
+        </button>
+
         <span 
           className="text-sm font-medium text-foreground"
           style={{ fontFamily: fontFamilyMap[tipografiaLogo] }}
         >
           {allPages.find(p => p.page === currentPageName)?.name || "Dashboard"}
         </span>
-
+        
         <button 
           onClick={() => setCommandOpen(true)}
-          className="p-2 rounded-lg hover:bg-secondary transition-colors"
+          className="p-2 -mr-2 rounded-lg hover:bg-secondary transition-colors"
         >
           <Search className="h-5 w-5 text-muted-foreground" />
         </button>
       </header>
 
-      {/* Toggle Sidebar Button */}
-      <button
-        onClick={() => setSidebarPinned(!sidebarPinned)}
-        className={cn(
-          "fixed top-20 z-40 p-2 rounded-r-lg bg-card border border-l-0 border-border/40 hover:bg-secondary transition-all duration-200",
-          sidebarPinned ? "left-64" : "left-0"
-        )}
-        title={sidebarPinned ? "Esconder" : "Mostrar"}
-      >
-        <ChevronRight className={cn(
-          "h-5 w-5 text-muted-foreground transition-transform",
-          sidebarPinned ? "rotate-180" : ""
-        )} />
-      </button>
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar Toggle Button - Flecha flotante */}
+      {!sidebarOpen && (
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="fixed left-6 top-20 z-45 p-3 rounded-full bg-card border border-border/40 shadow-lg hover:shadow-xl hover:bg-secondary transition-all duration-200 lg:hidden"
+          title="Abrir menú"
+        >
+          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+        </button>
+      )}
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed lg:relative top-0 left-0 bottom-0 w-64 bg-card border-r border-border/40 z-40 transition-theme",
+        "fixed top-0 left-0 bottom-0 w-64 bg-card border-r border-border/40 z-50 transition-theme",
         "transition-transform duration-300 ease-out",
-        sidebarPinned ? "translate-x-0 lg:translate-x-0" : "lg:-translate-x-full -translate-x-full"
+        "lg:translate-x-0",
+        sidebarOpen || sidebarPinned ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full">
           {/* Logo */}
@@ -303,7 +315,25 @@ export default function Layout({ children, currentPageName }) {
                 {nombreEmpresa}
               </span>
             </div>
-
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setSidebarPinned(!sidebarPinned)}
+                className="hidden sm:flex p-1.5 rounded-lg hover:bg-secondary transition-colors"
+                title={sidebarPinned ? "Desfijar" : "Fijar"}
+              >
+                {sidebarPinned ? (
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
+                )}
+              </button>
+              <button 
+                onClick={() => setSidebarOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
+              >
+                <ChevronRight className="h-4 w-4 text-muted-foreground rotate-180" />
+              </button>
+            </div>
           </div>
 
           {/* Search */}
@@ -383,7 +413,7 @@ export default function Layout({ children, currentPageName }) {
       </aside>
 
       {/* Main Content */}
-      <main className={cn("min-h-screen transition-all duration-300", sidebarPinned ? "lg:pl-64" : "")}>
+      <main className="lg:pl-64 min-h-screen">
         <div className="pt-14 lg:pt-0">
           {/* Desktop Header */}
           <header className="hidden lg:flex h-14 items-center justify-between px-6 border-b border-border/40 bg-card/60 backdrop-blur-sm sticky top-0 z-30 transition-theme">
