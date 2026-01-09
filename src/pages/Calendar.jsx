@@ -430,6 +430,61 @@ export default function Calendar() {
     }
   };
 
+  const handleEventResize = (event, newDate, direction = "end") => {
+    if (event.type === "freeTask") {
+      // Para free tasks solo actualizamos si es el end
+      if (direction === "end") {
+        const timeStr = `${String(newDate.getHours()).padStart(2, '0')}:${String(newDate.getMinutes()).padStart(2, '0')}`;
+        updateFreeTaskMutation.mutate({
+          id: event.id,
+          data: { end_time: timeStr }
+        });
+      }
+    } else if (event.type === "task") {
+      if (direction === "end") {
+        updateTaskMutation.mutate({
+          id: event.id,
+          type: "task",
+          data: { due_date: newDate.toISOString() }
+        });
+      } else {
+        updateTaskMutation.mutate({
+          id: event.id,
+          type: "task",
+          data: { start_date: newDate.toISOString() }
+        });
+      }
+    } else if (event.type === "phase" || event.type === "project") {
+      if (direction === "end") {
+        updateTaskMutation.mutate({
+          id: event.id,
+          type: event.type,
+          data: { estimated_end_date: newDate.toISOString() }
+        });
+      } else {
+        updateTaskMutation.mutate({
+          id: event.id,
+          type: event.type,
+          data: { start_date: newDate.toISOString() }
+        });
+      }
+    } else if (event.type === "campaign") {
+      if (direction === "end") {
+        updateTaskMutation.mutate({
+          id: event.id,
+          type: "campaign",
+          data: { end_date: newDate.toISOString() }
+        });
+      } else {
+        updateTaskMutation.mutate({
+          id: event.id,
+          type: "campaign",
+          data: { start_date: newDate.toISOString() }
+        });
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       <CalendarHeader
