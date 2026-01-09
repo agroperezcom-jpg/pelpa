@@ -69,6 +69,8 @@ export default function Inventory() {
   const [csvDataForMapper, setCsvDataForMapper] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isControlStockDialogOpen, setIsControlStockDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   const queryClient = useQueryClient();
 
