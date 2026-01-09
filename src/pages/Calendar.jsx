@@ -31,6 +31,7 @@ export default function Calendar() {
   const [freeTaskDialogOpen, setFreeTaskDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [clickedDate, setClickedDate] = useState(null);
+  const [snapMinutes, setSnapMinutes] = useState(30);
 
   const queryClient = useQueryClient();
   const { hasPermission, isAdmin, loading: permissionsLoading } = usePermissions();
@@ -331,6 +332,164 @@ export default function Calendar() {
     }
   };
 
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ id, type, data }) => {
+      const entityMap = {
+        task: base44.entities.ProjectTask,
+        phase: base44.entities.ProjectPhase,
+        project: base44.entities.Project,
+        milestone: base44.entities.ProjectMilestone,
+        campaign: base44.entities.Campaign,
+        freeTask: base44.entities.FreeTask
+      };
+      return entityMap[type].update(id, data);
+    },
+    onSuccess: (_, { type }) => {
+      const keyMap = {
+        task: 'projectTasks',
+        phase: 'projectPhases',
+        project: 'projects',
+        milestone: 'projectMilestones',
+        campaign: 'campaigns',
+        freeTask: 'freeTasks'
+      };
+      queryClient.invalidateQueries({ queryKey: [keyMap[type]] });
+    }
+  });
+
+  const snapToGrid = (date) => {
+    const minutes = date.getMinutes();
+    const snappedMinutes = Math.round(minutes / snapMinutes) * snapMinutes;
+    const snappedDate = new Date(date);
+    snappedDate.setMinutes(snappedMinutes);
+    snappedDate.setSeconds(0);
+    snappedDate.setMilliseconds(0);
+    return snappedDate;
+  };
+
+  const checkConflicts = (event, newStart, newEnd) => {
+    const conflicts = events.filter(e => {
+      if (e.id === event.id) return false;
+      if (e.type !== event.type) return false;
+      
+      const eStart = new Date(e.start_date || e.date);
+      const eEnd = new Date(e.estimated_end_date || e.due_date || e.end_date || eStart);
+      
+      return (newStart < eEnd && newEnd > eStart);
+    });
+    return conflicts;
+  };
+
+  const handleEventDrop = (event, newDate) => {
+    if (!event || !event.id) return;
+
+    // Validar permisos
+    if (event.type === "freeTask" && !canEditEvents) return;
+    if (event.type === "project" && !canEditProjects) return;
+    if ((event.type === "task" || event.type === "phase") && !canEditTasks) return;
+
+    const snappedDate = snapToGrid(newDate);
+    const dateStr = snappedDate.toISOString().split('T')[0];
+    const timeStr = `${String(snappedDate.getHours()).padStart(2, '0')}:${String(snappedDate.getMinutes()).padStart(2, '0')}`;
+
+    if (event.type === "freeTask") {
+      updateFreeTaskMutation.mutate({
+        id: event.id,
+        data: { date: dateStr, time: timeStr }
+      });
+    } else if (event.type === "task") {
+      const originalStart = new Date(event.start_date);
+      const originalEnd = event.due_date ? new Date(event.due_date) : null;
+      const duration = originalEnd ? originalEnd - originalStart : null;
+
+      const updateData = { start_date: snappedDate.toISOString() };
+      if (duration && originalEnd) {
+        const newEnd = new Date(snappedDate.getTime() + duration);
+        const conflicts = checkConflicts(event, snappedDate, newEnd);
+        
+        if (conflicts.length > 0) {
+          if (!confirm(`Conflicto detectado con ${conflicts.length} tarea(s). ¿Continuar?`)) return;
+        }
+        
+        updateData.due_date = newEnd.toISOString();
+      }
+
+      updateTaskMutation.mutate({ id: event.id, type: "task", data: updateData });
+    } else if (event.type === "phase") {
+      const originalStart = new Date(event.start_date);
+      const originalEnd = event.end_date ? new Date(event.end_date) : null;
+      const duration = originalEnd ? originalEnd - originalStart : null;
+
+      const updateData = { start_date: snappedDate.toISOString() };
+      if (duration && originalEnd) {
+        updateData.end_date = new Date(snappedDate.getTime() + duration).toISOString();
+      }
+
+      updateTaskMutation.mutate({ id: event.id, type: "phase", data: updateData });
+    } else if (event.type === "project") {
+      const originalStart = new Date(event.start_date);
+      const originalEnd = event.estimated_end_date ? new Date(event.estimated_end_date) : null;
+      const duration = originalEnd ? originalEnd - originalStart : null;
+
+      const updateData = { start_date: snappedDate.toISOString() };
+      if (duration && originalEnd) {
+        updateData.estimated_end_date = new Date(snappedDate.getTime() + duration).toISOString();
+      }
+
+      updateTaskMutation.mutate({ id: event.id, type: "project", data: updateData });
+    } else if (event.type === "milestone") {
+      updateTaskMutation.mutate({ id: event.id, type: "milestone", data: { date: dateStr } });
+    } else if (event.type === "campaign") {
+      const originalStart = new Date(event.start_date);
+      const originalEnd = event.end_date ? new Date(event.end_date) : null;
+      const duration = originalEnd ? originalEnd - originalStart : null;
+
+      const updateData = { start_date: snappedDate.toISOString() };
+      if (duration && originalEnd) {
+        updateData.end_date = new Date(snappedDate.getTime() + duration).toISOString();
+      }
+
+      updateTaskMutation.mutate({ id: event.id, type: "campaign", data: updateData });
+    }
+  };
+
+  const handleEventResize = (event, newDate, direction = "end") => {
+    if (!event || !event.id) return;
+    
+    // Validar permisos
+    if (event.type === "freeTask" && !canEditEvents) return;
+    if (event.type === "project" && !canEditProjects) return;
+    if ((event.type === "task" || event.type === "phase") && !canEditTasks) return;
+
+    const snappedDate = snapToGrid(newDate);
+    
+    if (event.type === "freeTask") {
+      if (direction === "end") {
+        const timeStr = `${String(snappedDate.getHours()).padStart(2, '0')}:${String(snappedDate.getMinutes()).padStart(2, '0')}`;
+        updateFreeTaskMutation.mutate({ id: event.id, data: { end_time: timeStr } });
+      }
+    } else if (event.type === "task") {
+      if (direction === "end") {
+        const start = new Date(event.start_date);
+        const conflicts = checkConflicts(event, start, snappedDate);
+        
+        if (conflicts.length > 0) {
+          if (!confirm(`Conflicto detectado con ${conflicts.length} tarea(s). ¿Continuar?`)) return;
+        }
+        
+        updateTaskMutation.mutate({ id: event.id, type: "task", data: { due_date: snappedDate.toISOString() } });
+      } else {
+        updateTaskMutation.mutate({ id: event.id, type: "task", data: { start_date: snappedDate.toISOString() } });
+      }
+    } else if (event.type === "phase" || event.type === "project") {
+      const field = direction === "end" ? "estimated_end_date" : "start_date";
+      updateTaskMutation.mutate({ id: event.id, type: event.type, data: { [field]: snappedDate.toISOString() } });
+    } else if (event.type === "campaign") {
+      const field = direction === "end" ? "end_date" : "start_date";
+      updateTaskMutation.mutate({ id: event.id, type: "campaign", data: { [field]: snappedDate.toISOString() } });
+    }
+  };
+
   // Sin permiso de ver calendario, mostrar mensaje
   if (permissionsLoading) {
     return (
@@ -366,6 +525,8 @@ export default function Calendar() {
         onCreateEvent={handleCreateEvent}
         filteredEventsCount={events.length}
         canCreateEvents={canCreateEvents}
+        snapMinutes={snapMinutes}
+        setSnapMinutes={setSnapMinutes}
       />
 
       {/* Alerts */}
@@ -473,6 +634,7 @@ export default function Calendar() {
           events={events}
           onEventClick={handleEventClick}
           onDateClick={handleDateClick}
+          onEventDrop={handleEventDrop}
           canCreateEvents={canCreateEvents}
           canEditEvents={canEditEvents}
           canEditTasks={canEditTasks}
@@ -485,9 +647,12 @@ export default function Calendar() {
           currentDate={currentDate}
           events={events}
           onEventClick={handleEventClick}
+          onEventDrop={handleEventDrop}
+          onEventResize={handleEventResize}
           canEditEvents={canEditEvents}
           canEditTasks={canEditTasks}
           canEditProjects={canEditProjects}
+          snapMinutes={snapMinutes}
         />
       )}
 
@@ -499,9 +664,12 @@ export default function Calendar() {
             return eventDate.toDateString() === currentDate.toDateString();
           })}
           onEventClick={handleEventClick}
+          onEventDrop={handleEventDrop}
+          onEventResize={handleEventResize}
           canEditEvents={canEditEvents}
           canEditTasks={canEditTasks}
           canEditProjects={canEditProjects}
+          snapMinutes={snapMinutes}
           singleDay={true}
         />
       )}

@@ -1,19 +1,25 @@
-import React from "react";
+import React, { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, isToday, isSameDay } from "date-fns";
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, isToday, isSameDay, setHours, setMinutes } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
 export default function WeekView({ 
   currentDate, 
   events, 
-  onEventClick, 
+  onEventClick,
+  onEventDrop,
+  onEventResize,
   singleDay = false,
   canEditEvents = true,
   canEditTasks = true,
-  canEditProjects = true
+  canEditProjects = true,
+  snapMinutes = 30
 }) {
+  const [draggingEvent, setDraggingEvent] = useState(null);
+  const [resizingEvent, setResizingEvent] = useState(null);
+  const resizeRef = useRef(null);
   const weekStart = singleDay ? currentDate : startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = singleDay ? currentDate : endOfWeek(currentDate, { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
@@ -43,6 +49,78 @@ export default function WeekView({
     if (event.type === "task" || event.type === "phase") return canEditTasks;
     return true;
   };
+
+  const canDragEvent = (event) => {
+    if (!onEventDrop) return false;
+    return canClickEvent(event);
+  };
+
+  const canResizeEvent = (event) => {
+    if (!onEventResize) return false;
+    return canClickEvent(event);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e, day, hour) => {
+    e.preventDefault();
+    if (!onEventDrop) return;
+
+    try {
+      const eventData = JSON.parse(e.dataTransfer.getData("application/json"));
+      const newDate = setHours(setMinutes(day, 0), hour);
+      onEventDrop(eventData, newDate);
+    } catch (err) {
+      console.error("Error dropping event:", err);
+    }
+    setDraggingEvent(null);
+  };
+
+  const handleResizeStart = (e, event, direction) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setResizingEvent({ event, direction });
+    resizeRef.current = {
+      startY: e.clientY,
+      startDate: new Date(direction === "end" ? (event.due_date || event.end_date || event.estimated_end_date) : event.start_date)
+    };
+  };
+
+  const handleResizeMove = (e) => {
+    if (!resizingEvent || !resizeRef.current) return;
+    
+    const deltaY = e.clientY - resizeRef.current.startY;
+    const pixelsPerHour = 60;
+    const hoursDelta = deltaY / pixelsPerHour;
+    
+    const newDate = new Date(resizeRef.current.startDate.getTime() + hoursDelta * 60 * 60 * 1000);
+    
+    if (Math.abs(hoursDelta) > 0.25) {
+      onEventResize(resizingEvent.event, newDate, resizingEvent.direction);
+      resizeRef.current.startY = e.clientY;
+      resizeRef.current.startDate = newDate;
+    }
+  };
+
+  const handleResizeEnd = () => {
+    setResizingEvent(null);
+    resizeRef.current = null;
+  };
+
+  React.useEffect(() => {
+    if (!resizingEvent) return;
+    
+    window.addEventListener("mousemove", handleResizeMove);
+    window.addEventListener("mouseup", handleResizeEnd);
+    
+    return () => {
+      window.removeEventListener("mousemove", handleResizeMove);
+      window.removeEventListener("mouseup", handleResizeEnd);
+    };
+  }, [resizingEvent]);
 
   return (
     <Card className="border-0 shadow-sm overflow-hidden">
@@ -98,8 +176,11 @@ export default function WeekView({
                        key={`${day}-${hour}`}
                        className={cn(
                          "min-h-[60px] border-r last:border-r-0 p-1",
-                         isDayToday && "bg-primary/5"
+                         isDayToday && "bg-primary/5",
+                         draggingEvent && "bg-blue-50/30"
                        )}
+                       onDragOver={handleDragOver}
+                       onDrop={(e) => handleDrop(e, day, hour)}
                      />
                    );
                  })}
@@ -120,25 +201,70 @@ export default function WeekView({
                       <div className="absolute inset-0 p-1 space-y-1 pointer-events-auto">
                         {dayEvents.map((event, idx) => {
                           const clickable = canClickEvent(event);
+                          const draggable = canDragEvent(event);
+                          const resizable = canResizeEvent(event);
+                          
                           return (
                             <div
                               key={idx}
+                              draggable={draggable}
+                              onDragStart={(e) => {
+                                if (!draggable) return;
+                                e.stopPropagation();
+                                const eventPayload = {
+                                  id: event.id,
+                                  type: event.type,
+                                  name: event.name,
+                                  date: event.date,
+                                  start_date: event.start_date,
+                                  due_date: event.due_date,
+                                  end_date: event.end_date,
+                                  estimated_end_date: event.estimated_end_date,
+                                  time: event.time,
+                                  duration: event.duration,
+                                  project_id: event.project_id,
+                                  phase_id: event.phase_id,
+                                  ...event
+                                };
+                                e.dataTransfer.effectAllowed = "move";
+                                e.dataTransfer.setData("application/json", JSON.stringify(eventPayload));
+                                setDraggingEvent(event);
+                              }}
+                              onDragEnd={() => setDraggingEvent(null)}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (clickable) onEventClick(event);
                               }}
                               className={cn(
-                                "border rounded px-2 py-1 text-xs transition-shadow",
+                                "relative border rounded px-2 py-1 text-xs transition-shadow group",
                                 getEventColor(event),
-                                clickable ? "cursor-pointer hover:shadow-md" : "cursor-default opacity-60"
+                                clickable && "cursor-pointer hover:shadow-md",
+                                draggable && "cursor-move",
+                                !clickable && !draggable && "cursor-default opacity-60",
+                                draggingEvent?.id === event.id && "opacity-50"
                               )}
-                              title={!clickable ? "No tienes permisos para editar" : undefined}
+                              title={!clickable && !draggable ? "No tienes permisos para editar" : undefined}
                             >
                               <div className="font-medium truncate">{event.name || event.title}</div>
                               {event.type && (
                                 <Badge variant="outline" className="text-[9px] mt-1 h-4">
                                   {event.type}
                                 </Badge>
+                              )}
+                              
+                              {resizable && (
+                                <>
+                                  <div
+                                    onMouseDown={(e) => handleResizeStart(e, event, "start")}
+                                    className="absolute top-0 left-0 right-0 h-1 cursor-n-resize opacity-0 group-hover:opacity-100 bg-blue-500/30 hover:bg-blue-500/50 transition-all"
+                                    title="Arrastra para cambiar hora de inicio"
+                                  />
+                                  <div
+                                    onMouseDown={(e) => handleResizeStart(e, event, "end")}
+                                    className="absolute bottom-0 left-0 right-0 h-1 cursor-s-resize opacity-0 group-hover:opacity-100 bg-blue-500/30 hover:bg-blue-500/50 transition-all"
+                                    title="Arrastra para cambiar hora de fin"
+                                  />
+                                </>
                               )}
                             </div>
                           );

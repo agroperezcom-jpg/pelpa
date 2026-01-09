@@ -1,9 +1,10 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Settings } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Grid3x3 } from "lucide-react";
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from "date-fns";
 import { es } from "date-fns/locale";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function CalendarHeader({ 
   currentDate, 
@@ -12,7 +13,9 @@ export default function CalendarHeader({
   setViewMode,
   onCreateEvent,
   filteredEventsCount,
-  canCreateEvents = true
+  canCreateEvents = true,
+  snapMinutes = 30,
+  setSnapMinutes
 }) {
   const handlePrevious = () => {
     if (viewMode === "month") {
@@ -106,6 +109,22 @@ export default function CalendarHeader({
         <div className="font-semibold text-foreground min-w-[200px] text-center">
           {getDateLabel()}
         </div>
+
+        {setSnapMinutes && (viewMode === "week" || viewMode === "day") && (
+          <div className="flex items-center gap-2">
+            <Grid3x3 className="h-4 w-4 text-muted-foreground" />
+            <Select value={snapMinutes.toString()} onValueChange={(v) => setSnapMinutes(Number(v))}>
+              <SelectTrigger className="w-[110px] h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="15">15 min</SelectItem>
+                <SelectItem value="30">30 min</SelectItem>
+                <SelectItem value="60">60 min</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {canCreateEvents && (
           <Button onClick={onCreateEvent} className="bg-primary hover:bg-[hsl(var(--primary-hover))]">

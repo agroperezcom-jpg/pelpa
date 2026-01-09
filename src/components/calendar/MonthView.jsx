@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, format, isToday } from "date-fns";
@@ -10,11 +10,13 @@ export default function MonthView({
   events, 
   onEventClick, 
   onDateClick,
+  onEventDrop,
   canCreateEvents = true,
   canEditEvents = true,
   canEditTasks = true,
   canEditProjects = true
 }) {
+  const [draggingEvent, setDraggingEvent] = useState(null);
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -47,6 +49,32 @@ export default function MonthView({
     return true;
   };
 
+  const canDragEvent = (event) => {
+    if (!onEventDrop) return false;
+    return canClickEvent(event);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e, day) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!onEventDrop) return;
+
+    try {
+      const eventData = JSON.parse(e.dataTransfer.getData("application/json"));
+      const noon = new Date(day);
+      noon.setHours(12, 0, 0, 0);
+      onEventDrop(eventData, noon);
+    } catch (err) {
+      console.error("Error dropping event:", err);
+    }
+    setDraggingEvent(null);
+  };
+
   return (
     <Card className="border-0 shadow-sm overflow-hidden">
       <div className="bg-secondary/50 border-b">
@@ -72,9 +100,12 @@ export default function MonthView({
                 "min-h-[120px] border-r border-b p-2 transition-colors",
                 !isCurrentMonth && "bg-secondary/20",
                 index % 7 === 6 && "border-r-0",
-                canCreateEvents && "cursor-pointer hover:bg-secondary/50"
+                canCreateEvents && "cursor-pointer hover:bg-secondary/50",
+                draggingEvent && "bg-blue-50/30"
               )}
               onClick={() => canCreateEvents && onDateClick(day)}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, day)}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className={cn(
@@ -94,9 +125,34 @@ export default function MonthView({
               <div className="space-y-1">
                 {dayEvents.slice(0, 3).map((event, idx) => {
                   const clickable = canClickEvent(event);
+                  const draggable = canDragEvent(event);
                   return (
                     <div
                       key={idx}
+                      draggable={draggable}
+                      onDragStart={(e) => {
+                        if (!draggable) return;
+                        e.stopPropagation();
+                        const eventPayload = {
+                          id: event.id,
+                          type: event.type,
+                          name: event.name,
+                          date: event.date,
+                          start_date: event.start_date,
+                          due_date: event.due_date,
+                          end_date: event.end_date,
+                          estimated_end_date: event.estimated_end_date,
+                          time: event.time,
+                          duration: event.duration,
+                          project_id: event.project_id,
+                          phase_id: event.phase_id,
+                          ...event
+                        };
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("application/json", JSON.stringify(eventPayload));
+                        setDraggingEvent(event);
+                      }}
+                      onDragEnd={() => setDraggingEvent(null)}
                       onClick={(e) => {
                         e.stopPropagation();
                         if (clickable) onEventClick(event);
@@ -104,9 +160,12 @@ export default function MonthView({
                       className={cn(
                         "text-[10px] px-2 py-1 rounded text-white truncate transition-opacity",
                         getEventColor(event),
-                        clickable ? "cursor-pointer hover:opacity-80" : "cursor-default opacity-70"
+                        clickable && "cursor-pointer hover:opacity-80",
+                        draggable && "cursor-move",
+                        !clickable && !draggable && "cursor-default opacity-70",
+                        draggingEvent?.id === event.id && "opacity-50"
                       )}
-                      title={!clickable ? "No tienes permisos para editar" : undefined}
+                      title={!clickable && !draggable ? "No tienes permisos para editar" : undefined}
                     >
                       {event.name || event.title}
                     </div>
