@@ -86,7 +86,7 @@ export default function WeekView({ currentDate, events, onEventClick, onEventDro
           {/* Time grid */}
           <div className="relative">
             {hours.map(hour => (
-              <div key={hour} className="grid grid-cols-8 border-b">
+              <div key={hour} className={cn("grid border-b", singleDay ? "grid-cols-2" : "grid-cols-8")}>
                 <div className="p-2 border-r text-xs text-muted-foreground text-right pr-3">
                   {format(new Date().setHours(hour, 0), "HH:mm")}
                 </div>
