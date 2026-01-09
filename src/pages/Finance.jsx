@@ -337,7 +337,7 @@ export default function Finance() {
       </div>
 
       <div className="flex items-center gap-4 mb-6">
-        <Label className="text-sm font-medium text-slate-700">Vista:</Label>
+        <span className="text-sm font-medium text-slate-700">Vista:</span>
         <Select value={activeView} onValueChange={setActiveView}>
           <SelectTrigger className="w-64">
             <SelectValue />
