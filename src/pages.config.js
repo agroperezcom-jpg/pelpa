@@ -25,6 +25,7 @@ import Talonarios from './pages/Talonarios';
 import TesoreriaV2 from './pages/TesoreriaV2';
 import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
+import HistorialControlesStock from './pages/HistorialControlesStock';
 import __Layout from './Layout.jsx';
 
 
@@ -56,6 +57,7 @@ export const PAGES = {
     "TesoreriaV2": TesoreriaV2,
     "TiposArticulo": TiposArticulo,
     "Treasury": Treasury,
+    "HistorialControlesStock": HistorialControlesStock,
 }
 
 export const pagesConfig = {
