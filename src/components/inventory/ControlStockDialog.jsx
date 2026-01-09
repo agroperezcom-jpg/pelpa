@@ -582,11 +582,11 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
                                   ref={(el) => {
                                     if (el) inputsRef.current[product.id] = el;
                                   }}
-                                  type="number"
-                                  min="0"
+                                  type="text"
+                                  inputMode="numeric"
                                   value={conteo[product.id] ?? ""}
                                   onChange={(e) => {
-                                    const val = e.target.value;
+                                    const val = e.target.value.trim();
                                     if (val === "") {
                                       setConteo(prev => {
                                         const newConteo = { ...prev };
@@ -616,8 +616,9 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
                                       }
                                     }
                                   }}
-                                  className="w-20 text-center"
+                                  className="w-20 text-center border border-slate-300 rounded px-2 py-1"
                                   placeholder="0"
+                                  autoComplete="off"
                                 />
                                 <Button
                                   size="icon"
