@@ -380,7 +380,7 @@ export default function Inventory() {
                   <Input
                     placeholder="Buscar producto o escanear código..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => handleSearch(e.target.value)}
                     className="pl-10"
                   />
                 </div>
