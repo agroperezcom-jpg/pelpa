@@ -389,8 +389,13 @@ export default function Calendar() {
   };
 
   const handleEventDrop = (event, newDate) => {
-    if (!event || !event.id) return;
-    
+    if (!event || !event.id) {
+      console.error("Event drop failed: missing event or id", event);
+      return;
+    }
+
+    console.log("Dropping event:", event.id, "to:", newDate);
+
     const dateStr = newDate.toISOString().split('T')[0];
     const timeStr = `${String(newDate.getHours()).padStart(2, '0')}:${String(newDate.getMinutes()).padStart(2, '0')}`;
 
@@ -400,22 +405,52 @@ export default function Calendar() {
         data: { date: dateStr, time: timeStr }
       });
     } else if (event.type === "task") {
+      // Calcular la duración si existe due_date
+      const originalStart = new Date(event.start_date);
+      const originalEnd = event.due_date ? new Date(event.due_date) : null;
+      const duration = originalEnd ? originalEnd - originalStart : null;
+
+      const updateData = { start_date: newDate.toISOString() };
+      if (duration && originalEnd) {
+        updateData.due_date = new Date(newDate.getTime() + duration).toISOString();
+      }
+
       updateTaskMutation.mutate({
         id: event.id,
         type: "task",
-        data: { start_date: newDate.toISOString() }
+        data: updateData
       });
     } else if (event.type === "phase") {
+      // Calcular la duración si existe end_date
+      const originalStart = new Date(event.start_date);
+      const originalEnd = event.end_date ? new Date(event.end_date) : null;
+      const duration = originalEnd ? originalEnd - originalStart : null;
+
+      const updateData = { start_date: newDate.toISOString() };
+      if (duration && originalEnd) {
+        updateData.end_date = new Date(newDate.getTime() + duration).toISOString();
+      }
+
       updateTaskMutation.mutate({
         id: event.id,
         type: "phase",
-        data: { start_date: newDate.toISOString() }
+        data: updateData
       });
     } else if (event.type === "project") {
+      // Calcular la duración si existe estimated_end_date
+      const originalStart = new Date(event.start_date);
+      const originalEnd = event.estimated_end_date ? new Date(event.estimated_end_date) : null;
+      const duration = originalEnd ? originalEnd - originalStart : null;
+
+      const updateData = { start_date: newDate.toISOString() };
+      if (duration && originalEnd) {
+        updateData.estimated_end_date = new Date(newDate.getTime() + duration).toISOString();
+      }
+
       updateTaskMutation.mutate({
         id: event.id,
         type: "project",
-        data: { start_date: newDate.toISOString() }
+        data: updateData
       });
     } else if (event.type === "milestone") {
       updateTaskMutation.mutate({
@@ -424,10 +459,20 @@ export default function Calendar() {
         data: { date: dateStr }
       });
     } else if (event.type === "campaign") {
+      // Calcular la duración si existe end_date
+      const originalStart = new Date(event.start_date);
+      const originalEnd = event.end_date ? new Date(event.end_date) : null;
+      const duration = originalEnd ? originalEnd - originalStart : null;
+
+      const updateData = { start_date: newDate.toISOString() };
+      if (duration && originalEnd) {
+        updateData.end_date = new Date(newDate.getTime() + duration).toISOString();
+      }
+
       updateTaskMutation.mutate({
         id: event.id,
         type: "campaign",
-        data: { start_date: newDate.toISOString() }
+        data: updateData
       });
     }
   };
