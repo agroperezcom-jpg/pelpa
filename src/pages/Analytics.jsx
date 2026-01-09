@@ -1504,9 +1504,11 @@ export default function Analytics() {
               </TableBody>
             </Table>
           </Card>
+          </>
         )}
 
         {activeView === "tendencias" && (
+          <>
           <Card className="border-0 shadow-sm">
             <CardHeader>
               <CardTitle className="text-base">Evolución de Ventas y Margen</CardTitle>
@@ -2136,9 +2138,11 @@ export default function Analytics() {
               </div>
             </CardContent>
           </Card>
+          </>
         )}
 
         {activeView === "segmentacion" && (
+          <>
           <div className="grid lg:grid-cols-2 gap-4">
             <Card className="border-0 shadow-sm">
               <CardHeader>
@@ -2747,6 +2751,7 @@ export default function Analytics() {
               </div>
             </CardContent>
           </Card>
+          </>
         )}
       </div>
     </div>
