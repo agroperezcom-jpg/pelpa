@@ -565,8 +565,8 @@ export default function ProjectBudgetingTab({ projectId, projectStatus }) {
 
           <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
             <div className="flex-1 overflow-y-auto px-1 space-y-4">
-            <div className="space-y-2">
-              <Label>Nombre de la Versión *</Label>
+              <div className="space-y-2">
+                <Label>Nombre de la Versión *</Label>
               <Input
                 value={formData.version_name}
                 onChange={(e) => setFormData({ ...formData, version_name: e.target.value })}
