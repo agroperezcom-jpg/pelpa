@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import {
   Receipt,
   TrendingUp,
@@ -48,7 +48,7 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 
 export default function IngresosBrutos() {
-  const [activeTab, setActiveTab] = useState("periodos");
+  const [activeView, setActiveView] = useState("periodos");
   const [selectedPeriodo, setSelectedPeriodo] = useState(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
@@ -403,14 +403,22 @@ export default function IngresosBrutos() {
         </Card>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="bg-white border shadow-sm">
-          <TabsTrigger value="periodos">Períodos IIBB</TabsTrigger>
-          <TabsTrigger value="retenciones">Retenciones</TabsTrigger>
-          <TabsTrigger value="proyecciones">Proyecciones</TabsTrigger>
-        </TabsList>
+      <div className="flex items-center gap-4 mb-6">
+        <Label className="text-sm font-medium text-slate-700">Vista:</Label>
+        <Select value={activeView} onValueChange={setActiveView}>
+          <SelectTrigger className="w-64">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="periodos">Períodos IIBB</SelectItem>
+            <SelectItem value="retenciones">Retenciones</SelectItem>
+            <SelectItem value="proyecciones">Proyecciones</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-        <TabsContent value="periodos" className="space-y-4">
+      <div className="space-y-4">
+        {activeView === "periodos" && (
           <div className="flex justify-end">
             <Button onClick={() => setIsCreatePeriodoDialogOpen(true)} className="bg-purple-600 hover:bg-purple-700">
               <Plus className="h-4 w-4 mr-2" />
@@ -493,9 +501,9 @@ export default function IngresosBrutos() {
               </TableBody>
             </Table>
           </Card>
-        </TabsContent>
+        )}
 
-        <TabsContent value="retenciones" className="space-y-4">
+        {activeView === "retenciones" && (
           <div className="flex justify-end">
             <Button onClick={() => setIsRetencionDialogOpen(true)} className="bg-green-600 hover:bg-green-700">
               <Plus className="h-4 w-4 mr-2" />
@@ -540,9 +548,9 @@ export default function IngresosBrutos() {
               </TableBody>
             </Table>
           </Card>
-        </TabsContent>
+        )}
 
-        <TabsContent value="proyecciones" className="space-y-4">
+        {activeView === "proyecciones" && (
           <div className="flex justify-end">
             <Button onClick={() => setIsProyeccionDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
               <Plus className="h-4 w-4 mr-2" />
@@ -599,8 +607,8 @@ export default function IngresosBrutos() {
               </TableBody>
             </Table>
           </Card>
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
 
       {/* Dialog Crear Período */}
       <Dialog open={isCreatePeriodoDialogOpen} onOpenChange={setIsCreatePeriodoDialogOpen}>

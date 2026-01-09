@@ -29,6 +29,7 @@ export default function Analytics() {
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [filtroCategoria, setFiltroCategoria] = useState("todas");
   const [filtroEmpleado, setFiltroEmpleado] = useState("todos");
+  const [activeView, setActiveView] = useState("dashboard");
 
   // Cargar todos los datos necesarios
   const { data: sales = [] } = useQuery({
@@ -583,24 +584,31 @@ export default function Analytics() {
         </div>
       </div>
 
-      <Tabs defaultValue="dashboard" className="space-y-4 w-full">
-        <TabsList className="bg-white border shadow-sm flex-wrap h-auto overflow-x-auto w-full justify-start sm:justify-start">
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="comerciales">KPI Comerciales</TabsTrigger>
-          <TabsTrigger value="stock">KPI Stock</TabsTrigger>
-          <TabsTrigger value="financieros">KPI Financieros</TabsTrigger>
-          <TabsTrigger value="clientes">KPI Clientes</TabsTrigger>
-          <TabsTrigger value="operativos">KPI Operativos</TabsTrigger>
-          <TabsTrigger value="rankings">Rankings</TabsTrigger>
-          <TabsTrigger value="tendencias">Tendencias</TabsTrigger>
-          <TabsTrigger value="comparacion">Comparación</TabsTrigger>
-          <TabsTrigger value="pronostico">Pronóstico</TabsTrigger>
-          <TabsTrigger value="segmentacion">Segmentación</TabsTrigger>
-          <TabsTrigger value="salud">Salud del Negocio</TabsTrigger>
-        </TabsList>
+      <div className="flex items-center gap-4 mb-6">
+        <Label className="text-sm font-medium text-slate-700">Vista:</Label>
+        <Select value={activeView} onValueChange={setActiveView}>
+          <SelectTrigger className="w-80">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="dashboard">Dashboard Ejecutivo</SelectItem>
+            <SelectItem value="comerciales">KPI Comerciales</SelectItem>
+            <SelectItem value="stock">KPI Stock</SelectItem>
+            <SelectItem value="financieros">KPI Financieros</SelectItem>
+            <SelectItem value="clientes">KPI Clientes</SelectItem>
+            <SelectItem value="operativos">KPI Operativos</SelectItem>
+            <SelectItem value="rankings">Rankings</SelectItem>
+            <SelectItem value="tendencias">Tendencias</SelectItem>
+            <SelectItem value="comparacion">Comparación</SelectItem>
+            <SelectItem value="pronostico">Pronóstico</SelectItem>
+            <SelectItem value="segmentacion">Segmentación</SelectItem>
+            <SelectItem value="salud">Salud del Negocio</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-        {/* DASHBOARD EJECUTIVO */}
-        <TabsContent value="dashboard" className="space-y-4">
+      <div className="space-y-4 w-full">
+        {activeView === "dashboard" && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
             <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white">
               <CardContent className="p-6">
@@ -864,10 +872,9 @@ export default function Analytics() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
+        )}
 
-        {/* KPI COMERCIALES */}
-         <TabsContent value="comerciales" className="space-y-4 w-full">
+        {activeView === "comerciales" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 w-full">
             <KPICard
               titulo="Ticket Promedio"
@@ -973,10 +980,9 @@ export default function Analytics() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
-        {/* KPI STOCK */}
-        <TabsContent value="stock" className="space-y-4">
+        {activeView === "stock" && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <KPICard
               titulo="Rotación de Stock"
@@ -1024,10 +1030,9 @@ export default function Analytics() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
+        )}
 
-        {/* KPI FINANCIEROS */}
-        <TabsContent value="financieros" className="space-y-4">
+        {activeView === "financieros" && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <KPICard
               titulo="Margen Neto"
@@ -1076,10 +1081,9 @@ export default function Analytics() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
+        )}
 
-        {/* KPI CLIENTES */}
-        <TabsContent value="clientes" className="space-y-4">
+        {activeView === "clientes" && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <KPICard
               titulo="Clientes Activos"
@@ -1161,7 +1165,7 @@ export default function Analytics() {
             </Table>
           </Card>
 
-          <div className="grid lg:grid-cols-3 gap-4">
+          <div className="grid lg:grid-cols-3 gap-4 w-full">
             <Card className="border-0 shadow-sm">
               <CardContent className="p-6">
                 <p className="text-sm font-medium text-slate-500 mb-2">CLV Promedio Total</p>
@@ -1206,10 +1210,9 @@ export default function Analytics() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
+        )}
 
-        {/* KPI OPERATIVOS */}
-        <TabsContent value="operativos" className="space-y-4">
+        {activeView === "operativos" && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <KPICard
               titulo="Ventas / Empleado"
@@ -1263,10 +1266,9 @@ export default function Analytics() {
               </TableBody>
             </Table>
           </Card>
-        </TabsContent>
+        )}
 
-        {/* RANKINGS */}
-        <TabsContent value="rankings" className="space-y-4">
+        {activeView === "rankings" && (
           <Card className="border-0 shadow-sm overflow-hidden">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
@@ -1712,10 +1714,9 @@ export default function Analytics() {
               </TableBody>
             </Table>
           </Card>
-        </TabsContent>
+        )}
 
-        {/* COMPARACIÓN PERÍODOS */}
-        <TabsContent value="comparacion" className="space-y-4">
+        {activeView === "comparacion" && (
           <Card className="border-0 shadow-sm">
             <CardHeader>
               <CardTitle className="text-base">Comparación de Períodos</CardTitle>
@@ -1925,10 +1926,9 @@ export default function Analytics() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
-        {/* PRONÓSTICO Y ESTACIONALIDAD */}
-        <TabsContent value="pronostico" className="space-y-4">
+        {activeView === "pronostico" && (
           <Card className="border-0 shadow-sm">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
@@ -2520,10 +2520,9 @@ export default function Analytics() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
-        {/* SALUD DEL NEGOCIO */}
-        <TabsContent value="salud" className="space-y-4">
+        {activeView === "salud" && (
           <Card className="border-0 shadow-lg overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
               <CardTitle className="text-lg flex items-center gap-2">
@@ -2733,8 +2732,8 @@ export default function Analytics() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
     </div>
   );
 }

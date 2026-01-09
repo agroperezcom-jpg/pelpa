@@ -6,7 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import {
   Receipt,
   TrendingUp,
@@ -28,7 +34,7 @@ import { createPageUrl } from "../utils";
 
 export default function TableroFiscal() {
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState(format(new Date(), 'yyyy-MM'));
-  const [activeTab, setActiveTab] = useState("resumen");
+  const [activeView, setActiveView] = useState("resumen");
 
   const { data: periodosIVA = [] } = useQuery({
     queryKey: ['periodosIVA'],
@@ -230,16 +236,24 @@ export default function TableroFiscal() {
         </Card>
       )}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="bg-white border shadow-sm">
-          <TabsTrigger value="resumen">Resumen Mensual</TabsTrigger>
-          <TabsTrigger value="iva">Detalle IVA</TabsTrigger>
-          <TabsTrigger value="iibb">Detalle IIBB</TabsTrigger>
-          <TabsTrigger value="proyecciones">Proyecciones</TabsTrigger>
-          <TabsTrigger value="historico">Histórico</TabsTrigger>
-        </TabsList>
+      <div className="flex items-center gap-4 mb-6">
+        <Label className="text-sm font-medium text-slate-700">Vista:</Label>
+        <Select value={activeView} onValueChange={setActiveView}>
+          <SelectTrigger className="w-64">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="resumen">Resumen Mensual</SelectItem>
+            <SelectItem value="iva">Detalle IVA</SelectItem>
+            <SelectItem value="iibb">Detalle IIBB</SelectItem>
+            <SelectItem value="proyecciones">Proyecciones</SelectItem>
+            <SelectItem value="historico">Histórico</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-        <TabsContent value="resumen" className="space-y-6">
+      <div className="space-y-4">
+        {activeView === "resumen" && (
           <div className="grid lg:grid-cols-2 gap-6">
             {/* IVA */}
             <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-white">
@@ -411,9 +425,9 @@ export default function TableroFiscal() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
-        <TabsContent value="iva" className="space-y-4">
+        {activeView === "iva" && (
           <div className="grid lg:grid-cols-3 gap-4">
             <Card className="border-0 shadow-sm">
               <CardContent className="p-6">
@@ -456,9 +470,9 @@ export default function TableroFiscal() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
-        <TabsContent value="iibb" className="space-y-4">
+        {activeView === "iibb" && (
           <div className="grid lg:grid-cols-3 gap-4">
             <Card className="border-0 shadow-sm">
               <CardContent className="p-6">
@@ -519,9 +533,9 @@ export default function TableroFiscal() {
               </CardContent>
             </Card>
           )}
-        </TabsContent>
+        )}
 
-        <TabsContent value="proyecciones" className="space-y-4">
+        {activeView === "proyecciones" && (
           {proyeccionMes && (
             <Card className="border-2 border-blue-200 bg-blue-50">
               <CardContent className="p-6">
@@ -583,9 +597,9 @@ export default function TableroFiscal() {
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </Link>
-        </TabsContent>
+        )}
 
-        <TabsContent value="historico" className="space-y-4">
+        {activeView === "historico" && (
           <Card className="border-0 shadow-sm">
             <CardContent className="p-6">
               <h4 className="font-semibold mb-4">Evolución Últimos 6 Meses</h4>
@@ -617,8 +631,8 @@ export default function TableroFiscal() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
     </div>
   );
 }

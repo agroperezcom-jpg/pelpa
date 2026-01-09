@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
@@ -46,9 +46,17 @@ import {
   PieChart as PieChartIcon,
   Minus
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 
 export default function Finance() {
   const [monthFilter, setMonthFilter] = useState(format(new Date(), 'yyyy-MM'));
+  const [activeView, setActiveView] = useState("statement");
 
   const { data: sales = [] } = useQuery({
     queryKey: ['sales'],
@@ -328,16 +336,24 @@ export default function Finance() {
         </Card>
       </div>
 
-      <Tabs defaultValue="statement" className="space-y-4">
-        <TabsList className="bg-white border shadow-sm">
-          <TabsTrigger value="statement">Estado de Resultados</TabsTrigger>
-          <TabsTrigger value="trends">Tendencias</TabsTrigger>
-          <TabsTrigger value="margins">Márgenes</TabsTrigger>
-          <TabsTrigger value="iva">Libro IVA Ventas</TabsTrigger>
-          <TabsTrigger value="posicion-iva">Posición IVA</TabsTrigger>
-        </TabsList>
+      <div className="flex items-center gap-4 mb-6">
+        <Label className="text-sm font-medium text-slate-700">Vista:</Label>
+        <Select value={activeView} onValueChange={setActiveView}>
+          <SelectTrigger className="w-64">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="statement">Estado de Resultados</SelectItem>
+            <SelectItem value="trends">Tendencias</SelectItem>
+            <SelectItem value="margins">Márgenes</SelectItem>
+            <SelectItem value="iva">Libro IVA Ventas</SelectItem>
+            <SelectItem value="posicion-iva">Posición IVA</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-        <TabsContent value="statement" className="space-y-4">
+      <div className="space-y-4">
+        {activeView === "statement" && (
           {/* Income Statement */}
           <Card className="border-0 shadow-sm">
             <CardHeader className="border-b">
@@ -422,9 +438,9 @@ export default function Finance() {
               </Table>
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
-        <TabsContent value="trends">
+        {activeView === "trends" && (
           {/* Revenue & Profit Trend */}
           <Card className="border-0 shadow-sm">
             <CardHeader>
@@ -474,9 +490,9 @@ export default function Finance() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
-        <TabsContent value="margins">
+        {activeView === "margins" && (
           <Card className="border-0 shadow-sm">
             <CardHeader>
               <CardTitle className="text-base">Evolución de Márgenes - 12 Meses</CardTitle>
@@ -556,9 +572,9 @@ export default function Finance() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
-        <TabsContent value="iva" className="space-y-4">
+        {activeView === "iva" && (
           <Card className="border-0 shadow-sm">
             <CardHeader className="border-b">
               <CardTitle className="text-base flex items-center justify-between">
@@ -669,9 +685,9 @@ export default function Finance() {
               </Table>
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
-        <TabsContent value="posicion-iva" className="space-y-4">
+        {activeView === "posicion-iva" && (
           {/* Resumen Posición IVA */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="border-0 shadow-sm">
@@ -864,9 +880,9 @@ export default function Finance() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
-        <TabsContent value="gestion" className="space-y-4">
+        {activeView === "gestion" && (
           <Card className="border-0 shadow-sm">
             <CardContent className="p-8">
               <div className="max-w-2xl mx-auto text-center space-y-6">
@@ -898,8 +914,8 @@ export default function Finance() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-        </Tabs>
-        </div>
-        );
-        }
+        )}
+      </div>
+    </div>
+  );
+}

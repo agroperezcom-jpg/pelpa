@@ -61,7 +61,7 @@ export const PAGES = {
 }
 
 export const pagesConfig = {
-    mainPage: "Dashboard",
+    mainPage: "Analytics",
     Pages: PAGES,
     Layout: __Layout,
 };
