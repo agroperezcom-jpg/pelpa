@@ -203,6 +203,7 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
       const product = products.find(p => p.barcode === code);
       
       if (product) {
+        playBeep();
         // Incrementar cantidad
         setConteo(prev => ({
           ...prev,
@@ -213,9 +214,6 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
           name: product.name,
           cantidad: (conteo[product.id] || 0) + 1
         });
-        
-        // Sonido de éxito (opcional)
-        // new Audio('/beep.mp3').play();
       } else {
         alert(`⚠️ Código de barras no encontrado: ${code}`);
       }
