@@ -388,6 +388,48 @@ export default function Calendar() {
     });
   };
 
+  const handleEventDrop = (event, newDate) => {
+    const dateStr = newDate.toISOString().split('T')[0];
+    const timeStr = `${String(newDate.getHours()).padStart(2, '0')}:${String(newDate.getMinutes()).padStart(2, '0')}`;
+
+    if (event.type === "freeTask") {
+      updateFreeTaskMutation.mutate({
+        id: event.id,
+        data: { date: dateStr, time: timeStr }
+      });
+    } else if (event.type === "task") {
+      updateTaskMutation.mutate({
+        id: event.id,
+        type: "task",
+        data: { start_date: newDate.toISOString() }
+      });
+    } else if (event.type === "phase") {
+      updateTaskMutation.mutate({
+        id: event.id,
+        type: "phase",
+        data: { start_date: newDate.toISOString() }
+      });
+    } else if (event.type === "project") {
+      updateTaskMutation.mutate({
+        id: event.id,
+        type: "project",
+        data: { start_date: newDate.toISOString() }
+      });
+    } else if (event.type === "milestone") {
+      updateTaskMutation.mutate({
+        id: event.id,
+        type: "milestone",
+        data: { date: dateStr }
+      });
+    } else if (event.type === "campaign") {
+      updateTaskMutation.mutate({
+        id: event.id,
+        type: "campaign",
+        data: { start_date: newDate.toISOString() }
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <CalendarHeader
