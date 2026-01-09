@@ -609,6 +609,7 @@ export default function Analytics() {
 
       <div className="space-y-4 w-full">
         {activeView === "dashboard" && (
+          <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
             <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white">
               <CardContent className="p-6">
@@ -872,9 +873,11 @@ export default function Analytics() {
               </CardContent>
             </Card>
           </div>
+          </>
         )}
 
         {activeView === "comerciales" && (
+          <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 w-full">
             <KPICard
               titulo="Ticket Promedio"
@@ -980,9 +983,11 @@ export default function Analytics() {
               </div>
             </CardContent>
           </Card>
+          </>
         )}
 
         {activeView === "stock" && (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <KPICard
               titulo="Rotación de Stock"
@@ -1030,9 +1035,11 @@ export default function Analytics() {
               </CardContent>
             </Card>
           </div>
+          </>
         )}
 
         {activeView === "financieros" && (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <KPICard
               titulo="Margen Neto"
@@ -1081,9 +1088,11 @@ export default function Analytics() {
               </CardContent>
             </Card>
           </div>
+          </>
         )}
 
         {activeView === "clientes" && (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <KPICard
               titulo="Clientes Activos"
@@ -1210,9 +1219,11 @@ export default function Analytics() {
               </CardContent>
             </Card>
           </div>
+          </>
         )}
 
         {activeView === "operativos" && (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <KPICard
               titulo="Ventas / Empleado"
@@ -1266,9 +1277,11 @@ export default function Analytics() {
               </TableBody>
             </Table>
           </Card>
+          </>
         )}
 
         {activeView === "rankings" && (
+          <>
           <Card className="border-0 shadow-sm overflow-hidden">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
@@ -1713,9 +1726,11 @@ export default function Analytics() {
               </TableBody>
             </Table>
           </Card>
+          </>
         )}
 
         {activeView === "comparacion" && (
+          <>
           <Card className="border-0 shadow-sm">
             <CardHeader>
               <CardTitle className="text-base">Comparación de Períodos</CardTitle>
@@ -1925,9 +1940,11 @@ export default function Analytics() {
               </div>
             </CardContent>
           </Card>
+          </>
         )}
 
         {activeView === "pronostico" && (
+          <>
           <Card className="border-0 shadow-sm">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">

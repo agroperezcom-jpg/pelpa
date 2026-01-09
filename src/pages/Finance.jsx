@@ -354,7 +354,6 @@ export default function Finance() {
 
       <div className="space-y-4">
         {activeView === "statement" && (
-          {/* Income Statement */}
           <Card className="border-0 shadow-sm">
             <CardHeader className="border-b">
               <CardTitle className="text-base">

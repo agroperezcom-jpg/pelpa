@@ -254,6 +254,7 @@ export default function TableroFiscal() {
 
       <div className="space-y-4">
         {activeView === "resumen" && (
+          <>
           <div className="grid lg:grid-cols-2 gap-6">
             {/* IVA */}
             <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-white">
@@ -425,9 +426,11 @@ export default function TableroFiscal() {
               </div>
             </CardContent>
           </Card>
+          </>
         )}
 
         {activeView === "iva" && (
+          <>
           <div className="grid lg:grid-cols-3 gap-4">
             <Card className="border-0 shadow-sm">
               <CardContent className="p-6">
@@ -470,9 +473,11 @@ export default function TableroFiscal() {
               </div>
             </CardContent>
           </Card>
+          </>
         )}
 
         {activeView === "iibb" && (
+          <>
           <div className="grid lg:grid-cols-3 gap-4">
             <Card className="border-0 shadow-sm">
               <CardContent className="p-6">
@@ -533,6 +538,7 @@ export default function TableroFiscal() {
               </CardContent>
             </Card>
           )}
+          </>
         )}
 
         {activeView === "proyecciones" && (

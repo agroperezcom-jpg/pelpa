@@ -419,6 +419,7 @@ export default function IngresosBrutos() {
 
       <div className="space-y-4">
         {activeView === "periodos" && (
+          <>
           <div className="flex justify-end">
             <Button onClick={() => setIsCreatePeriodoDialogOpen(true)} className="bg-purple-600 hover:bg-purple-700">
               <Plus className="h-4 w-4 mr-2" />
@@ -501,9 +502,11 @@ export default function IngresosBrutos() {
               </TableBody>
             </Table>
           </Card>
+          </>
         )}
 
         {activeView === "retenciones" && (
+          <>
           <div className="flex justify-end">
             <Button onClick={() => setIsRetencionDialogOpen(true)} className="bg-green-600 hover:bg-green-700">
               <Plus className="h-4 w-4 mr-2" />
@@ -548,9 +551,11 @@ export default function IngresosBrutos() {
               </TableBody>
             </Table>
           </Card>
+          </>
         )}
 
         {activeView === "proyecciones" && (
+          <>
           <div className="flex justify-end">
             <Button onClick={() => setIsProyeccionDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
               <Plus className="h-4 w-4 mr-2" />
@@ -607,6 +612,7 @@ export default function IngresosBrutos() {
               </TableBody>
             </Table>
           </Card>
+          </>
         )}
       </div>
 
