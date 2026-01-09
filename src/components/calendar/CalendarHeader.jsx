@@ -11,9 +11,7 @@ export default function CalendarHeader({
   viewMode, 
   setViewMode,
   onCreateEvent,
-  filteredEventsCount,
-  customDaysCount,
-  onCustomRangeClick
+  filteredEventsCount
 }) {
   const handlePrevious = () => {
     if (viewMode === "month") {
@@ -22,8 +20,6 @@ export default function CalendarHeader({
       setCurrentDate(subWeeks(currentDate, 1));
     } else if (viewMode === "day") {
       setCurrentDate(subDays(currentDate, 1));
-    } else if (viewMode === "custom") {
-      setCurrentDate(subDays(currentDate, customDaysCount || 5));
     }
   };
 
@@ -34,8 +30,6 @@ export default function CalendarHeader({
       setCurrentDate(addWeeks(currentDate, 1));
     } else if (viewMode === "day") {
       setCurrentDate(addDays(currentDate, 1));
-    } else if (viewMode === "custom") {
-      setCurrentDate(addDays(currentDate, customDaysCount || 5));
     }
   };
 
@@ -50,9 +44,6 @@ export default function CalendarHeader({
       return `Semana del ${format(currentDate, "d MMM", { locale: es })}`;
     } else if (viewMode === "day") {
       return format(currentDate, "d 'de' MMMM yyyy", { locale: es });
-    } else if (viewMode === "custom") {
-      const endDate = addDays(currentDate, (customDaysCount || 5) - 1);
-      return `${format(currentDate, "d MMM", { locale: es })} - ${format(endDate, "d MMM yyyy", { locale: es })}`;
     }
     return format(currentDate, "MMMM yyyy", { locale: es });
   };
@@ -96,22 +87,6 @@ export default function CalendarHeader({
             className="text-xs"
           >
             Mes
-          </Button>
-          <Button
-            variant={viewMode === "custom" ? "default" : "ghost"}
-            size="sm"
-            onClick={onCustomRangeClick}
-            className="text-xs"
-          >
-            {viewMode === "custom" ? `${customDaysCount}d` : "Rango"}
-          </Button>
-          <Button
-            variant={viewMode === "timeline" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setViewMode("timeline")}
-            className="text-xs"
-          >
-            Timeline
           </Button>
         </div>
 
