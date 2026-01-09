@@ -552,15 +552,19 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
                                 <Input
                                   type="number"
                                   min="0"
-                                  value={conteo[product.id] ?? ""}
+                                  value={conteo[product.id] !== undefined ? conteo[product.id] : ""}
                                   onChange={(e) => {
-                                    const val = e.target.value;
+                                    const val = e.target.value.trim();
                                     if (val === "") {
-                                      updateConteo(product.id, 0);
+                                      setConteo(prev => {
+                                        const newConteo = { ...prev };
+                                        delete newConteo[product.id];
+                                        return newConteo;
+                                      });
                                     } else {
                                       const num = parseInt(val);
-                                      if (!isNaN(num)) {
-                                        updateConteo(product.id, num);
+                                      if (!isNaN(num) && num >= 0) {
+                                        setConteo(prev => ({ ...prev, [product.id]: num }));
                                       }
                                     }
                                   }}
@@ -570,12 +574,13 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
                                       const nextRow = filteredProducts[index + 1];
                                       if (nextRow) {
                                         const nextInput = e.target.closest('tbody').querySelectorAll('input[type="number"]')[index + 1];
-                                        nextInput?.focus();
-                                        nextInput?.select();
+                                        setTimeout(() => {
+                                          nextInput?.focus();
+                                          nextInput?.select();
+                                        }, 0);
                                       }
                                     }
                                   }}
-                                  onFocus={(e) => e.target.select()}
                                   className="w-20 text-center"
                                   placeholder="0"
                                 />
