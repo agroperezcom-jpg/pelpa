@@ -67,6 +67,7 @@ export default function Presupuestos() {
     descuento: 0
   });
   const [productSearch, setProductSearch] = useState("");
+  const [clientSearch, setClientSearch] = useState("");
   const [activeTab, setActiveTab] = useState("products");
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const [isCobroDialogOpen, setIsCobroDialogOpen] = useState(false);
@@ -661,6 +662,11 @@ export default function Presupuestos() {
     s.name?.toLowerCase().includes(productSearch.toLowerCase())
   );
 
+  const filteredClients = clients.filter(c =>
+    c.name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+    c.email?.toLowerCase().includes(clientSearch.toLowerCase())
+  );
+
   const filteredPresupuestos = presupuestos.filter(p => {
     const matchSearch = p.cliente_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.numero_presupuesto?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -886,10 +892,23 @@ export default function Presupuestos() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder="Buscar producto o servicio..."
+                  placeholder="Buscar o escanear código..."
                   value={productSearch}
-                  onChange={(e) => setProductSearch(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setProductSearch(value);
+                    
+                    // Auto-agregar si coincide exactamente con un código de barras
+                    if (value.length >= 8) {
+                      const productByBarcode = products.find(p => p.barcode === value);
+                      if (productByBarcode && productByBarcode.stock > 0) {
+                        addToCart(productByBarcode, 'product');
+                        setProductSearch("");
+                      }
+                    }
+                  }}
                   className="pl-10"
+                  autoFocus
                 />
               </div>
 
@@ -957,14 +976,29 @@ export default function Presupuestos() {
                         ...currentPresupuesto, 
                         cliente_id: v
                       });
+                      setClientSearch("");
                     }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar cliente" />
                     </SelectTrigger>
                     <SelectContent>
-                      {clients.map(c => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      <div className="sticky top-0 bg-white p-2 border-b">
+                        <div className="relative">
+                          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-slate-400" />
+                          <Input
+                            placeholder="Buscar cliente..."
+                            value={clientSearch}
+                            onChange={(e) => setClientSearch(e.target.value)}
+                            className="pl-7 h-8 text-xs"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
+                      {filteredClients.map(c => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name} {c.email && <span className="text-xs text-slate-400">({c.email})</span>}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
