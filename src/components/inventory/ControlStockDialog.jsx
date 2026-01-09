@@ -584,20 +584,18 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
                             </button>
                             <input
                               ref={(el) => { if (el) inputsRef.current[product.id] = el; }}
-                              type="text"
-                              inputMode="numeric"
+                              type="number"
+                              min="0"
                               value={conteo[product.id] ?? ""}
                               onChange={(e) => {
                                 const val = e.target.value;
-                                if (val === "") {
+                                if (val === "" || val === "-") {
                                   const newConteo = { ...conteo };
                                   delete newConteo[product.id];
                                   setConteo(newConteo);
                                 } else {
-                                  const num = parseInt(val, 10);
-                                  if (!isNaN(num) && num >= 0) {
-                                    setConteo({ ...conteo, [product.id]: num });
-                                  }
+                                  const num = Math.max(0, parseInt(val, 10));
+                                  setConteo({ ...conteo, [product.id]: num });
                                 }
                               }}
                               onKeyDown={(e) => {
