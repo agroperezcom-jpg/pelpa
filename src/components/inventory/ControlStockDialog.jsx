@@ -48,6 +48,7 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
   const [lastScanned, setLastScanned] = useState(null);
   const [user, setUser] = useState(null);
   const barcodeInputRef = useRef(null);
+  const inputsRef = useRef({});
   const queryClient = useQueryClient();
 
   useEffect(() => {
