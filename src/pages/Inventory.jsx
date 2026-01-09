@@ -287,8 +287,12 @@ export default function Inventory() {
             <Trash2 className="h-4 w-4 mr-2" />
             Eliminar
           </Button>
-        </div>
-      </div>
+          <Button onClick={() => setIsControlStockDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto whitespace-nowrap">
+            <ClipboardList className="h-4 w-4 mr-2" />
+            Iniciar Control de Stock
+          </Button>
+          </div>
+          </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
