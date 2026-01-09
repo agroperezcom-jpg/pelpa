@@ -281,16 +281,20 @@ export default function Layout({ children, currentPageName }) {
         />
       )}
 
-      {/* Sidebar Toggle Button - Flecha flotante */}
-      {!sidebarOpen && (
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="fixed left-6 top-20 z-45 p-3 rounded-full bg-card border border-border/40 shadow-lg hover:shadow-xl hover:bg-secondary transition-all duration-200 lg:hidden"
-          title="Abrir menú"
-        >
-          <ChevronRight className="h-5 w-5 text-muted-foreground" />
-        </button>
-      )}
+      {/* Toggle Sidebar Button */}
+      <button
+        onClick={() => setSidebarPinned(!sidebarPinned)}
+        className={cn(
+          "fixed top-20 z-40 p-2 rounded-r-lg bg-card border border-l-0 border-border/40 hover:bg-secondary transition-all duration-200",
+          sidebarPinned ? "left-64" : "left-0"
+        )}
+        title={sidebarPinned ? "Esconder" : "Mostrar"}
+      >
+        <ChevronRight className={cn(
+          "h-5 w-5 text-muted-foreground transition-transform",
+          sidebarPinned ? "rotate-180" : ""
+        )} />
+      </button>
 
       {/* Sidebar */}
       <aside className={cn(
