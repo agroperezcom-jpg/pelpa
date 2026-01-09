@@ -237,16 +237,10 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
     }));
   };
 
-  const handleGuardarParcial = async () => {
-    // Guardar progreso parcial sin finalizar
-    for (const product of products) {
-      const cantidad = conteo[product.id];
-      if (cantidad === undefined) continue; // Solo guardar productos contados
-      
+  const saveDetalles = async (detallesData) => {
+    for (const { product, cantidad } of detallesData) {
       const diferencia = cantidad - (product.stock || 0);
       const valorDif = diferencia * (product.costo_unitario || 0);
-
-      // Verificar si ya existe detalle
       const detalleExistente = detallesEnCurso.find(d => d.product_id === product.id);
       
       if (detalleExistente) {
@@ -270,7 +264,14 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
         });
       }
     }
+  };
+
+  const handleGuardarParcial = async () => {
+    const detallesAGuardar = products
+      .filter(p => conteo[p.id] !== undefined)
+      .map(p => ({ product: p, cantidad: conteo[p.id] }));
     
+    await saveDetalles(detallesAGuardar);
     queryClient.invalidateQueries({ queryKey: ['controlStock'] });
     handleClose();
   };
