@@ -315,13 +315,26 @@ export default function Layout({ children, currentPageName }) {
                 {nombreEmpresa}
               </span>
             </div>
-            <button 
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden p-1.5 rounded-lg hover:bg-secondary transition-colors"
-            >
-              <X className="h-4 w-4 text-muted-foreground" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setSidebarPinned(!sidebarPinned)}
+                className="hidden sm:flex p-1.5 rounded-lg hover:bg-secondary transition-colors"
+                title={sidebarPinned ? "Desfijar" : "Fijar"}
+              >
+                {sidebarPinned ? (
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
+                )}
+              </button>
+              <button 
+                onClick={() => setSidebarOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
+              >
+                <ChevronRight className="h-4 w-4 text-muted-foreground rotate-180" />
+              </button>
             </div>
+          </div>
 
           {/* Search */}
           <div className="px-4 py-3">
