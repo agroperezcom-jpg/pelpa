@@ -34,12 +34,15 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
       });
     } else {
       // Nueva tarea (con o sin fecha pre-seleccionada)
+      const now = new Date();
+      const defaultTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
       setFormData({
         name: "",
         description: "",
         date: initialData?.date || new Date().toISOString().split('T')[0],
-        time: "",
-        duration: "",
+        time: defaultTime,
+        duration: "60",
         status: "pendiente",
         priority: "media",
         assigned_to: currentUser?.email || "",
@@ -57,8 +60,8 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
     }
     
     if (!canEdit) return;
-    if (!formData.name?.trim() || !formData.date) {
-      alert("Complete el nombre y la fecha");
+    if (!formData.name?.trim() || !formData.date || !formData.time) {
+      alert("Complete el nombre, fecha y hora");
       return;
     }
     
@@ -66,14 +69,14 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
       name: formData.name.trim(),
       description: formData.description?.trim() || "",
       date: formData.date,
-      time: formData.time || "09:00",
-      duration: formData.duration ? parseInt(formData.duration) : 60,
-      status: formData.status || "pendiente",
-      priority: formData.priority || "media",
-      assigned_to: formData.assigned_to || currentUser?.email,
-      assigned_to_name: formData.assigned_to_name || currentUser?.full_name,
+      time: formData.time,
+      duration: parseInt(formData.duration) || 60,
+      status: formData.status,
+      priority: formData.priority,
+      assigned_to: formData.assigned_to,
+      assigned_to_name: formData.assigned_to_name,
       tags: formData.tags || [],
-      recurrence: formData.recurrence || "none"
+      recurrence: formData.recurrence
     };
     
     onSave(taskToSave);
@@ -147,7 +150,7 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
               />
             </div>
             <div className="space-y-2">
-              <Label>Hora</Label>
+              <Label>Hora *</Label>
               <div className="relative">
                 <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -156,6 +159,7 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
                   onChange={(e) => setFormData({ ...formData, time: e.target.value })}
                   className="pl-10"
                   disabled={!canEdit}
+                  required
                 />
               </div>
             </div>
