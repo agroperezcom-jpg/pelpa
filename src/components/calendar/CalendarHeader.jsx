@@ -11,7 +11,8 @@ export default function CalendarHeader({
   viewMode, 
   setViewMode,
   onCreateEvent,
-  filteredEventsCount
+  filteredEventsCount,
+  canCreateEvents = true
 }) {
   const handlePrevious = () => {
     if (viewMode === "month") {
@@ -106,10 +107,12 @@ export default function CalendarHeader({
           {getDateLabel()}
         </div>
 
-        <Button onClick={onCreateEvent} className="bg-primary hover:bg-[hsl(var(--primary-hover))]">
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Tarea
-        </Button>
+        {canCreateEvents && (
+          <Button onClick={onCreateEvent} className="bg-primary hover:bg-[hsl(var(--primary-hover))]">
+            <Plus className="h-4 w-4 mr-2" />
+            Nueva Tarea
+          </Button>
+        )}
       </div>
     </div>
   );

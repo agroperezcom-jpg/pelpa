@@ -4,13 +4,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Clock, TrendingUp } from "lucide-react";
+import { AlertCircle, Clock, TrendingUp, ShieldAlert } from "lucide-react";
 
 import CalendarHeader from "@/components/calendar/CalendarHeader";
 import CalendarFilters from "@/components/calendar/CalendarFilters";
 import MonthView from "@/components/calendar/MonthView";
 import WeekView from "@/components/calendar/WeekView";
 import FreeTaskDialog from "@/components/calendar/FreeTaskDialog";
+import { usePermissions } from "@/components/permissions/usePermissions";
 
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -32,6 +33,14 @@ export default function Calendar() {
   const [clickedDate, setClickedDate] = useState(null);
 
   const queryClient = useQueryClient();
+  const { hasPermission, isAdmin, loading: permissionsLoading } = usePermissions();
+
+  // Permisos del calendario
+  const canViewCalendar = isAdmin || hasPermission("calendario", "ver");
+  const canCreateEvents = isAdmin || hasPermission("calendario", "crear");
+  const canEditEvents = isAdmin || hasPermission("calendario", "editar_eventos");
+  const canEditTasks = isAdmin || hasPermission("calendario", "editar_tareas");
+  const canEditProjects = isAdmin || hasPermission("calendario", "editar_proyectos");
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
@@ -280,12 +289,16 @@ export default function Calendar() {
   });
 
   const handleEventClick = (event) => {
+    // Validar permisos antes de abrir edición
     if (event.type === "freeTask") {
+      if (!canEditEvents) return;
       setEditingTask(event.data);
       setFreeTaskDialogOpen(true);
     } else if (event.type === "project") {
+      if (!canEditProjects) return;
       window.location.href = `/Projects?id=${event.id}`;
-    } else if (event.type === "task") {
+    } else if (event.type === "task" || event.type === "phase") {
+      if (!canEditTasks) return;
       window.location.href = `/Projects?id=${event.project_id}`;
     } else if (event.type === "campaign") {
       window.location.href = `/Marketing`;
@@ -293,24 +306,55 @@ export default function Calendar() {
   };
 
   const handleDateClick = (date) => {
+    if (!canCreateEvents) return;
     setClickedDate(date);
     setEditingTask(null);
     setFreeTaskDialogOpen(true);
   };
 
   const handleCreateEvent = () => {
+    if (!canCreateEvents) return;
     setClickedDate(null);
     setEditingTask(null);
     setFreeTaskDialogOpen(true);
   };
 
   const handleSaveFreeTask = (taskData) => {
+    // Validar permisos antes de guardar
+    if (editingTask?.id && !canEditEvents) return;
+    if (!editingTask?.id && !canCreateEvents) return;
+
     if (editingTask?.id) {
       updateFreeTaskMutation.mutate({ id: editingTask.id, data: taskData });
     } else {
       createFreeTaskMutation.mutate(taskData);
     }
   };
+
+  // Sin permiso de ver calendario, mostrar mensaje
+  if (permissionsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-muted-foreground">Cargando permisos...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!canViewCalendar) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Alert className="max-w-md border-amber-200 bg-amber-50">
+          <ShieldAlert className="h-5 w-5 text-amber-600" />
+          <AlertDescription className="text-sm text-amber-900 ml-2">
+            <strong>Acceso denegado.</strong> No tienes permisos para ver el calendario. Contacta con un administrador.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -321,6 +365,7 @@ export default function Calendar() {
         setViewMode={setViewMode}
         onCreateEvent={handleCreateEvent}
         filteredEventsCount={events.length}
+        canCreateEvents={canCreateEvents}
       />
 
       {/* Alerts */}
@@ -428,6 +473,10 @@ export default function Calendar() {
           events={events}
           onEventClick={handleEventClick}
           onDateClick={handleDateClick}
+          canCreateEvents={canCreateEvents}
+          canEditEvents={canEditEvents}
+          canEditTasks={canEditTasks}
+          canEditProjects={canEditProjects}
         />
       )}
 
@@ -436,6 +485,9 @@ export default function Calendar() {
           currentDate={currentDate}
           events={events}
           onEventClick={handleEventClick}
+          canEditEvents={canEditEvents}
+          canEditTasks={canEditTasks}
+          canEditProjects={canEditProjects}
         />
       )}
 
@@ -447,6 +499,9 @@ export default function Calendar() {
             return eventDate.toDateString() === currentDate.toDateString();
           })}
           onEventClick={handleEventClick}
+          canEditEvents={canEditEvents}
+          canEditTasks={canEditTasks}
+          canEditProjects={canEditProjects}
           singleDay={true}
         />
       )}
@@ -463,6 +518,7 @@ export default function Calendar() {
         initialData={editingTask || (clickedDate ? { date: clickedDate.toISOString().split('T')[0] } : null)}
         users={users}
         currentUser={currentUser}
+        canEdit={editingTask?.id ? canEditEvents : canCreateEvents}
       />
     </div>
   );

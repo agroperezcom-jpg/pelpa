@@ -5,7 +5,16 @@ import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, is
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-export default function MonthView({ currentDate, events, onEventClick, onDateClick }) {
+export default function MonthView({ 
+  currentDate, 
+  events, 
+  onEventClick, 
+  onDateClick,
+  canCreateEvents = true,
+  canEditEvents = true,
+  canEditTasks = true,
+  canEditProjects = true
+}) {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -31,6 +40,13 @@ export default function MonthView({ currentDate, events, onEventClick, onDateCli
     return "bg-slate-500";
   };
 
+  const canClickEvent = (event) => {
+    if (event.type === "freeTask") return canEditEvents;
+    if (event.type === "project") return canEditProjects;
+    if (event.type === "task" || event.type === "phase") return canEditTasks;
+    return true;
+  };
+
   return (
     <Card className="border-0 shadow-sm overflow-hidden">
       <div className="bg-secondary/50 border-b">
@@ -53,11 +69,12 @@ export default function MonthView({ currentDate, events, onEventClick, onDateCli
             <div
               key={day.toString()}
               className={cn(
-                "min-h-[120px] border-r border-b p-2 cursor-pointer hover:bg-secondary/50 transition-colors",
+                "min-h-[120px] border-r border-b p-2 transition-colors",
                 !isCurrentMonth && "bg-secondary/20",
-                index % 7 === 6 && "border-r-0"
+                index % 7 === 6 && "border-r-0",
+                canCreateEvents && "cursor-pointer hover:bg-secondary/50"
               )}
-              onClick={() => onDateClick(day)}
+              onClick={() => canCreateEvents && onDateClick(day)}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className={cn(
@@ -75,21 +92,26 @@ export default function MonthView({ currentDate, events, onEventClick, onDateCli
               </div>
 
               <div className="space-y-1">
-                {dayEvents.slice(0, 3).map((event, idx) => (
-                  <div
-                    key={idx}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEventClick(event);
-                    }}
-                    className={cn(
-                      "text-[10px] px-2 py-1 rounded text-white truncate cursor-pointer hover:opacity-80 transition-opacity",
-                      getEventColor(event)
-                    )}
-                  >
-                    {event.name || event.title}
-                  </div>
-                ))}
+                {dayEvents.slice(0, 3).map((event, idx) => {
+                  const clickable = canClickEvent(event);
+                  return (
+                    <div
+                      key={idx}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (clickable) onEventClick(event);
+                      }}
+                      className={cn(
+                        "text-[10px] px-2 py-1 rounded text-white truncate transition-opacity",
+                        getEventColor(event),
+                        clickable ? "cursor-pointer hover:opacity-80" : "cursor-default opacity-70"
+                      )}
+                      title={!clickable ? "No tienes permisos para editar" : undefined}
+                    >
+                      {event.name || event.title}
+                    </div>
+                  );
+                })}
                 {dayEvents.length > 3 && (
                   <div className="text-[10px] text-muted-foreground pl-2">
                     +{dayEvents.length - 3} más

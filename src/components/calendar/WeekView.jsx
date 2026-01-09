@@ -5,7 +5,15 @@ import { startOfWeek, endOfWeek, eachDayOfInterval, format, isToday, isSameDay }
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-export default function WeekView({ currentDate, events, onEventClick, singleDay = false }) {
+export default function WeekView({ 
+  currentDate, 
+  events, 
+  onEventClick, 
+  singleDay = false,
+  canEditEvents = true,
+  canEditTasks = true,
+  canEditProjects = true
+}) {
   const weekStart = singleDay ? currentDate : startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = singleDay ? currentDate : endOfWeek(currentDate, { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
@@ -27,6 +35,13 @@ export default function WeekView({ currentDate, events, onEventClick, singleDay 
     if (event.type === "milestone") return "bg-amber-100 border-amber-300 text-amber-800";
     if (event.type === "campaign") return "bg-pink-100 border-pink-300 text-pink-800";
     return "bg-slate-100 border-slate-300 text-slate-800";
+  };
+
+  const canClickEvent = (event) => {
+    if (event.type === "freeTask") return canEditEvents;
+    if (event.type === "project") return canEditProjects;
+    if (event.type === "task" || event.type === "phase") return canEditTasks;
+    return true;
   };
 
   return (
@@ -103,26 +118,31 @@ export default function WeekView({ currentDate, events, onEventClick, singleDay 
                   return (
                     <div key={day.toString()} className="relative">
                       <div className="absolute inset-0 p-1 space-y-1 pointer-events-auto">
-                        {dayEvents.map((event, idx) => (
-                          <div
-                            key={idx}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onEventClick(event);
-                            }}
-                            className={cn(
-                              "border rounded px-2 py-1 text-xs cursor-pointer hover:shadow-md transition-shadow",
-                              getEventColor(event)
-                            )}
-                          >
-                            <div className="font-medium truncate">{event.name || event.title}</div>
-                            {event.type && (
-                              <Badge variant="outline" className="text-[9px] mt-1 h-4">
-                                {event.type}
-                              </Badge>
-                            )}
-                          </div>
-                         ))}
+                        {dayEvents.map((event, idx) => {
+                          const clickable = canClickEvent(event);
+                          return (
+                            <div
+                              key={idx}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (clickable) onEventClick(event);
+                              }}
+                              className={cn(
+                                "border rounded px-2 py-1 text-xs transition-shadow",
+                                getEventColor(event),
+                                clickable ? "cursor-pointer hover:shadow-md" : "cursor-default opacity-60"
+                              )}
+                              title={!clickable ? "No tienes permisos para editar" : undefined}
+                            >
+                              <div className="font-medium truncate">{event.name || event.title}</div>
+                              {event.type && (
+                                <Badge variant="outline" className="text-[9px] mt-1 h-4">
+                                  {event.type}
+                                </Badge>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   );
