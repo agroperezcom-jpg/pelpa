@@ -85,6 +85,9 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
         barcodeInputRef.current?.focus();
       }, 100);
     }
+    return () => {
+      inputsRef.current = {};
+    };
   }, [step]);
 
   const createControlMutation = useMutation({
