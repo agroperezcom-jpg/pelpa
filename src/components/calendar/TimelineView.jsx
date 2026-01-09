@@ -14,6 +14,11 @@ export default function TimelineView({ currentDate, events, onEventClick, onEven
   const monthEnd = endOfMonth(currentDate);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
   // Filtrar solo proyectos, fases y tareas con fechas
   const timelineEvents = events.filter(e => 
     (e.type === "project" || e.type === "phase" || e.type === "task") &&

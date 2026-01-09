@@ -12,6 +12,25 @@ export default function CustomDaysView({ currentDate, daysCount, events, onEvent
     end: addDays(currentDate, daysCount - 1)
   });
 
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e, day) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!onEventDrop) return;
+
+    try {
+      const eventData = JSON.parse(e.dataTransfer.getData("application/json"));
+      onEventDrop(eventData, day);
+    } catch (err) {
+      console.error("Error dropping event:", err);
+    }
+    setDraggingEvent(null);
+  };
+
   const getEventsForDay = (day) => {
     return events.filter(event => {
       const eventDate = new Date(event.date || event.start_date || event.created_date);
@@ -83,7 +102,11 @@ export default function CustomDaysView({ currentDate, daysCount, events, onEvent
                 </div>
 
                 {/* Events */}
-                <div className="p-3 space-y-2 min-h-[400px]">
+                <div 
+                  className="p-3 space-y-2 min-h-[400px]"
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, day)}
+                >
                   {dayEvents.map((event, idx) => (
                     <div
                       key={idx}

@@ -16,6 +16,25 @@ export default function MonthView({ currentDate, events, onEventClick, onDateCli
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   const weekDays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e, day) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!onEventDrop) return;
+
+    try {
+      const eventData = JSON.parse(e.dataTransfer.getData("application/json"));
+      onEventDrop(eventData, day);
+    } catch (err) {
+      console.error("Error dropping event:", err);
+    }
+    setDraggingEvent(null);
+  };
+
   const getEventsForDay = (day) => {
     return events.filter(event => {
       const eventDate = new Date(event.date || event.start_date || event.created_date);
@@ -60,6 +79,8 @@ export default function MonthView({ currentDate, events, onEventClick, onDateCli
                 index % 7 === 6 && "border-r-0"
               )}
               onClick={() => onDateClick(day)}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, day)}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className={cn(
