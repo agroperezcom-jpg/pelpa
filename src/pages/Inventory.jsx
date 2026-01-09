@@ -153,8 +153,8 @@ export default function Inventory() {
 
   const lowStockProducts = products.filter(p => p.stock <= p.min_stock && p.stock > 0);
   const outOfStockProducts = products.filter(p => p.stock === 0);
-  const totalStock = products.reduce((acc, p) => acc + p.stock, 0);
-  const totalValue = products.reduce((acc, p) => acc + (p.stock * (p.cost || p.price)), 0);
+  const totalStock = products.reduce((acc, p) => acc + (p.stock || 0), 0);
+  const totalValue = products.reduce((acc, p) => acc + ((p.stock || 0) * (p.costo_unitario || p.precio_lista_minorista || 0)), 0);
 
   // Chart data by category
   const categoryData = products.reduce((acc, p) => {
@@ -173,7 +173,7 @@ export default function Inventory() {
       p.category,
       p.stock,
       p.min_stock,
-      p.stock * (p.cost || p.price)
+      (p.stock || 0) * (p.costo_unitario || p.precio_lista_minorista || 0)
     ]);
 
     const csvContent = [headers, ...rows].map(row => row.join(",")).join("\n");
@@ -487,7 +487,7 @@ export default function Inventory() {
                       {product.min_stock}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      ${(product.stock * (product.cost || product.price)).toLocaleString()}
+                      ${((product.stock || 0) * (product.costo_unitario || product.precio_lista_minorista || 0)).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
