@@ -748,10 +748,7 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
                   Volver al Conteo
                 </Button>
                 <Button
-                  onClick={() => {
-                    const obs = document.getElementById('observaciones-finales').value;
-                    handleConfirmarAjustes(obs);
-                  }}
+                  onClick={() => setShowConfirmation(true)}
                   className="bg-green-600 hover:bg-green-700"
                   disabled={finalizarControlMutation.isPending}
                 >
