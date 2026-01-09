@@ -544,96 +544,99 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
                   </div>
 
                   <div className="border rounded-lg max-h-96 overflow-y-auto">
-                    <Table>
-                      <TableHeader className="bg-slate-50 sticky top-0">
-                        <TableRow>
-                          <TableHead>Producto</TableHead>
-                          <TableHead className="text-center">Stock Teórico</TableHead>
-                          <TableHead className="text-center">Cantidad Contada</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredProducts.map((product, index) => (
-                          <TableRow key={product.id}>
-                            <TableCell>
-                              <div>
-                                <p className="font-medium">{product.name}</p>
-                                {product.barcode && (
-                                  <p className="text-xs text-slate-400">{product.barcode}</p>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <div className="px-3 py-1 bg-slate-100 rounded-lg inline-block">
-                                <p className="text-sm font-semibold text-slate-700">{product.stock || 0}</p>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex justify-center gap-1 items-center">
-                                <Button
-                                  size="icon"
-                                  variant="outline"
-                                  className="h-7 w-7"
-                                  onClick={() => updateConteo(product.id, (conteo[product.id] || 0) - 1)}
-                                >
-                                  <Minus className="h-3 w-3" />
-                                </Button>
-                                <Input
-                                  ref={(el) => {
-                                    if (el) inputsRef.current[product.id] = el;
-                                  }}
-                                  type="text"
-                                  inputMode="numeric"
-                                  value={conteo[product.id] ?? ""}
-                                  onChange={(e) => {
-                                    const val = e.target.value.trim();
-                                    if (val === "") {
-                                      setConteo(prev => {
-                                        const newConteo = { ...prev };
-                                        delete newConteo[product.id];
-                                        return newConteo;
-                                      });
-                                    } else {
-                                      const num = parseInt(val, 10);
-                                      if (!isNaN(num) && num >= 0) {
-                                        setConteo(prev => ({ ...prev, [product.id]: num }));
+                    <div className="grid gap-0">
+                      {/* Header */}
+                      <div className="sticky top-0 bg-slate-50 border-b grid grid-cols-3 gap-4 p-3 font-semibold text-sm">
+                        <div>Producto</div>
+                        <div className="text-center">Stock Teórico</div>
+                        <div className="text-center">Cantidad Contada</div>
+                      </div>
+
+                      {/* Filas */}
+                      {filteredProducts.map((product, index) => (
+                        <div
+                          key={product.id}
+                          className="border-b grid grid-cols-3 gap-4 p-3 items-center hover:bg-slate-50"
+                        >
+                          {/* Columna 1: Producto */}
+                          <div>
+                            <p className="font-medium text-sm">{product.name}</p>
+                            {product.barcode && (
+                              <p className="text-xs text-slate-400">{product.barcode}</p>
+                            )}
+                          </div>
+
+                          {/* Columna 2: Stock Teórico */}
+                          <div className="text-center">
+                            <span className="px-3 py-1 bg-slate-100 rounded-lg text-sm font-semibold text-slate-700 inline-block">
+                              {product.stock || 0}
+                            </span>
+                          </div>
+
+                          {/* Columna 3: Input Cantidad */}
+                          <div className="flex justify-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => updateConteo(product.id, Math.max(0, (conteo[product.id] || 0) - 1))}
+                              className="px-2 py-1 border border-slate-300 rounded hover:bg-slate-100"
+                            >
+                              <Minus className="h-3 w-3" />
+                            </button>
+                            <input
+                              ref={(el) => { if (el) inputsRef.current[product.id] = el; }}
+                              type="text"
+                              inputMode="numeric"
+                              value={conteo[product.id] ?? ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === "") {
+                                  const newConteo = { ...conteo };
+                                  delete newConteo[product.id];
+                                  setConteo(newConteo);
+                                } else {
+                                  const num = parseInt(val, 10);
+                                  if (!isNaN(num) && num >= 0) {
+                                    setConteo({ ...conteo, [product.id]: num });
+                                  }
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  const nextIndex = filteredProducts.findIndex((p, i) => i > index);
+                                  if (nextIndex > -1) {
+                                    const nextProduct = filteredProducts[nextIndex];
+                                    setTimeout(() => {
+                                      const nextEl = inputsRef.current[nextProduct.id];
+                                      if (nextEl) {
+                                        nextEl.focus();
+                                        nextEl.select();
                                       }
-                                    }
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault();
-                                      const nextIdx = index + 1;
-                                      if (nextIdx < filteredProducts.length) {
-                                        const nextProduct = filteredProducts[nextIdx];
-                                        setTimeout(() => {
-                                          const nextInput = inputsRef.current[nextProduct.id];
-                                          if (nextInput) {
-                                            nextInput.focus();
-                                            nextInput.select();
-                                          }
-                                        }, 0);
-                                      }
-                                    }
-                                  }}
-                                  className="w-20 text-center border border-slate-300 rounded px-2 py-1"
-                                  placeholder="0"
-                                  autoComplete="off"
-                                />
-                                <Button
-                                  size="icon"
-                                  variant="outline"
-                                  className="h-7 w-7"
-                                  onClick={() => updateConteo(product.id, (conteo[product.id] || 0) + 1)}
-                                >
-                                  <Plus className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                                    }, 10);
+                                  }
+                                }
+                              }}
+                              className="w-16 text-center border border-slate-300 rounded px-2 py-1 text-sm"
+                              placeholder="0"
+                              autoComplete="off"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => updateConteo(product.id, (conteo[product.id] || 0) + 1)}
+                              className="px-2 py-1 border border-slate-300 rounded hover:bg-slate-100"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+
+                      {filteredProducts.length === 0 && (
+                        <div className="text-center py-8 text-slate-500 text-sm">
+                          No se encontraron productos
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>
