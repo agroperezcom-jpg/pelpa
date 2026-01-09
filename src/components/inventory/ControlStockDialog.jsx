@@ -582,16 +582,16 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                   e.preventDefault();
-                                  const nextIndex = filteredProducts.findIndex((p, i) => i > index);
-                                  if (nextIndex > -1) {
-                                    const nextProduct = filteredProducts[nextIndex];
+                                  const nextIdx = index + 1;
+                                  if (nextIdx < filteredProducts.length) {
+                                    const nextProduct = filteredProducts[nextIdx];
                                     setTimeout(() => {
                                       const nextEl = inputsRef.current[nextProduct.id];
                                       if (nextEl) {
                                         nextEl.focus();
                                         nextEl.select();
                                       }
-                                    }, 10);
+                                    }, 0);
                                   }
                                 }
                               }}
