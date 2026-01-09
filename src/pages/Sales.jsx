@@ -76,6 +76,7 @@ export default function Sales() {
   const [activeTab, setActiveTab] = useState("products");
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
   const [clientSearch, setClientSearch] = useState("");
+  const [dialogKey, setDialogKey] = useState(0);
   const [newClient, setNewClient] = useState({
     name: "",
     email: "",
@@ -716,8 +717,9 @@ export default function Sales() {
     setProductSearch("");
     setClientSearch("");
     
-    // Reabrir limpio después de un momento
+    // Reabrir limpio después de un momento con nueva key para forzar re-render
     setTimeout(() => {
+      setDialogKey(prev => prev + 1);
       setIsDialogOpen(true);
     }, 100);
   };
@@ -1053,7 +1055,7 @@ export default function Sales() {
       </Card>
 
       {/* New Sale Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen} key={dialogKey}>
         <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden p-0 flex flex-col">
           <div className="bg-white border-b border-slate-200 px-6 py-4">
             <DialogTitle className="flex items-center gap-3 text-slate-800 m-0">
