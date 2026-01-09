@@ -389,6 +389,8 @@ export default function Calendar() {
   };
 
   const handleEventDrop = (event, newDate) => {
+    if (!event || !event.id) return;
+    
     const dateStr = newDate.toISOString().split('T')[0];
     const timeStr = `${String(newDate.getHours()).padStart(2, '0')}:${String(newDate.getMinutes()).padStart(2, '0')}`;
 
@@ -431,6 +433,8 @@ export default function Calendar() {
   };
 
   const handleEventResize = (event, newDate, direction = "end") => {
+    if (!event || !event.id) return;
+    
     if (event.type === "freeTask") {
       // Para free tasks solo actualizamos si es el end
       if (direction === "end") {
@@ -614,6 +618,7 @@ export default function Calendar() {
           events={events}
           onEventClick={handleEventClick}
           onEventDrop={handleEventDrop}
+          onEventResize={handleEventResize}
         />
       )}
 
