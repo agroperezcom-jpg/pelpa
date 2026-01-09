@@ -733,8 +733,22 @@ export default function Sales() {
 
   // Recalcular precios cuando cambia tipo de lista
   useEffect(() => {
-    const newCart = [...cart];
-    newCart.forEach(item => updateCartItemPricing(item));
+    if (cart.length === 0) return;
+    const newCart = cart.map(item => {
+      const updatedItem = { ...item };
+      if (updatedItem.type === 'product') {
+        const product = products.find(p => p.id === updatedItem.item_id);
+        if (product) {
+          const calc = calcularPrecioYMargen(product, updatedItem.quantity);
+          updatedItem.precio_lista = calc.precio_lista;
+          updatedItem.precio_venta = calc.precio_venta;
+          updatedItem.margen_real = calc.margen_real;
+          updatedItem.valido = calc.valido;
+          updatedItem.total = calc.precio_venta * updatedItem.quantity;
+        }
+      }
+      return updatedItem;
+    });
     setCart(newCart);
   }, [currentSale.tipo_lista]);
 
