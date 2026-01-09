@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import DashboardEjecutivo from './pages/DashboardEjecutivo';
 import Expenses from './pages/Expenses';
 import Finance from './pages/Finance';
+import HistorialControlesStock from './pages/HistorialControlesStock';
 import IVAMensual from './pages/IVAMensual';
 import IngresosBrutos from './pages/IngresosBrutos';
 import Inventory from './pages/Inventory';
@@ -25,7 +26,6 @@ import Talonarios from './pages/Talonarios';
 import TesoreriaV2 from './pages/TesoreriaV2';
 import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
-import HistorialControlesStock from './pages/HistorialControlesStock';
 import __Layout from './Layout.jsx';
 
 
@@ -38,6 +38,7 @@ export const PAGES = {
     "DashboardEjecutivo": DashboardEjecutivo,
     "Expenses": Expenses,
     "Finance": Finance,
+    "HistorialControlesStock": HistorialControlesStock,
     "IVAMensual": IVAMensual,
     "IngresosBrutos": IngresosBrutos,
     "Inventory": Inventory,
@@ -57,7 +58,6 @@ export const PAGES = {
     "TesoreriaV2": TesoreriaV2,
     "TiposArticulo": TiposArticulo,
     "Treasury": Treasury,
-    "HistorialControlesStock": HistorialControlesStock,
 }
 
 export const pagesConfig = {

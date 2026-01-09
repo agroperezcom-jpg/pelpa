@@ -1177,7 +1177,7 @@ export default function Sales() {
                       <SelectValue placeholder="Consumidor Final" />
                     </SelectTrigger>
                     <SelectContent>
-                      <div className="sticky top-0 bg-white p-2 border-b">
+                      <div className="sticky top-0 bg-white p-2 border-b z-50">
                         <div className="relative">
                           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-slate-400" />
                           <Input
