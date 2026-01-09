@@ -536,6 +536,7 @@ export default function TableroFiscal() {
         )}
 
         {activeView === "proyecciones" && (
+          <>
           {proyeccionMes && (
             <Card className="border-2 border-blue-200 bg-blue-50">
               <CardContent className="p-6">
@@ -597,9 +598,11 @@ export default function TableroFiscal() {
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </Link>
+          </>
         )}
 
         {activeView === "historico" && (
+          <>
           <Card className="border-0 shadow-sm">
             <CardContent className="p-6">
               <h4 className="font-semibold mb-4">Evolución Últimos 6 Meses</h4>
@@ -631,6 +634,7 @@ export default function TableroFiscal() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+          </>
         )}
       </div>
     </div>

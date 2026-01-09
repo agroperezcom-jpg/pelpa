@@ -1491,10 +1491,9 @@ export default function Analytics() {
               </TableBody>
             </Table>
           </Card>
-        </TabsContent>
+        )}
 
-        {/* TENDENCIAS Y ANÁLISIS AVANZADO */}
-        <TabsContent value="tendencias" className="space-y-4">
+        {activeView === "tendencias" && (
           <Card className="border-0 shadow-sm">
             <CardHeader>
               <CardTitle className="text-base">Evolución de Ventas y Margen</CardTitle>
@@ -2120,10 +2119,9 @@ export default function Analytics() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
-        {/* SEGMENTACIÓN AVANZADA */}
-        <TabsContent value="segmentacion" className="space-y-4">
+        {activeView === "segmentacion" && (
           <div className="grid lg:grid-cols-2 gap-4">
             <Card className="border-0 shadow-sm">
               <CardHeader>
