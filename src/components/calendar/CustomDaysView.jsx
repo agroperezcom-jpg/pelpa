@@ -203,8 +203,7 @@ export default function CustomDaysView({ currentDate, daysCount, events, onEvent
                           </div>
                         )}
                       </div>
-                    );
-                  })}
+                  ))}
 
                   {dayEvents.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground text-xs">
