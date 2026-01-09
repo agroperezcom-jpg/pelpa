@@ -79,7 +79,7 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
   };
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
+    base44.auth.me().then(setUser).catch(() => console.log("User not authenticated"));
   }, []);
 
   // Cargar control en curso si existe
