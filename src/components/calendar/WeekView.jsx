@@ -56,7 +56,10 @@ export default function WeekView({ currentDate, events, onEventClick, onEventDro
         <div className="min-w-[900px]">
           {/* Header */}
           <div className="bg-secondary/50 border-b sticky top-0 z-10">
-            <div className={cn("grid", singleDay ? "grid-cols-2" : "grid-cols-8")}>
+            <div 
+              className="grid"
+              style={{ gridTemplateColumns: singleDay ? '80px 1fr' : '80px repeat(7, 1fr)' }}
+            >
               <div className="p-3 border-r text-xs font-semibold text-muted-foreground">Hora</div>
               {days.map(day => {
                 const isDayToday = isToday(day);
@@ -86,7 +89,11 @@ export default function WeekView({ currentDate, events, onEventClick, onEventDro
           {/* Time grid */}
           <div className="relative">
             {hours.map(hour => (
-              <div key={hour} className={cn("grid border-b", singleDay ? "grid-cols-2" : "grid-cols-8")}>
+              <div 
+                key={hour} 
+                className="grid border-b"
+                style={{ gridTemplateColumns: singleDay ? '80px 1fr' : '80px repeat(7, 1fr)' }}
+              >
                 <div className="p-2 border-r text-xs text-muted-foreground text-right pr-3">
                   {format(new Date().setHours(hour, 0), "HH:mm")}
                 </div>
@@ -110,7 +117,10 @@ export default function WeekView({ currentDate, events, onEventClick, onEventDro
 
             {/* Events overlay */}
             <div className="absolute inset-0 pointer-events-none">
-              <div className={cn("grid h-full", singleDay ? "grid-cols-2" : "grid-cols-8")}>
+              <div 
+                className="grid h-full"
+                style={{ gridTemplateColumns: singleDay ? '80px 1fr' : '80px repeat(7, 1fr)' }}
+              >
                 <div className="border-r" />
                 {days.map((day, dayIndex) => {
                   const dayEvents = getEventsForDay(day);
