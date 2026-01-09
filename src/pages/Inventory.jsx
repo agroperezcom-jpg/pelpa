@@ -62,13 +62,8 @@ const COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4'
 export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [stockFilter, setStockFilter] = useState("all");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isControlStockOpen, setIsControlStockOpen] = useState(false);
-  const [movementType, setMovementType] = useState("entrada");
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [quantity, setQuantity] = useState("");
-  const [reason, setReason] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   const [isMapperDialogOpen, setIsMapperDialogOpen] = useState(false);
   const [csvDataForMapper, setCsvDataForMapper] = useState(null);
@@ -86,58 +81,7 @@ export default function Inventory() {
     queryFn: () => base44.entities.InventoryMovement.list('-created_date', 100)
   });
 
-  const createMovementMutation = useMutation({
-    mutationFn: async (movementData) => {
-      const product = products.find(p => p.id === movementData.product_id);
-      const newStock = movementData.type === 'entrada' 
-        ? product.stock + movementData.quantity
-        : product.stock - movementData.quantity;
 
-      if (newStock < 0) {
-        throw new Error("No se puede tener stock negativo");
-      }
-
-      await base44.entities.Product.update(product.id, { stock: newStock });
-      await base44.entities.InventoryMovement.create({
-        ...movementData,
-        previous_stock: product.stock,
-        new_stock: newStock
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['movements'] });
-      handleCloseDialog();
-    }
-  });
-
-  const handleOpenDialog = (type, product = null) => {
-    setMovementType(type);
-    setSelectedProduct(product?.id || "");
-    setQuantity("");
-    setReason("");
-    setIsDialogOpen(true);
-  };
-
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
-    setSelectedProduct(null);
-    setQuantity("");
-    setReason("");
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const product = products.find(p => p.id === selectedProduct);
-    
-    createMovementMutation.mutate({
-      product_id: selectedProduct,
-      product_name: product.name,
-      type: movementType,
-      quantity: parseInt(quantity),
-      reason: reason
-    });
-  };
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = 
@@ -341,10 +285,6 @@ export default function Inventory() {
             <History className="h-4 w-4 mr-2" />
             Control de Stock
           </Button>
-          <Button variant="outline" onClick={() => handleOpenDialog('salida')} className="border-red-200 text-red-600 hover:bg-red-50 w-full sm:w-auto whitespace-nowrap">
-            <Minus className="h-4 w-4 mr-2" />
-            Salida
-          </Button>
           <Button onClick={() => setIsDeleteDialogOpen(true)} variant="destructive" className="w-full sm:w-auto whitespace-nowrap">
             <Trash2 className="h-4 w-4 mr-2" />
             Eliminar
@@ -492,16 +432,7 @@ export default function Inventory() {
                       ${((product.stock || 0) * (product.costo_unitario || product.precio_lista_minorista || 0)).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          className="text-red-600 hover:bg-red-50"
-                          onClick={() => handleOpenDialog('salida', product)}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      -
                     </TableCell>
                   </TableRow>
                 ))}
@@ -620,67 +551,7 @@ export default function Inventory() {
         products={products}
       />
 
-      {/* Movement Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {movementType === 'entrada' ? (
-                <><Plus className="h-5 w-5 text-emerald-600" /> Entrada de Stock</>
-              ) : (
-                <><Minus className="h-5 w-5 text-red-600" /> Salida de Stock</>
-              )}
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label>Producto</Label>
-              <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar producto" />
-                </SelectTrigger>
-                <SelectContent>
-                  {products.map(product => (
-                    <SelectItem key={product.id} value={product.id}>
-                      {product.name} (Stock: {product.stock})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Cantidad</Label>
-              <Input
-                type="number"
-                min="1"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                placeholder="Cantidad"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Razón</Label>
-              <Input
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="Razón del movimiento"
-              />
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                Cancelar
-              </Button>
-              <Button 
-                type="submit" 
-                className={movementType === 'entrada' ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}
-              >
-                Confirmar {movementType}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+
     </div>
   );
 }
