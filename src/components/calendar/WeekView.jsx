@@ -6,7 +6,7 @@ import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import DraggableEventItem from "./DraggableEventItem";
 
-export default function WeekView({ currentDate, events, onEventClick, onEventDrop }) {
+export default function WeekView({ currentDate, events, onEventClick, onEventDrop, onEventResize }) {
   const [draggingEvent, setDraggingEvent] = useState(null);
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
