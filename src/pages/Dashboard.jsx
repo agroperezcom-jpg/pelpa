@@ -47,26 +47,28 @@ export default function Dashboard() {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
-
-
-  const { data: products = [] } = useQuery({
+  const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ['products'],
-    queryFn: () => base44.entities.Product.list()
+    queryFn: () => base44.entities.Product.list(),
+    retry: 1
   });
 
-  const { data: projects = [] } = useQuery({
+  const { data: projects = [], isLoading: projectsLoading } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list('-created_date', 50)
+    queryFn: () => base44.entities.Project.list('-created_date', 50),
+    retry: 1
   });
 
-  const { data: freeTasks = [] } = useQuery({
+  const { data: freeTasks = [], isLoading: freeTasksLoading } = useQuery({
     queryKey: ['freeTasks'],
-    queryFn: () => base44.entities.FreeTask.list()
+    queryFn: () => base44.entities.FreeTask.list(),
+    retry: 1
   });
 
-  const { data: projectTasks = [] } = useQuery({
+  const { data: projectTasks = [], isLoading: projectTasksLoading } = useQuery({
     queryKey: ['projectTasks'],
-    queryFn: () => base44.entities.ProjectTask.list()
+    queryFn: () => base44.entities.ProjectTask.list(),
+    retry: 1
   });
 
 
