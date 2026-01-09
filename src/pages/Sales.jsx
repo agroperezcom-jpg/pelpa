@@ -1012,7 +1012,25 @@ export default function Sales() {
               <div className="p-4 space-y-3 border-b border-slate-200">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input placeholder="Buscar..." value={productSearch} onChange={(e) => setProductSearch(e.target.value)} className="pl-10 h-10" />
+                  <Input 
+                    placeholder="Buscar o escanear código..." 
+                    value={productSearch} 
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setProductSearch(value);
+
+                      // Auto-agregar si coincide exactamente con un código de barras
+                      if (value.length >= 8) {
+                        const productByBarcode = products.find(p => p.barcode === value);
+                        if (productByBarcode && productByBarcode.stock > 0) {
+                          addToCart(productByBarcode, 'product');
+                          setProductSearch("");
+                        }
+                      }
+                    }}
+                    className="pl-10 h-10" 
+                    autoFocus
+                  />
                 </div>
                 <div className="flex gap-2">
                   <Button variant={activeTab === 'products' ? 'default' : 'outline'} size="sm" onClick={() => setActiveTab('products')} className="flex-1 h-8 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border-0">
@@ -1123,31 +1141,39 @@ export default function Sales() {
                 {/* Cliente */}
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold text-slate-700">Cliente</Label>
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 text-slate-400 pointer-events-none" />
-                      <Input
-                        placeholder="Buscar cliente..."
-                        value={clientSearch}
-                        onChange={(e) => setClientSearch(e.target.value)}
-                        className="pl-8 h-9 text-sm"
-                      />
-                    </div>
-                    <Select value={currentSale.client_id} onValueChange={(v) => {
+                  <Select 
+                    value={currentSale.client_id} 
+                    onValueChange={(v) => {
                       const cliente = clients.find(c => c.id === v);
                       const shouldGenerateIVA = cliente?.tipo_iva === "RESP_INSCRIPTO" || cliente?.tipo_iva === "MONOTRIBUTO";
                       setCurrentSale({...currentSale, client_id: v, client_name: cliente?.name || "", client_tipo_iva: cliente?.tipo_iva || "", genera_iva: shouldGenerateIVA});
                       setClientSearch("");
-                    }}>
-                      <SelectTrigger className="h-9 text-sm">
-                        <SelectValue placeholder="Consumidor Final" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={null}>Consumidor Final</SelectItem>
-                        {filteredClients.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                    }}
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Consumidor Final" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <div className="sticky top-0 bg-white p-2 border-b">
+                        <div className="relative">
+                          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-slate-400" />
+                          <Input
+                            placeholder="Buscar cliente..."
+                            value={clientSearch}
+                            onChange={(e) => setClientSearch(e.target.value)}
+                            className="pl-7 h-8 text-xs"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
+                      <SelectItem value={null}>Consumidor Final</SelectItem>
+                      {filteredClients.map(c => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name} {c.email && <span className="text-xs text-slate-400">({c.email})</span>}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Button type="button" variant="outline" onClick={() => setIsClientDialogOpen(true)} className="w-full h-8 text-xs">
                     <Plus className="h-3 w-3 mr-1" />
                     Nuevo
