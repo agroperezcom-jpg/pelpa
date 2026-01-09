@@ -2542,6 +2542,7 @@ export default function Analytics() {
         )}
 
         {activeView === "salud" && (
+          <>
           <Card className="border-0 shadow-lg overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
               <CardTitle className="text-lg flex items-center gap-2">

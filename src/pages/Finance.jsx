@@ -354,6 +354,7 @@ export default function Finance() {
 
       <div className="space-y-4">
         {activeView === "statement" && (
+          <>
           <Card className="border-0 shadow-sm">
             <CardHeader className="border-b">
               <CardTitle className="text-base">
@@ -437,9 +438,11 @@ export default function Finance() {
               </Table>
             </CardContent>
           </Card>
+          </>
         )}
 
         {activeView === "trends" && (
+          <>
           {/* Revenue & Profit Trend */}
           <Card className="border-0 shadow-sm">
             <CardHeader>
@@ -489,9 +492,11 @@ export default function Finance() {
               </div>
             </CardContent>
           </Card>
+          </>
         )}
 
         {activeView === "margins" && (
+          <>
           <Card className="border-0 shadow-sm">
             <CardHeader>
               <CardTitle className="text-base">Evolución de Márgenes - 12 Meses</CardTitle>
@@ -571,9 +576,11 @@ export default function Finance() {
               </div>
             </CardContent>
           </Card>
+          </>
         )}
 
         {activeView === "iva" && (
+          <>
           <Card className="border-0 shadow-sm">
             <CardHeader className="border-b">
               <CardTitle className="text-base flex items-center justify-between">
@@ -684,9 +691,11 @@ export default function Finance() {
               </Table>
             </CardContent>
           </Card>
+          </>
         )}
 
         {activeView === "posicion-iva" && (
+          <>
           {/* Resumen Posición IVA */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="border-0 shadow-sm">
@@ -879,9 +888,11 @@ export default function Finance() {
               </div>
             </CardContent>
           </Card>
+          </>
         )}
 
         {activeView === "gestion" && (
+          <>
           <Card className="border-0 shadow-sm">
             <CardContent className="p-8">
               <div className="max-w-2xl mx-auto text-center space-y-6">
@@ -913,6 +924,7 @@ export default function Finance() {
               </div>
             </CardContent>
           </Card>
+          </>
         )}
       </div>
     </div>
