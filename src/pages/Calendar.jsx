@@ -407,13 +407,24 @@ export default function Calendar() {
   };
 
   const handleSaveFreeTask = (taskData) => {
+    console.log("handleSaveFreeTask llamado con:", taskData);
+    console.log("Permisos:", { canEditEvents, canCreateEvents, editingTask });
+    
     // Validar permisos antes de guardar
-    if (editingTask?.id && !canEditEvents) return;
-    if (!editingTask?.id && !canCreateEvents) return;
+    if (editingTask?.id && !canEditEvents) {
+      toast.error("No tienes permisos para editar eventos");
+      return;
+    }
+    if (!editingTask?.id && !canCreateEvents) {
+      toast.error("No tienes permisos para crear eventos");
+      return;
+    }
 
     if (editingTask?.id) {
+      console.log("Actualizando tarea existente:", editingTask.id);
       updateFreeTaskMutation.mutate({ id: editingTask.id, data: taskData });
     } else {
+      console.log("Creando nueva tarea con datos:", taskData);
       createFreeTaskMutation.mutate(taskData);
     }
   };
