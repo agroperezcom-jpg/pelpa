@@ -304,28 +304,12 @@ export default function Layout({ children, currentPageName }) {
                 {nombreEmpresa}
               </span>
             </div>
-            <div className="flex gap-1">
-              <button 
-                onClick={() => setSidebarPinned(!sidebarPinned)}
-                className="lg:hidden p-1.5 rounded-lg hover:bg-secondary transition-colors"
-                title={sidebarPinned ? "Desfijar barra lateral" : "Fijar barra lateral"}
-              >
-                {sidebarPinned ? (
-                  <svg className="h-4 w-4 text-muted-foreground" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
-                  </svg>
-                ) : (
-                  <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h6a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V5z" />
-                  </svg>
-                )}
-              </button>
-              <button 
-                onClick={() => setSidebarOpen(false)}
-                className="lg:hidden p-1.5 rounded-lg hover:bg-secondary transition-colors"
-              >
-                <X className="h-4 w-4 text-muted-foreground" />
-              </button>
+            <button 
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden p-1.5 rounded-lg hover:bg-secondary transition-colors"
+            >
+              <X className="h-4 w-4 text-muted-foreground" />
+            </button>
             </div>
             </div>
 
