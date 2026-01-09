@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Grid3x3 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Grid3x3, Palette, History } from "lucide-react";
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,7 +15,9 @@ export default function CalendarHeader({
   filteredEventsCount,
   canCreateEvents = true,
   snapMinutes = 30,
-  setSnapMinutes
+  setSnapMinutes,
+  onOpenSettings,
+  onOpenAudit
 }) {
   const handlePrevious = () => {
     if (viewMode === "month") {
@@ -126,12 +128,26 @@ export default function CalendarHeader({
           </div>
         )}
 
-        {canCreateEvents && (
-          <Button onClick={onCreateEvent} className="bg-primary hover:bg-[hsl(var(--primary-hover))]">
-            <Plus className="h-4 w-4 mr-2" />
-            Nueva Tarea
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {onOpenSettings && (
+            <Button variant="outline" size="sm" onClick={onOpenSettings} title="Configuración visual">
+              <Palette className="h-4 w-4" />
+            </Button>
+          )}
+          
+          {onOpenAudit && (
+            <Button variant="outline" size="sm" onClick={onOpenAudit} title="Historial de cambios">
+              <History className="h-4 w-4" />
+            </Button>
+          )}
+
+          {canCreateEvents && (
+            <Button onClick={onCreateEvent} className="bg-primary hover:bg-[hsl(var(--primary-hover))]">
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva Tarea
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

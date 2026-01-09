@@ -14,7 +14,8 @@ export default function MonthView({
   canCreateEvents = true,
   canEditEvents = true,
   canEditTasks = true,
-  canEditProjects = true
+  canEditProjects = true,
+  getEventColor
 }) {
   const [draggingEvent, setDraggingEvent] = useState(null);
   const monthStart = startOfMonth(currentDate);
@@ -32,7 +33,11 @@ export default function MonthView({
     });
   };
 
-  const getEventColor = (event) => {
+  const getEventBgClass = (event) => {
+    if (getEventColor) {
+      return "";
+    }
+    // Fallback por defecto
     if (event.type === "project") return "bg-purple-500";
     if (event.type === "phase") return "bg-blue-500";
     if (event.type === "task") return "bg-green-500";
@@ -159,12 +164,13 @@ export default function MonthView({
                       }}
                       className={cn(
                         "text-[10px] px-2 py-1 rounded text-white truncate transition-opacity",
-                        getEventColor(event),
+                        !getEventColor && getEventBgClass(event),
                         clickable && "cursor-pointer hover:opacity-80",
                         draggable && "cursor-move",
                         !clickable && !draggable && "cursor-default opacity-70",
                         draggingEvent?.id === event.id && "opacity-50"
                       )}
+                      style={getEventColor ? { backgroundColor: getEventColor(event) } : undefined}
                       title={!clickable && !draggable ? "No tienes permisos para editar" : undefined}
                     >
                       {event.name || event.title}

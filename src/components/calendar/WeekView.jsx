@@ -15,7 +15,8 @@ export default function WeekView({
   canEditEvents = true,
   canEditTasks = true,
   canEditProjects = true,
-  snapMinutes = 30
+  snapMinutes = 30,
+  getEventColor
 }) {
   const [draggingEvent, setDraggingEvent] = useState(null);
   const [resizingEvent, setResizingEvent] = useState(null);
@@ -33,7 +34,11 @@ export default function WeekView({
     });
   };
 
-  const getEventColor = (event) => {
+  const getEventBgClass = (event) => {
+    if (getEventColor) {
+      return "border";
+    }
+    // Fallback por defecto
     if (event.type === "project") return "bg-purple-100 border-purple-300 text-purple-800";
     if (event.type === "phase") return "bg-blue-100 border-blue-300 text-blue-800";
     if (event.type === "task") return "bg-green-100 border-green-300 text-green-800";
@@ -41,6 +46,30 @@ export default function WeekView({
     if (event.type === "milestone") return "bg-amber-100 border-amber-300 text-amber-800";
     if (event.type === "campaign") return "bg-pink-100 border-pink-300 text-pink-800";
     return "bg-slate-100 border-slate-300 text-slate-800";
+  };
+
+  const hexToRgb = (hex) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : null;
+  };
+
+  const getEventStyle = (event) => {
+    if (!getEventColor) return {};
+    
+    const color = getEventColor(event);
+    const rgb = hexToRgb(color);
+    
+    if (!rgb) return { backgroundColor: color };
+    
+    return {
+      backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`,
+      borderColor: color,
+      color: color
+    };
   };
 
   const canClickEvent = (event) => {
@@ -236,13 +265,14 @@ export default function WeekView({
                                 if (clickable) onEventClick(event);
                               }}
                               className={cn(
-                                "relative border rounded px-2 py-1 text-xs transition-shadow group",
-                                getEventColor(event),
+                                "relative rounded px-2 py-1 text-xs transition-shadow group",
+                                getEventBgClass(event),
                                 clickable && "cursor-pointer hover:shadow-md",
                                 draggable && "cursor-move",
                                 !clickable && !draggable && "cursor-default opacity-60",
                                 draggingEvent?.id === event.id && "opacity-50"
                               )}
+                              style={getEventStyle(event)}
                               title={!clickable && !draggable ? "No tienes permisos para editar" : undefined}
                             >
                               <div className="font-medium truncate">{event.name || event.title}</div>

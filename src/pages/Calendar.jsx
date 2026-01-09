@@ -11,6 +11,8 @@ import CalendarFilters from "@/components/calendar/CalendarFilters";
 import MonthView from "@/components/calendar/MonthView";
 import WeekView from "@/components/calendar/WeekView";
 import FreeTaskDialog from "@/components/calendar/FreeTaskDialog";
+import CalendarSettingsDialog from "@/components/calendar/CalendarSettingsDialog";
+import CalendarAuditDialog from "@/components/calendar/CalendarAuditDialog";
 import { usePermissions } from "@/components/permissions/usePermissions";
 
 export default function Calendar() {
@@ -32,6 +34,8 @@ export default function Calendar() {
   const [editingTask, setEditingTask] = useState(null);
   const [clickedDate, setClickedDate] = useState(null);
   const [snapMinutes, setSnapMinutes] = useState(30);
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [auditDialogOpen, setAuditDialogOpen] = useState(false);
 
   const queryClient = useQueryClient();
   const { hasPermission, isAdmin, loading: permissionsLoading } = usePermissions();
@@ -82,6 +86,23 @@ export default function Calendar() {
     queryKey: ['freeTasks'],
     queryFn: () => base44.entities.FreeTask.list()
   });
+
+  const { data: calendarConfigs = [] } = useQuery({
+    queryKey: ['calendarConfig', currentUser?.email],
+    queryFn: async () => {
+      if (!currentUser?.email) return [];
+      return await base44.entities.CalendarConfig.filter({ user_email: currentUser.email });
+    },
+    enabled: !!currentUser?.email
+  });
+
+  const { data: auditLogs = [] } = useQuery({
+    queryKey: ['calendarAuditLogs'],
+    queryFn: () => base44.entities.CalendarAuditLog.list('-timestamp', 100),
+    refetchInterval: 30000
+  });
+
+  const calendarConfig = calendarConfigs[0];
 
   const createFreeTaskMutation = useMutation({
     mutationFn: (taskData) => base44.entities.FreeTask.create(taskData),
@@ -357,6 +378,30 @@ export default function Calendar() {
     }
   });
 
+  const saveConfigMutation = useMutation({
+    mutationFn: async (configData) => {
+      if (calendarConfig?.id) {
+        return await base44.entities.CalendarConfig.update(calendarConfig.id, configData);
+      } else {
+        return await base44.entities.CalendarConfig.create({
+          user_email: currentUser?.email,
+          ...configData
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendarConfig'] });
+      setSettingsDialogOpen(false);
+    }
+  });
+
+  const logAuditMutation = useMutation({
+    mutationFn: (auditData) => base44.entities.CalendarAuditLog.create(auditData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendarAuditLogs'] });
+    }
+  });
+
   const snapToGrid = (date) => {
     const minutes = date.getMinutes();
     const snappedMinutes = Math.round(minutes / snapMinutes) * snapMinutes;
@@ -392,10 +437,27 @@ export default function Calendar() {
     const dateStr = snappedDate.toISOString().split('T')[0];
     const timeStr = `${String(snappedDate.getHours()).padStart(2, '0')}:${String(snappedDate.getMinutes()).padStart(2, '0')}`;
 
+    // Registrar auditoría
+    const oldStartDate = new Date(event.start_date || event.date);
+    const oldEndDate = event.estimated_end_date || event.due_date || event.end_date;
+
     if (event.type === "freeTask") {
+      const updateData = { date: dateStr, time: timeStr };
       updateFreeTaskMutation.mutate({
         id: event.id,
-        data: { date: dateStr, time: timeStr }
+        data: updateData
+      });
+      
+      logAuditMutation.mutate({
+        action: "move",
+        event_type: event.type,
+        event_id: event.id,
+        event_name: event.name,
+        user_email: currentUser?.email,
+        user_name: currentUser?.full_name,
+        timestamp: new Date().toISOString(),
+        old_start_date: oldStartDate.toISOString(),
+        new_start_date: snappedDate.toISOString()
       });
     } else if (event.type === "task") {
       const originalStart = new Date(event.start_date);
@@ -403,6 +465,8 @@ export default function Calendar() {
       const duration = originalEnd ? originalEnd - originalStart : null;
 
       const updateData = { start_date: snappedDate.toISOString() };
+      let newEndDate = originalEnd;
+      
       if (duration && originalEnd) {
         const newEnd = new Date(snappedDate.getTime() + duration);
         const conflicts = checkConflicts(event, snappedDate, newEnd);
@@ -412,31 +476,80 @@ export default function Calendar() {
         }
         
         updateData.due_date = newEnd.toISOString();
+        newEndDate = newEnd;
       }
 
       updateTaskMutation.mutate({ id: event.id, type: "task", data: updateData });
+      
+      logAuditMutation.mutate({
+        action: "move",
+        event_type: event.type,
+        event_id: event.id,
+        event_name: event.name,
+        user_email: currentUser?.email,
+        user_name: currentUser?.full_name,
+        timestamp: new Date().toISOString(),
+        old_start_date: originalStart.toISOString(),
+        new_start_date: snappedDate.toISOString(),
+        old_end_date: originalEnd?.toISOString(),
+        new_end_date: newEndDate?.toISOString()
+      });
     } else if (event.type === "phase") {
       const originalStart = new Date(event.start_date);
       const originalEnd = event.end_date ? new Date(event.end_date) : null;
       const duration = originalEnd ? originalEnd - originalStart : null;
 
       const updateData = { start_date: snappedDate.toISOString() };
+      let newEndDate = originalEnd;
+      
       if (duration && originalEnd) {
-        updateData.end_date = new Date(snappedDate.getTime() + duration).toISOString();
+        newEndDate = new Date(snappedDate.getTime() + duration);
+        updateData.end_date = newEndDate.toISOString();
       }
 
       updateTaskMutation.mutate({ id: event.id, type: "phase", data: updateData });
+      
+      logAuditMutation.mutate({
+        action: "move",
+        event_type: event.type,
+        event_id: event.id,
+        event_name: event.name,
+        user_email: currentUser?.email,
+        user_name: currentUser?.full_name,
+        timestamp: new Date().toISOString(),
+        old_start_date: originalStart.toISOString(),
+        new_start_date: snappedDate.toISOString(),
+        old_end_date: originalEnd?.toISOString(),
+        new_end_date: newEndDate?.toISOString()
+      });
     } else if (event.type === "project") {
       const originalStart = new Date(event.start_date);
       const originalEnd = event.estimated_end_date ? new Date(event.estimated_end_date) : null;
       const duration = originalEnd ? originalEnd - originalStart : null;
 
       const updateData = { start_date: snappedDate.toISOString() };
+      let newEndDate = originalEnd;
+      
       if (duration && originalEnd) {
-        updateData.estimated_end_date = new Date(snappedDate.getTime() + duration).toISOString();
+        newEndDate = new Date(snappedDate.getTime() + duration);
+        updateData.estimated_end_date = newEndDate.toISOString();
       }
 
       updateTaskMutation.mutate({ id: event.id, type: "project", data: updateData });
+      
+      logAuditMutation.mutate({
+        action: "move",
+        event_type: event.type,
+        event_id: event.id,
+        event_name: event.name,
+        user_email: currentUser?.email,
+        user_name: currentUser?.full_name,
+        timestamp: new Date().toISOString(),
+        old_start_date: originalStart.toISOString(),
+        new_start_date: snappedDate.toISOString(),
+        old_end_date: originalEnd?.toISOString(),
+        new_end_date: newEndDate?.toISOString()
+      });
     } else if (event.type === "milestone") {
       updateTaskMutation.mutate({ id: event.id, type: "milestone", data: { date: dateStr } });
     } else if (event.type === "campaign") {
@@ -463,6 +576,11 @@ export default function Calendar() {
 
     const snappedDate = snapToGrid(newDate);
     
+    // Capturar valores antiguos para auditoría
+    const oldStart = new Date(event.start_date || event.date);
+    const oldEnd = event.estimated_end_date || event.due_date || event.end_date ? 
+                   new Date(event.estimated_end_date || event.due_date || event.end_date) : null;
+    
     if (event.type === "freeTask") {
       if (direction === "end") {
         const timeStr = `${String(snappedDate.getHours()).padStart(2, '0')}:${String(snappedDate.getMinutes()).padStart(2, '0')}`;
@@ -478,16 +596,78 @@ export default function Calendar() {
         }
         
         updateTaskMutation.mutate({ id: event.id, type: "task", data: { due_date: snappedDate.toISOString() } });
+        
+        logAuditMutation.mutate({
+          action: "resize",
+          event_type: event.type,
+          event_id: event.id,
+          event_name: event.name,
+          user_email: currentUser?.email,
+          user_name: currentUser?.full_name,
+          timestamp: new Date().toISOString(),
+          old_start_date: oldStart.toISOString(),
+          new_start_date: oldStart.toISOString(),
+          old_end_date: oldEnd?.toISOString(),
+          new_end_date: snappedDate.toISOString()
+        });
       } else {
         updateTaskMutation.mutate({ id: event.id, type: "task", data: { start_date: snappedDate.toISOString() } });
       }
     } else if (event.type === "phase" || event.type === "project") {
       const field = direction === "end" ? "estimated_end_date" : "start_date";
       updateTaskMutation.mutate({ id: event.id, type: event.type, data: { [field]: snappedDate.toISOString() } });
+      
+      logAuditMutation.mutate({
+        action: "resize",
+        event_type: event.type,
+        event_id: event.id,
+        event_name: event.name,
+        user_email: currentUser?.email,
+        user_name: currentUser?.full_name,
+        timestamp: new Date().toISOString(),
+        old_start_date: oldStart.toISOString(),
+        new_start_date: direction === "start" ? snappedDate.toISOString() : oldStart.toISOString(),
+        old_end_date: oldEnd?.toISOString(),
+        new_end_date: direction === "end" ? snappedDate.toISOString() : oldEnd?.toISOString()
+      });
     } else if (event.type === "campaign") {
       const field = direction === "end" ? "end_date" : "start_date";
       updateTaskMutation.mutate({ id: event.id, type: "campaign", data: { [field]: snappedDate.toISOString() } });
     }
+  };
+
+  const handleSaveSettings = (configData) => {
+    saveConfigMutation.mutate(configData);
+  };
+
+  const getEventColor = (event) => {
+    // Usar color personalizado de proyecto si existe
+    if (event.type === "project" && calendarConfig?.custom_project_colors?.[event.id]) {
+      return calendarConfig.custom_project_colors[event.id];
+    }
+    
+    // Usar color del proyecto para tareas/fases si está configurado
+    if ((event.type === "task" || event.type === "phase") && event.project_id) {
+      const projectColor = calendarConfig?.custom_project_colors?.[event.project_id];
+      if (projectColor) return projectColor;
+    }
+    
+    // Usar esquema de colores personalizado
+    if (calendarConfig?.color_scheme?.[event.type]) {
+      return calendarConfig.color_scheme[event.type];
+    }
+    
+    // Colores por defecto
+    const defaults = {
+      project: "#9333ea",
+      phase: "#3b82f6",
+      task: "#10b981",
+      freeTask: "#64748b",
+      milestone: "#f59e0b",
+      campaign: "#ec4899"
+    };
+    
+    return defaults[event.type] || event.color || "#64748b";
   };
 
   // Sin permiso de ver calendario, mostrar mensaje
@@ -527,6 +707,8 @@ export default function Calendar() {
         canCreateEvents={canCreateEvents}
         snapMinutes={snapMinutes}
         setSnapMinutes={setSnapMinutes}
+        onOpenSettings={() => setSettingsDialogOpen(true)}
+        onOpenAudit={() => setAuditDialogOpen(true)}
       />
 
       {/* Alerts */}
@@ -639,6 +821,7 @@ export default function Calendar() {
           canEditEvents={canEditEvents}
           canEditTasks={canEditTasks}
           canEditProjects={canEditProjects}
+          getEventColor={getEventColor}
         />
       )}
 
@@ -653,6 +836,7 @@ export default function Calendar() {
           canEditTasks={canEditTasks}
           canEditProjects={canEditProjects}
           snapMinutes={snapMinutes}
+          getEventColor={getEventColor}
         />
       )}
 
@@ -670,6 +854,7 @@ export default function Calendar() {
           canEditTasks={canEditTasks}
           canEditProjects={canEditProjects}
           snapMinutes={snapMinutes}
+          getEventColor={getEventColor}
           singleDay={true}
         />
       )}
@@ -687,6 +872,20 @@ export default function Calendar() {
         users={users}
         currentUser={currentUser}
         canEdit={editingTask?.id ? canEditEvents : canCreateEvents}
+      />
+
+      <CalendarSettingsDialog
+        isOpen={settingsDialogOpen}
+        onClose={() => setSettingsDialogOpen(false)}
+        config={calendarConfig}
+        onSave={handleSaveSettings}
+        projects={projects}
+      />
+
+      <CalendarAuditDialog
+        isOpen={auditDialogOpen}
+        onClose={() => setAuditDialogOpen(false)}
+        auditLogs={auditLogs}
       />
     </div>
   );
