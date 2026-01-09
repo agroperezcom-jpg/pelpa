@@ -192,9 +192,13 @@ export default function CsvImportMapperDialog({
 
   // Vista previa de datos transformados
   const previewData = useMemo(() => {
-    if (!validateMapping() || headers.length === 0) return [];
-    return transformData(true).slice(0, 3);
-  }, [fieldMapping, rows]);
+    if (headers.length === 0) return [];
+    try {
+      return transformData(true).slice(0, 3);
+    } catch {
+      return [];
+    }
+  }, [fieldMapping, headers.length]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
