@@ -408,7 +408,7 @@ export default function Inventory() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredProducts.map((product) => (
+                {paginatedProducts.map((product) => (
                   <TableRow key={product.id} className="hover:bg-slate-50">
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -448,6 +448,36 @@ export default function Inventory() {
                 ))}
               </TableBody>
             </Table>
+            {filteredProducts.length > 0 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 bg-slate-50">
+                <p className="text-xs text-slate-600">
+                  Mostrando <span className="font-medium">{((currentPage - 1) * itemsPerPage) + 1}</span> a <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredProducts.length)}</span> de <span className="font-medium">{filteredProducts.length}</span> productos
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="h-8 px-4 text-xs"
+                  >
+                    ← Anterior
+                  </Button>
+                  <span className="flex items-center text-xs text-slate-600 px-2">
+                    Página <span className="font-medium mx-1">{currentPage}</span> de <span className="font-medium mx-1">{totalPages}</span>
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="h-8 px-4 text-xs"
+                  >
+                    Siguiente →
+                  </Button>
+                </div>
+              </div>
+            )}
           </Card>
         </TabsContent>
 
