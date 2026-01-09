@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -446,7 +445,7 @@ export default function Analytics() {
         <CardContent className="p-3 sm:p-4">
           <div className="flex flex-col gap-3 items-start sm:flex-row sm:items-end sm:gap-4 w-full">
             <div className="space-y-2 w-full sm:w-auto">
-              <Label className="text-xs sm:text-sm">Período</Label>
+              <span className="text-xs sm:text-sm font-medium text-slate-700">Período</span>
               <Select value={dateRange} onValueChange={handleDateRangeChange}>
                 <SelectTrigger className="w-full sm:w-40">
                   <SelectValue />
@@ -461,7 +460,7 @@ export default function Analytics() {
               </Select>
             </div>
             <div className="space-y-2 w-full sm:w-auto">
-              <Label className="text-xs sm:text-sm">Desde</Label>
+              <span className="text-xs sm:text-sm font-medium text-slate-700">Desde</span>
               <Input
                 type="date"
                 value={startDate}
@@ -470,7 +469,7 @@ export default function Analytics() {
               />
             </div>
             <div className="space-y-2 w-full sm:w-auto">
-              <Label className="text-xs sm:text-sm">Hasta</Label>
+              <span className="text-xs sm:text-sm font-medium text-slate-700">Hasta</span>
               <Input
                 type="date"
                 value={endDate}
@@ -479,7 +478,7 @@ export default function Analytics() {
               />
             </div>
             <div className="space-y-2 w-full sm:w-auto">
-              <Label className="text-xs sm:text-sm">Categoría</Label>
+              <span className="text-xs sm:text-sm font-medium text-slate-700">Categoría</span>
               <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
                 <SelectTrigger className="w-full sm:w-40">
                   <SelectValue />
@@ -495,7 +494,7 @@ export default function Analytics() {
               </Select>
             </div>
             <div className="space-y-2 w-full sm:w-auto">
-              <Label className="text-xs sm:text-sm">Empleado</Label>
+              <span className="text-xs sm:text-sm font-medium text-slate-700">Empleado</span>
               <Select value={filtroEmpleado} onValueChange={setFiltroEmpleado}>
                 <SelectTrigger className="w-full sm:w-40">
                   <SelectValue />
@@ -585,7 +584,7 @@ export default function Analytics() {
       </div>
 
       <div className="flex items-center gap-4 mb-6">
-        <Label className="text-sm font-medium text-slate-700">Vista:</Label>
+        <span className="text-sm font-medium text-slate-700">Vista:</span>
         <Select value={activeView} onValueChange={setActiveView}>
           <SelectTrigger className="w-80">
             <SelectValue />
