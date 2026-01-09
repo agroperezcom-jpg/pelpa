@@ -319,7 +319,7 @@ export default function Analytics() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {Array.from(new Set(products.map(p => p.category).filter(Boolean))).map(cat => {
+                  {Array.from({ set: new Set(products.map(p => p.category)) }).map(cat => {
                     const ventasCat = filteredSales.filter(s => s.items?.some(i => products.find(p => p.id === i.item_id)?.category === cat)).reduce((acc, s) => acc + s.total, 0);
                     return (
                       <div key={cat} className="flex justify-between items-center p-2 hover:bg-slate-50 rounded">
