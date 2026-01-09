@@ -51,31 +51,37 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
   }, [initialData, isOpen, currentUser]);
 
   const handleSave = (e) => {
-    e?.preventDefault();
-    e?.stopPropagation();
-    
-    console.log("=== FreeTaskDialog handleSave INICIO ===");
-    console.log("canEdit:", canEdit);
-    console.log("formData:", formData);
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     
     if (!canEdit) {
-      console.error("❌ Sin permisos para editar");
       alert("No tienes permisos para crear/editar tareas");
       return;
     }
     
     if (!formData.name || !formData.date) {
-      console.error("❌ Faltan campos obligatorios");
       alert("Complete el nombre y la fecha");
       return;
     }
     
-    console.log("✅ Validaciones OK - Llamando onSave");
-    console.log("Datos que se envían:", formData);
+    // Crear objeto completo con todos los campos necesarios
+    const taskToSave = {
+      name: formData.name.trim(),
+      description: formData.description || "",
+      date: formData.date,
+      time: formData.time || "09:00",
+      duration: formData.duration ? parseInt(formData.duration) : 60,
+      status: formData.status || "pendiente",
+      priority: formData.priority || "media",
+      assigned_to: formData.assigned_to || currentUser?.email,
+      assigned_to_name: formData.assigned_to_name || currentUser?.full_name,
+      tags: formData.tags || [],
+      recurrence: formData.recurrence || "none"
+    };
     
-    onSave(formData);
-    
-    console.log("=== FreeTaskDialog handleSave FIN ===");
+    onSave(taskToSave);
   };
 
   const addTag = () => {
