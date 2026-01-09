@@ -49,6 +49,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import toast from "react-hot-toast";
 
 export default function Sales() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -649,6 +650,16 @@ export default function Sales() {
       queryClient.invalidateQueries({ queryKey: ['iibbVentas'] });
       queryClient.invalidateQueries({ queryKey: ['cheques'] });
       setIsPagosDialogOpen(false);
+      toast.success(`✓ Venta confirmada - ${sale.numero_comprobante}`, {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#10b981',
+          color: '#fff',
+          fontWeight: 'bold',
+          fontSize: '16px'
+        }
+      });
       setVentaConfirmada(sale);
       setPagosConfirmados(variables.pagos);
       setIsTicketDialogOpen(true);
