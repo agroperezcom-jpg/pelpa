@@ -758,8 +758,39 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
               </DialogFooter>
             </div>
           )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
+
+          {/* Confirmation Dialog */}
+          {showConfirmation && (
+           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+             <div className="bg-white rounded-lg p-6 max-w-md">
+               <h3 className="text-lg font-bold text-slate-800 mb-2">Confirmar ajustes</h3>
+               <p className="text-sm text-slate-600 mb-4">
+                 Estás a punto de aplicar {detalles.filter(d => d.diferencia !== 0).length} ajustes de stock.
+                 Esta acción no se puede deshacer. ¿Deseas continuar?
+               </p>
+               <div className="flex gap-2 justify-end">
+                 <Button
+                   variant="outline"
+                   onClick={() => setShowConfirmation(false)}
+                 >
+                   Cancelar
+                 </Button>
+                 <Button
+                   className="bg-green-600 hover:bg-green-700"
+                   onClick={() => {
+                     const obs = document.getElementById('observaciones-finales').value;
+                     handleConfirmarAjustes(obs);
+                     setShowConfirmation(false);
+                   }}
+                 >
+                   Confirmar
+                 </Button>
+               </div>
+             </div>
+           </div>
+          )}
+          </div>
+          </DialogContent>
+          </Dialog>
+          );
+          }
