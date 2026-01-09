@@ -524,7 +524,7 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredProducts.map(product => (
+                        {filteredProducts.map((product, index) => (
                           <TableRow key={product.id}>
                             <TableCell>
                               <div>
@@ -540,27 +540,41 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
                               </div>
                             </TableCell>
                             <TableCell>
-                              <div className="flex justify-center gap-2 items-center">
+                              <div className="flex justify-center gap-1 items-center">
                                 <Button
-                                  size="sm"
+                                  size="icon"
                                   variant="outline"
+                                  className="h-7 w-7"
                                   onClick={() => updateConteo(product.id, (conteo[product.id] || 0) - 1)}
                                 >
-                                  <Minus className="h-4 w-4" />
+                                  <Minus className="h-3 w-3" />
                                 </Button>
                                 <Input
                                   type="number"
                                   min="0"
-                                  value={conteo[product.id] || 0}
+                                  value={conteo[product.id] || ""}
                                   onChange={(e) => updateConteo(product.id, parseInt(e.target.value) || 0)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      const nextRow = filteredProducts[index + 1];
+                                      if (nextRow) {
+                                        const nextInput = e.target.closest('tbody').querySelectorAll('input[type="number"]')[index + 1];
+                                        nextInput?.focus();
+                                        nextInput?.select();
+                                      }
+                                    }
+                                  }}
                                   className="w-20 text-center"
+                                  placeholder="0"
                                 />
                                 <Button
-                                  size="sm"
+                                  size="icon"
                                   variant="outline"
+                                  className="h-7 w-7"
                                   onClick={() => updateConteo(product.id, (conteo[product.id] || 0) + 1)}
                                 >
-                                  <Plus className="h-4 w-4" />
+                                  <Plus className="h-3 w-3" />
                                 </Button>
                               </div>
                             </TableCell>
