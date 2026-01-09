@@ -551,40 +551,42 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
                                   <Minus className="h-3 w-3" />
                                 </Button>
                                 <Input
-                                  type="number"
-                                  min="0"
-                                  value={conteo[product.id] !== undefined ? conteo[product.id] : ""}
-                                  onChange={(e) => {
-                                    const val = e.target.value.trim();
-                                    if (val === "") {
-                                      setConteo(prev => {
-                                        const newConteo = { ...prev };
-                                        delete newConteo[product.id];
-                                        return newConteo;
-                                      });
-                                    } else {
-                                      const num = parseInt(val);
-                                      if (!isNaN(num) && num >= 0) {
-                                        setConteo(prev => ({ ...prev, [product.id]: num }));
-                                      }
-                                    }
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault();
-                                      const nextRow = filteredProducts[index + 1];
-                                      if (nextRow) {
-                                        const nextInput = e.target.closest('tbody').querySelectorAll('input[type="number"]')[index + 1];
-                                        setTimeout(() => {
-                                          nextInput?.focus();
-                                          nextInput?.select();
-                                        }, 0);
-                                      }
-                                    }
-                                  }}
-                                  className="w-20 text-center"
-                                  placeholder="0"
-                                />
+                                   ref={(el) => {
+                                     if (el) inputsRef.current[product.id] = el;
+                                   }}
+                                   type="number"
+                                   min="0"
+                                   value={conteo[product.id] !== undefined ? conteo[product.id] : ""}
+                                   onChange={(e) => {
+                                     const val = e.target.value;
+                                     if (val === "") {
+                                       setConteo(prev => {
+                                         const newConteo = { ...prev };
+                                         delete newConteo[product.id];
+                                         return newConteo;
+                                       });
+                                     } else {
+                                       const num = parseInt(val, 10);
+                                       if (!isNaN(num) && num >= 0) {
+                                         setConteo(prev => ({ ...prev, [product.id]: num }));
+                                       }
+                                     }
+                                   }}
+                                   onKeyDown={(e) => {
+                                     if (e.key === 'Enter') {
+                                       e.preventDefault();
+                                       const nextProduct = filteredProducts[index + 1];
+                                       if (nextProduct) {
+                                         setTimeout(() => {
+                                           inputsRef.current[nextProduct.id]?.focus();
+                                           inputsRef.current[nextProduct.id]?.select();
+                                         }, 0);
+                                       }
+                                     }
+                                   }}
+                                   className="w-20 text-center"
+                                   placeholder="0"
+                                 />
                                 <Button
                                   size="icon"
                                   variant="outline"
