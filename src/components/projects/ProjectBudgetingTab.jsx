@@ -556,14 +556,15 @@ export default function ProjectBudgetingTab({ projectId, projectStatus }) {
 
       {/* Dialog Crear/Editar Presupuesto */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>
               {editingBudget ? 'Editar Versión' : 'Nueva Versión de Presupuesto'}
             </DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+            <div className="flex-1 overflow-y-auto px-1 space-y-4">
             <div className="space-y-2">
               <Label>Nombre de la Versión *</Label>
               <Input
