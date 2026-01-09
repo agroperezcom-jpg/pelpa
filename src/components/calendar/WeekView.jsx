@@ -6,10 +6,10 @@ import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import DraggableEventItem from "./DraggableEventItem";
 
-export default function WeekView({ currentDate, events, onEventClick, onEventDrop, onEventResize }) {
+export default function WeekView({ currentDate, events, onEventClick, onEventDrop, onEventResize, singleDay = false }) {
   const [draggingEvent, setDraggingEvent] = useState(null);
-  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
+  const weekStart = singleDay ? currentDate : startOfWeek(currentDate, { weekStartsOn: 1 });
+  const weekEnd = singleDay ? currentDate : endOfWeek(currentDate, { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
