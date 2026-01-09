@@ -5,7 +5,6 @@ import { startOfWeek, endOfWeek, eachDayOfInterval, format, isToday, isSameDay, 
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import DraggableEventItem from "./DraggableEventItem";
-import DraggableEventItem from "./DraggableEventItem";
 
 export default function WeekView({ currentDate, events, onEventClick, onEventDrop, onEventResize, singleDay = false }) {
   const [draggingEvent, setDraggingEvent] = useState(null);
