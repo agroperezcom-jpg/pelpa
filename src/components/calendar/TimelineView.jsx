@@ -19,6 +19,23 @@ export default function TimelineView({ currentDate, events, onEventClick, onEven
     e.dataTransfer.dropEffect = "move";
   };
 
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!onEventDrop) return;
+
+    try {
+      const eventData = JSON.parse(e.dataTransfer.getData("application/json"));
+      // En timeline mantenemos la fecha actual ya que es más complejo calcular la nueva
+      // El usuario puede editar manualmente si necesita cambiar fechas
+      const currentDate = new Date(eventData.start_date || eventData.date);
+      onEventDrop(eventData, currentDate);
+    } catch (err) {
+      console.error("Error dropping event:", err);
+    }
+    setDraggingEvent(null);
+  };
+
   // Filtrar solo proyectos, fases y tareas con fechas
   const timelineEvents = events.filter(e => 
     (e.type === "project" || e.type === "phase" || e.type === "task") &&
@@ -111,7 +128,11 @@ export default function TimelineView({ currentDate, events, onEventClick, onEven
                 <div className="relative">
                   <div className="flex items-center gap-3 mb-1">
                     <span className="text-xs font-medium text-slate-600 w-32">Proyecto</span>
-                    <div className="flex-1 relative h-8 bg-slate-100 rounded overflow-hidden">
+                    <div 
+                     className="flex-1 relative h-8 bg-slate-100 rounded overflow-hidden"
+                     onDragOver={handleDragOver}
+                     onDrop={handleDrop}
+                    >
                     <DraggableEventItem
                     event={project}
                     onEventClick={onEventClick}
@@ -139,17 +160,21 @@ export default function TimelineView({ currentDate, events, onEventClick, onEven
                             <Icon className="h-3 w-3" />
                             Fase #{phase.order}
                           </span>
-                          <div className="flex-1 relative h-7 bg-slate-50 rounded overflow-hidden">
-                           <DraggableEventItem
-                             event={phase}
-                             onEventClick={onEventClick}
-                             onEventDrop={onEventDrop}
-                             onEventResize={onEventResize}
-                             eventColor={getEventColor(phase)}
-                             isDragging={draggingEvent?.id === phase.id}
-                             style={getEventPosition(phase.start_date, phase.end_date)}
-                             layout="timeline"
-                           />
+                          <div 
+                           className="flex-1 relative h-7 bg-slate-50 rounded overflow-hidden"
+                           onDragOver={handleDragOver}
+                           onDrop={handleDrop}
+                          >
+                          <DraggableEventItem
+                            event={phase}
+                            onEventClick={onEventClick}
+                            onEventDrop={onEventDrop}
+                            onEventResize={onEventResize}
+                            eventColor={getEventColor(phase)}
+                            isDragging={draggingEvent?.id === phase.id}
+                            style={getEventPosition(phase.start_date, phase.end_date)}
+                            layout="timeline"
+                          />
                           </div>
                         </div>
                       </div>
@@ -170,17 +195,21 @@ export default function TimelineView({ currentDate, events, onEventClick, onEven
                             <Icon className="h-3 w-3" />
                             Tarea
                           </span>
-                          <div className="flex-1 relative h-6 bg-slate-50 rounded overflow-hidden">
-                           <DraggableEventItem
-                             event={task}
-                             onEventClick={onEventClick}
-                             onEventDrop={onEventDrop}
-                             onEventResize={onEventResize}
-                             eventColor={getEventColor(task)}
-                             isDragging={draggingEvent?.id === task.id}
-                             style={getEventPosition(task.start_date, task.due_date)}
-                             layout="timeline"
-                           />
+                          <div 
+                           className="flex-1 relative h-6 bg-slate-50 rounded overflow-hidden"
+                           onDragOver={handleDragOver}
+                           onDrop={handleDrop}
+                          >
+                          <DraggableEventItem
+                            event={task}
+                            onEventClick={onEventClick}
+                            onEventDrop={onEventDrop}
+                            onEventResize={onEventResize}
+                            eventColor={getEventColor(task)}
+                            isDragging={draggingEvent?.id === task.id}
+                            style={getEventPosition(task.start_date, task.due_date)}
+                            layout="timeline"
+                          />
                           </div>
                         </div>
                       </div>
