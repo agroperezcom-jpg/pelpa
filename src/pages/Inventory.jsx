@@ -100,6 +100,12 @@ export default function Inventory() {
     return matchesSearch && matchesStock;
   });
 
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   const lowStockProducts = products.filter(p => p.stock <= p.min_stock && p.stock > 0);
   const outOfStockProducts = products.filter(p => p.stock === 0);
   const totalStock = products.reduce((acc, p) => acc + (p.stock || 0), 0);
