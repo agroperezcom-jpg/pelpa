@@ -281,18 +281,14 @@ export default function Layout({ children, currentPageName }) {
         />
       )}
 
-      {/* Pin/Unpin Button - Flecha flotante */}
-      {(sidebarOpen || sidebarPinned) && (
+      {/* Sidebar Toggle Button - Flecha flotante */}
+      {!sidebarOpen && (
         <button
-          onClick={() => setSidebarPinned(!sidebarPinned)}
-          className="fixed left-64 top-1/2 -translate-y-1/2 transform -translate-x-1/2 z-50 p-2 rounded-full bg-card border border-border/40 shadow-lg hover:bg-secondary transition-colors lg:hidden"
-          title={sidebarPinned ? "Desfijar" : "Fijar"}
+          onClick={() => setSidebarOpen(true)}
+          className="fixed left-6 top-20 z-45 p-3 rounded-full bg-card border border-border/40 shadow-lg hover:shadow-xl hover:bg-secondary transition-all duration-200 lg:hidden"
+          title="Abrir menú"
         >
-          {sidebarPinned ? (
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground rotate-180" />
-          )}
+          <ChevronRight className="h-5 w-5 text-muted-foreground" />
         </button>
       )}
 
