@@ -1012,7 +1012,7 @@ export default function Calendar() {
         initialData={editingTask || (clickedDate ? { date: clickedDate.toISOString().split('T')[0] } : null)}
         users={users}
         currentUser={currentUser}
-        canEdit={editingTask?.id ? canEditEvents : canCreateEvents}
+        canEdit={editingTask ? canEditEvents : canCreateEvents}
       />
 
       <CalendarSettingsDialog
