@@ -52,17 +52,30 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
 
   const handleSave = (e) => {
     e?.preventDefault();
-    console.log("handleSave ejecutado", { canEdit, formData });
+    e?.stopPropagation();
+    
+    console.log("=== FreeTaskDialog handleSave INICIO ===");
+    console.log("canEdit:", canEdit);
+    console.log("formData:", formData);
+    
     if (!canEdit) {
-      console.log("Sin permisos para editar");
+      console.error("❌ Sin permisos para editar");
+      alert("No tienes permisos para crear/editar tareas");
       return;
     }
+    
     if (!formData.name || !formData.date) {
-      alert("Complete los campos obligatorios");
+      console.error("❌ Faltan campos obligatorios");
+      alert("Complete el nombre y la fecha");
       return;
     }
-    console.log("Llamando onSave con:", formData);
+    
+    console.log("✅ Validaciones OK - Llamando onSave");
+    console.log("Datos que se envían:", formData);
+    
     onSave(formData);
+    
+    console.log("=== FreeTaskDialog handleSave FIN ===");
   };
 
   const addTag = () => {

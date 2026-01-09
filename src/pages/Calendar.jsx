@@ -159,8 +159,19 @@ export default function Calendar() {
   const calendarConfig = calendarConfigs[0];
 
   const createFreeTaskMutation = useMutation({
-    mutationFn: (taskData) => base44.entities.FreeTask.create(taskData),
-    onSuccess: () => {
+    mutationFn: async (taskData) => {
+      console.log("🚀 createFreeTaskMutation ejecutando con:", taskData);
+      try {
+        const result = await base44.entities.FreeTask.create(taskData);
+        console.log("✅ Tarea creada exitosamente:", result);
+        return result;
+      } catch (error) {
+        console.error("❌ Error creando tarea:", error);
+        throw error;
+      }
+    },
+    onSuccess: (data) => {
+      console.log("✅ onSuccess ejecutado, tarea creada:", data);
       queryClient.invalidateQueries({ queryKey: ['freeTasks'] });
       setFreeTaskDialogOpen(false);
       setEditingTask(null);
@@ -168,8 +179,8 @@ export default function Calendar() {
       toast.success('Tarea creada exitosamente');
     },
     onError: (error) => {
-      toast.error('Error al crear tarea');
-      console.error(error);
+      console.error("❌ onError ejecutado:", error);
+      toast.error('Error al crear tarea: ' + (error.message || 'Error desconocido'));
     }
   });
 
@@ -407,26 +418,39 @@ export default function Calendar() {
   };
 
   const handleSaveFreeTask = (taskData) => {
-    console.log("handleSaveFreeTask llamado con:", taskData);
-    console.log("Permisos:", { canEditEvents, canCreateEvents, editingTask });
+    console.log("=== Calendar handleSaveFreeTask INICIO ===");
+    console.log("taskData recibido:", taskData);
+    console.log("editingTask:", editingTask);
+    console.log("Permisos:", { 
+      canEditEvents, 
+      canCreateEvents, 
+      isAdmin,
+      esEdicion: !!editingTask?.id 
+    });
     
     // Validar permisos antes de guardar
     if (editingTask?.id && !canEditEvents) {
+      console.error("❌ Sin permisos para editar eventos");
       toast.error("No tienes permisos para editar eventos");
       return;
     }
     if (!editingTask?.id && !canCreateEvents) {
+      console.error("❌ Sin permisos para crear eventos");
       toast.error("No tienes permisos para crear eventos");
       return;
     }
 
     if (editingTask?.id) {
-      console.log("Actualizando tarea existente:", editingTask.id);
+      console.log("📝 EDITANDO tarea existente:", editingTask.id);
       updateFreeTaskMutation.mutate({ id: editingTask.id, data: taskData });
     } else {
-      console.log("Creando nueva tarea con datos:", taskData);
+      console.log("🆕 CREANDO nueva tarea");
+      console.log("Llamando createFreeTaskMutation.mutate con:", taskData);
       createFreeTaskMutation.mutate(taskData);
+      console.log("Mutación disparada");
     }
+    
+    console.log("=== Calendar handleSaveFreeTask FIN ===");
   };
 
   const updateTaskMutation = useMutation({
