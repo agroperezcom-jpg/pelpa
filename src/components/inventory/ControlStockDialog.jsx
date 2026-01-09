@@ -552,8 +552,18 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
                                 <Input
                                   type="number"
                                   min="0"
-                                  value={conteo[product.id] || ""}
-                                  onChange={(e) => updateConteo(product.id, parseInt(e.target.value) || 0)}
+                                  value={conteo[product.id] ?? ""}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === "") {
+                                      updateConteo(product.id, 0);
+                                    } else {
+                                      const num = parseInt(val);
+                                      if (!isNaN(num)) {
+                                        updateConteo(product.id, num);
+                                      }
+                                    }
+                                  }}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                       e.preventDefault();
@@ -565,6 +575,7 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
                                       }
                                     }
                                   }}
+                                  onFocus={(e) => e.target.select()}
                                   className="w-20 text-center"
                                   placeholder="0"
                                 />
