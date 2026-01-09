@@ -298,10 +298,9 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed top-0 left-0 bottom-0 w-64 bg-card border-r border-border/40 z-50 transition-theme",
+        "fixed lg:relative top-0 left-0 bottom-0 w-64 bg-card border-r border-border/40 z-40 transition-theme",
         "transition-transform duration-300 ease-out",
-        "lg:translate-x-0",
-        sidebarOpen || sidebarPinned ? "translate-x-0" : "-translate-x-full"
+        sidebarPinned ? "translate-x-0 lg:translate-x-0" : "lg:-translate-x-full -translate-x-full"
       )}>
         <div className="flex flex-col h-full">
           {/* Logo */}
