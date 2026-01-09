@@ -485,7 +485,7 @@ export default function Analytics() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todas">Todas</SelectItem>
-                  {[...new Set(products.map(p => p.category))].filter(Boolean).map(cat => (
+                  {[...new Set((products || []).map(p => p.category))].filter(Boolean).map(cat => (
                     <SelectItem key={cat} value={cat}>
                       {cat.charAt(0).toUpperCase() + cat.slice(1)}
                     </SelectItem>
@@ -501,7 +501,7 @@ export default function Analytics() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos</SelectItem>
-                  {[...new Set(sales.map(s => s.employee_email))].filter(Boolean).map(email => {
+                  {[...new Set((sales || []).map(s => s.employee_email))].filter(Boolean).map(email => {
                     const venta = sales.find(s => s.employee_email === email);
                     return (
                       <SelectItem key={email} value={email}>
@@ -2356,7 +2356,7 @@ export default function Analytics() {
                         dataKey="value"
                         label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                       >
-                        {COLORS.map((color, index) => (
+                        {(COLORS || []).map((color, index) => (
                           <Cell key={`cell-${index}`} fill={color} />
                         ))}
                       </Pie>
