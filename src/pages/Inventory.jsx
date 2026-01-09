@@ -46,6 +46,7 @@ import {
 } from "lucide-react";
 import DeleteProductsDialog from "../components/inventory/DeleteProductsDialog";
 import CsvImportMapperDialog from "../components/inventory/CsvImportMapperDialog";
+import ControlStockDialog from "../components/inventory/ControlStockDialog";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -63,6 +64,7 @@ export default function Inventory() {
   const [stockFilter, setStockFilter] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isControlStockOpen, setIsControlStockOpen] = useState(false);
   const [movementType, setMovementType] = useState("entrada");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState("");
@@ -335,6 +337,10 @@ export default function Inventory() {
              className="hidden"
              onChange={handleImportCSV}
            />
+          <Button variant="outline" onClick={() => setIsControlStockOpen(true)} className="border-blue-200 text-blue-600 hover:bg-blue-50 w-full sm:w-auto whitespace-nowrap">
+            <History className="h-4 w-4 mr-2" />
+            Control de Stock
+          </Button>
           <Button variant="outline" onClick={() => handleOpenDialog('salida')} className="border-red-200 text-red-600 hover:bg-red-50 w-full sm:w-auto whitespace-nowrap">
             <Minus className="h-4 w-4 mr-2" />
             Salida
@@ -617,6 +623,13 @@ export default function Inventory() {
         csvData={csvDataForMapper}
         tiposArticulo={tiposArticulo}
         onConfirm={handleConfirmImport}
+      />
+
+      {/* Control de Stock Dialog */}
+      <ControlStockDialog
+        isOpen={isControlStockOpen}
+        onClose={() => setIsControlStockOpen(false)}
+        products={products}
       />
 
       {/* Movement Dialog */}
