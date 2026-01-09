@@ -250,36 +250,21 @@ export default function Layout({ children, currentPageName }) {
     <ThemeProvider>
       <div className="min-h-screen bg-background transition-theme">
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card/90 backdrop-blur-sm border-b border-border/40 z-50 flex items-center justify-between px-4 transition-theme">
-        <button 
-          onClick={() => setSidebarOpen(true)}
-          className="p-2 -ml-2 rounded-lg hover:bg-secondary transition-colors"
-        >
-          <Menu className="h-5 w-5 text-muted-foreground" />
-        </button>
-
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card/90 backdrop-blur-sm border-b border-border/40 z-40 flex items-center justify-between px-4 transition-theme">
         <span 
           className="text-sm font-medium text-foreground"
           style={{ fontFamily: fontFamilyMap[tipografiaLogo] }}
         >
           {allPages.find(p => p.page === currentPageName)?.name || "Dashboard"}
         </span>
-        
+
         <button 
           onClick={() => setCommandOpen(true)}
-          className="p-2 -mr-2 rounded-lg hover:bg-secondary transition-colors"
+          className="p-2 rounded-lg hover:bg-secondary transition-colors"
         >
           <Search className="h-5 w-5 text-muted-foreground" />
         </button>
       </header>
-
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div 
-          className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
 
       {/* Toggle Sidebar Button */}
       <button
