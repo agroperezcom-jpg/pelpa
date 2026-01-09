@@ -135,6 +135,7 @@ export default function Layout({ children, currentPageName }) {
       items: [
         { name: "Productos", page: "Products", icon: Package, permiso: "productos" },
         { name: "Inventario", page: "Inventory", icon: null, permiso: "inventario" },
+        { name: "Control de Stock", page: "HistorialControlesStock", icon: null, permiso: "control_stock" },
       ]
     },
     {
