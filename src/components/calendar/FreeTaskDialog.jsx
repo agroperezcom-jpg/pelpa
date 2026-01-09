@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Tag, X } from "lucide-react";
 
-export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, users, currentUser }) {
+export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, users, currentUser, canEdit = true }) {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -49,6 +49,7 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
   }, [initialData, isOpen, currentUser]);
 
   const handleSave = () => {
+    if (!canEdit) return;
     if (!formData.name || !formData.date) {
       alert("Complete los campos obligatorios");
       return;
@@ -83,6 +84,7 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-slate-600" />
+            {!canEdit && "(Solo lectura) "}
             {initialData?.id ? "Editar Tarea Libre" : "Nueva Tarea Libre"}
           </DialogTitle>
         </DialogHeader>
@@ -96,6 +98,7 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Ej: Reunión con cliente, Revisión de inventario..."
               autoFocus
+              disabled={!canEdit}
             />
           </div>
 
@@ -107,6 +110,7 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Detalles adicionales sobre la tarea..."
               rows={3}
+              disabled={!canEdit}
             />
           </div>
 
@@ -118,6 +122,7 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                disabled={!canEdit}
               />
             </div>
             <div className="space-y-2">
@@ -129,6 +134,7 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
                   value={formData.time}
                   onChange={(e) => setFormData({ ...formData, time: e.target.value })}
                   className="pl-10"
+                  disabled={!canEdit}
                 />
               </div>
             </div>
@@ -140,6 +146,7 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
                 onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                 placeholder="60"
                 min="0"
+                disabled={!canEdit}
               />
             </div>
           </div>
@@ -148,7 +155,7 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-2">
               <Label>Estado</Label>
-              <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
+              <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })} disabled={!canEdit}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -162,7 +169,7 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
 
             <div className="space-y-2">
               <Label>Prioridad</Label>
-              <Select value={formData.priority} onValueChange={(v) => setFormData({ ...formData, priority: v })}>
+              <Select value={formData.priority} onValueChange={(v) => setFormData({ ...formData, priority: v })} disabled={!canEdit}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -177,7 +184,7 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
 
             <div className="space-y-2">
               <Label>Asignado a</Label>
-              <Select value={formData.assigned_to} onValueChange={handleUserChange}>
+              <Select value={formData.assigned_to} onValueChange={handleUserChange} disabled={!canEdit}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -193,7 +200,7 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
           {/* Repetición */}
           <div className="space-y-2">
             <Label>Repetición</Label>
-            <Select value={formData.recurrence} onValueChange={(v) => setFormData({ ...formData, recurrence: v })}>
+            <Select value={formData.recurrence} onValueChange={(v) => setFormData({ ...formData, recurrence: v })} disabled={!canEdit}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -209,30 +216,34 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
           {/* Etiquetas */}
           <div className="space-y-2">
             <Label>Etiquetas</Label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && addTag()}
-                  placeholder="Agregar etiqueta..."
-                  className="pl-10"
-                />
+            {canEdit && (
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && addTag()}
+                    placeholder="Agregar etiqueta..."
+                    className="pl-10"
+                  />
+                </div>
+                <Button type="button" onClick={addTag} variant="outline">
+                  Agregar
+                </Button>
               </div>
-              <Button type="button" onClick={addTag} variant="outline">
-                Agregar
-              </Button>
-            </div>
+            )}
             {formData.tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
                 {formData.tags.map(tag => (
                   <Badge key={tag} variant="secondary" className="gap-1">
                     {tag}
-                    <X
-                      className="h-3 w-3 cursor-pointer hover:text-red-600"
-                      onClick={() => removeTag(tag)}
-                    />
+                    {canEdit && (
+                      <X
+                        className="h-3 w-3 cursor-pointer hover:text-red-600"
+                        onClick={() => removeTag(tag)}
+                      />
+                    )}
                   </Badge>
                 ))}
               </div>
@@ -241,10 +252,14 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleSave} className="bg-primary hover:bg-[hsl(var(--primary-hover))]">
-            {initialData?.id ? "Guardar cambios" : "Crear tarea"}
+          <Button variant="outline" onClick={onClose}>
+            {canEdit ? "Cancelar" : "Cerrar"}
           </Button>
+          {canEdit && (
+            <Button onClick={handleSave} className="bg-primary hover:bg-[hsl(var(--primary-hover))]">
+              {initialData?.id ? "Guardar cambios" : "Crear tarea"}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
