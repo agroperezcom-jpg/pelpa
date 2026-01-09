@@ -812,7 +812,9 @@ export default function ProjectBudgetingTab({ projectId, projectStatus }) {
                       (1 + (parseFloat(formData.margen_esperado) || 0) / 100)
                     ).toLocaleString()}
                   </p>
+                </div>
               </div>
+            </div>
             </div>
 
             <DialogFooter className="flex-shrink-0 mt-4">
