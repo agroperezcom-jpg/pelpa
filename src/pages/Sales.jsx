@@ -1019,14 +1019,11 @@ export default function Sales() {
       {/* New Sale Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden p-0 flex flex-col">
-          <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+          <div className="bg-white border-b border-slate-200 px-6 py-4">
             <DialogTitle className="flex items-center gap-3 text-slate-800 m-0">
               <ShoppingCart className="h-6 w-6 text-slate-600" />
               <span className="text-lg font-semibold">Nueva Venta</span>
             </DialogTitle>
-            <button onClick={() => setIsDialogOpen(false)} className="text-slate-400 hover:text-slate-600 rounded p-1">
-              <X className="h-5 w-5" />
-            </button>
           </div>
 
           <div className="flex flex-1 overflow-hidden gap-0">
