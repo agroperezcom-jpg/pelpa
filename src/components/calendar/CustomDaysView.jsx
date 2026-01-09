@@ -211,8 +211,9 @@ export default function CustomDaysView({ currentDate, daysCount, events, onEvent
                     </div>
                   )}
                 </div>
-                </div>
-                ))}
+              </div>
+            );
+          })}
         </div>
       </div>
     </Card>
