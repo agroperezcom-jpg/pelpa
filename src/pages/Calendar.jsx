@@ -159,31 +159,42 @@ export default function Calendar() {
   const calendarConfig = calendarConfigs[0];
 
   const createFreeTaskMutation = useMutation({
-    mutationFn: (taskData) => base44.entities.FreeTask.create(taskData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['freeTasks'] });
+    mutationFn: async (taskData) => {
+      const result = await base44.entities.FreeTask.create(taskData);
+      return result;
+    },
+    onSuccess: async (newTask) => {
+      // Actualizar inmediatamente sin esperar refetch
+      queryClient.setQueryData(['freeTasks'], (old = []) => [...old, newTask]);
+      // Refetch en background
+      await queryClient.invalidateQueries({ queryKey: ['freeTasks'] });
       setFreeTaskDialogOpen(false);
       setEditingTask(null);
       setClickedDate(null);
-      toast.success('Tarea creada exitosamente');
+      toast.success('Tarea creada');
     },
     onError: (error) => {
-      toast.error('Error al crear tarea: ' + (error.message || 'Error desconocido'));
-      console.error(error);
+      toast.error('Error: ' + (error.message || 'No se pudo crear la tarea'));
     }
   });
 
   const updateFreeTaskMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.FreeTask.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['freeTasks'] });
+    mutationFn: async ({ id, data }) => {
+      const result = await base44.entities.FreeTask.update(id, data);
+      return result;
+    },
+    onSuccess: async (updatedTask) => {
+      // Actualizar inmediatamente
+      queryClient.setQueryData(['freeTasks'], (old = []) => 
+        old.map(t => t.id === updatedTask.id ? updatedTask : t)
+      );
+      await queryClient.invalidateQueries({ queryKey: ['freeTasks'] });
       setFreeTaskDialogOpen(false);
       setEditingTask(null);
       toast.success('Tarea actualizada');
     },
     onError: (error) => {
-      toast.error('Error al actualizar tarea');
-      console.error(error);
+      toast.error('Error: ' + (error.message || 'No se pudo actualizar'));
     }
   });
 

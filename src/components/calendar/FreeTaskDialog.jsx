@@ -50,26 +50,21 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
     }
   }, [initialData, isOpen, currentUser]);
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
     
-    if (!canEdit) {
-      alert("No tienes permisos para crear/editar tareas");
-      return;
-    }
-    
-    if (!formData.name || !formData.date) {
+    if (!canEdit) return;
+    if (!formData.name?.trim() || !formData.date) {
       alert("Complete el nombre y la fecha");
       return;
     }
     
-    // Crear objeto completo con todos los campos necesarios
     const taskToSave = {
       name: formData.name.trim(),
-      description: formData.description || "",
+      description: formData.description?.trim() || "",
       date: formData.date,
       time: formData.time || "09:00",
       duration: formData.duration ? parseInt(formData.duration) : 60,
