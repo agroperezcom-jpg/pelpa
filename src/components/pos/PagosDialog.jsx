@@ -70,11 +70,11 @@ export default function PagosDialog({ isOpen, onClose, total, onConfirm, cliente
 
   // Autocompletar importe con saldo pendiente cuando se selecciona medio
   useEffect(() => {
-    if (nuevoPago.medio_pago_id && !nuevoPago.importe && saldoPendiente > 0) {
+    if (nuevoPago.medio_pago_id && saldoPendiente > 0 && pagos.length === 0) {
       setNuevoPago(prev => ({ ...prev, importe: saldoPendiente.toFixed(2) }));
       setTimeout(() => importeRef.current?.select(), 100);
     }
-  }, [nuevoPago.medio_pago_id, saldoPendiente]);
+  }, [nuevoPago.medio_pago_id]);
 
   // Preseleccionar caja activa si medio lo requiere
   useEffect(() => {
@@ -127,13 +127,48 @@ export default function PagosDialog({ isOpen, onClose, total, onConfirm, cliente
         alert("Complete todos los campos del cheque");
         return;
       }
-    } else if (!nuevoPago.medio_pago_id || !nuevoPago.importe || parseFloat(nuevoPago.importe) <= 0) {
+      
+      const importePago = parseFloat(nuevoPago.importe);
+      if (importePago > saldoPendiente + 0.01) {
+        alert(`No se puede pagar más del saldo pendiente ($${saldoPendiente.toFixed(2)})`);
+        return;
+      }
+
+      const banco = bancos.find(b => b.id === nuevoPago.cheque_banco_id);
+
+      setPagos([...pagos, {
+        medio_pago_id: null,
+        medio_pago_nombre: `Cheque ${nuevoPago.cheque_numero}`,
+        importe: importePago,
+        banco_id: nuevoPago.cheque_banco_id,
+        banco_nombre: banco?.nombre || "",
+        caja_id: null,
+        caja_nombre: "",
+        es_cheque: true,
+        cheque_numero: nuevoPago.cheque_numero,
+        cheque_banco_id: nuevoPago.cheque_banco_id,
+        cheque_fecha_vencimiento: nuevoPago.cheque_fecha_vencimiento
+      }]);
+
+      setNuevoPago({
+        medio_pago_id: "",
+        importe: "",
+        banco_id: "",
+        caja_id: "",
+        es_cheque: false,
+        cheque_numero: "",
+        cheque_banco_id: "",
+        cheque_fecha_vencimiento: ""
+      });
+      return;
+    }
+
+    if (!nuevoPago.medio_pago_id || !nuevoPago.importe || parseFloat(nuevoPago.importe) <= 0) {
       return;
     }
 
     const importePago = parseFloat(nuevoPago.importe);
 
-    // REGLA UX: No permitir pagar más del saldo pendiente
     if (importePago > saldoPendiente + 0.01) {
       alert(`No se puede pagar más del saldo pendiente ($${saldoPendiente.toFixed(2)})`);
       return;
@@ -162,10 +197,10 @@ export default function PagosDialog({ isOpen, onClose, total, onConfirm, cliente
       banco_nombre: banco?.nombre || "",
       caja_id: nuevoPago.caja_id || null,
       caja_nombre: caja?.nombre || "",
-      es_cheque: nuevoPago.es_cheque || false,
-      cheque_numero: nuevoPago.cheque_numero || "",
-      cheque_banco_id: nuevoPago.cheque_banco_id || "",
-      cheque_fecha_vencimiento: nuevoPago.cheque_fecha_vencimiento || ""
+      es_cheque: false,
+      cheque_numero: "",
+      cheque_banco_id: "",
+      cheque_fecha_vencimiento: ""
     }]);
 
     setNuevoPago({
@@ -273,30 +308,41 @@ export default function PagosDialog({ isOpen, onClose, total, onConfirm, cliente
           <div>
             <Label className="text-xs font-medium mb-2 block">Medios de Pago Rápidos</Label>
             <div className="grid grid-cols-6 gap-2">
-              {mediosPago.slice(0, 5).map(medio => {
+              {mediosPago.filter(m => m.nombre !== "Cuenta Corriente").slice(0, 5).map(medio => {
                 const iconMap = {
                   "Efectivo": Banknote,
                   "Débito": CreditCard,
                   "Crédito": CreditCard,
                   "Transferencia": Smartphone,
-                  "Cuenta Corriente": ReceiptIcon
+                  "Mercado Pago": Smartphone
                 };
                 const Icon = iconMap[medio.nombre] || CreditCard;
-                const disabled = medio.nombre === "Cuenta Corriente" && !clienteId;
-                
+
                 return (
                   <Button
                     key={medio.id}
                     variant={nuevoPago.medio_pago_id === medio.id && !nuevoPago.es_cheque ? "default" : "outline"}
                     className={`h-16 flex flex-col gap-1 ${nuevoPago.medio_pago_id === medio.id && !nuevoPago.es_cheque ? 'bg-emerald-600' : ''}`}
-                    onClick={() => !disabled && setNuevoPago({ ...nuevoPago, medio_pago_id: medio.id, banco_id: "", caja_id: "", es_cheque: false })}
-                    disabled={disabled}
+                    onClick={() => setNuevoPago({ ...nuevoPago, medio_pago_id: medio.id, banco_id: "", caja_id: "", es_cheque: false })}
                   >
                     <Icon className="h-5 w-5" />
                     <span className="text-xs">{medio.nombre.split(' ')[0]}</span>
                   </Button>
                 );
               })}
+              {clienteId && mediosPago.find(m => m.nombre === "Cuenta Corriente") && (
+                <Button
+                  variant={nuevoPago.medio_pago_id === mediosPago.find(m => m.nombre === "Cuenta Corriente")?.id && !nuevoPago.es_cheque ? "default" : "outline"}
+                  className={`h-16 flex flex-col gap-1 ${nuevoPago.medio_pago_id === mediosPago.find(m => m.nombre === "Cuenta Corriente")?.id && !nuevoPago.es_cheque ? 'bg-emerald-600' : ''}`}
+                  onClick={() => {
+                    const medioCc = mediosPago.find(m => m.nombre === "Cuenta Corriente");
+                    if (medioCc) setNuevoPago({ ...nuevoPago, medio_pago_id: medioCc.id, banco_id: "", caja_id: "", es_cheque: false });
+                  }}
+                >
+                  <ReceiptIcon className="h-5 w-5" />
+                  <span className="text-xs">Cta Cte</span>
+                </Button>
+              )}
               <Button
                 variant={nuevoPago.es_cheque ? "default" : "outline"}
                 className={`h-16 flex flex-col gap-1 ${nuevoPago.es_cheque ? 'bg-purple-600' : ''}`}

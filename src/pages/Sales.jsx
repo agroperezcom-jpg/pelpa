@@ -711,7 +711,8 @@ export default function Sales() {
       total_manual: null
     });
     setProductSearch("");
-    setIsDialogOpen(false);
+    setClientSearch("");
+    setIsDialogOpen(true);
   };
 
   const addToCart = (item, type) => {

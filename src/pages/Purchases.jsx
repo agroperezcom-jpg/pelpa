@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -72,8 +72,13 @@ export default function Purchases() {
   });
   const [activeTab, setActiveTab] = useState("compras");
   const [fechaReporte, setFechaReporte] = useState(format(new Date(), 'yyyy-MM'));
+  const [user, setUser] = useState(null);
 
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    base44.auth.me().then(setUser).catch(() => {});
+  }, []);
 
   const { data: periodosIVA = [] } = useQuery({
     queryKey: ['periodosIVA'],
@@ -326,6 +331,18 @@ export default function Purchases() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setIsPagosDialogOpen(false);
+    setCompraActual({
+      fecha: format(new Date(), 'yyyy-MM-dd'),
+      proveedor_id: "",
+      tipo_comprobante: "A",
+      numero_comprobante_proveedor: "",
+      observaciones: ""
+    });
+    setDetalles([]);
+    setPagos([]);
+    setNuevoDetalle({ producto_id: "", cantidad: "", costo_unitario: "" });
+    setNuevoPago({ medio_pago_id: "", importe: "", banco_id: "", caja_id: "", es_cheque: false, cheque_numero: "", cheque_banco_id: "", cheque_fecha_vencimiento: "" });
+    setRetencionIIBB({ aplica: false, importe_retenido: "", numero_comprobante: "" });
   };
 
   const agregarDetalle = () => {
