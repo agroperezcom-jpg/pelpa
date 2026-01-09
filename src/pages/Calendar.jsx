@@ -119,6 +119,12 @@ export default function Calendar() {
       queryClient.invalidateQueries({ queryKey: ['freeTasks'] });
       setFreeTaskDialogOpen(false);
       setEditingTask(null);
+      setClickedDate(null);
+      toast.success('Tarea creada exitosamente');
+    },
+    onError: (error) => {
+      toast.error('Error al crear tarea');
+      console.error(error);
     }
   });
 

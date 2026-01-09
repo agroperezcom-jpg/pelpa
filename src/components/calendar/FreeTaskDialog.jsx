@@ -55,7 +55,6 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
       return;
     }
     onSave(formData);
-    onClose();
   };
 
   const addTag = () => {
