@@ -281,6 +281,21 @@ export default function Layout({ children, currentPageName }) {
         />
       )}
 
+      {/* Pin/Unpin Button - Flecha flotante */}
+      {(sidebarOpen || sidebarPinned) && (
+        <button
+          onClick={() => setSidebarPinned(!sidebarPinned)}
+          className="fixed left-64 top-1/2 -translate-y-1/2 transform -translate-x-1/2 z-50 p-2 rounded-full bg-card border border-border/40 shadow-lg hover:bg-secondary transition-colors lg:hidden"
+          title={sidebarPinned ? "Desfijar" : "Fijar"}
+        >
+          {sidebarPinned ? (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground rotate-180" />
+          )}
+        </button>
+      )}
+
       {/* Sidebar */}
       <aside className={cn(
         "fixed top-0 left-0 bottom-0 w-64 bg-card border-r border-border/40 z-50 transition-theme",
