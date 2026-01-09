@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { eachDayOfInterval, format, isToday, isSameDay, addDays, setHours, setMinutes } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import DraggableEventItem from "./DraggableEventItem";
 
 export default function CustomDaysView({ currentDate, daysCount, events, onEventClick, onDateClick, onEventDrop, onEventResize }) {
   const [draggingEvent, setDraggingEvent] = useState(null);
@@ -116,18 +115,44 @@ export default function CustomDaysView({ currentDate, daysCount, events, onEvent
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, day)}
                 >
-                  {dayEvents.map((event, idx) => (
-                    <DraggableEventItem
-                      key={idx}
-                      event={event}
-                      onEventClick={onEventClick}
-                      onEventDrop={onEventDrop}
-                      onEventResize={onEventResize}
-                      eventColor={getEventColor(event)}
-                      isDragging={draggingEvent?.id === event.id}
-                      layout="inline"
-                    >
-                      <div className="border rounded-lg p-3 hover:shadow-md transition-all">
+                  {dayEvents.map((event, idx) => {
+                    const eventWithData = {
+                      ...event,
+                      data: event
+                    };
+                    return (
+                      <div
+                        key={idx}
+                        draggable
+                        onDragStart={(e) => {
+                          e.stopPropagation();
+                          const eventPayload = {
+                            id: event.id,
+                            type: event.type,
+                            name: event.name,
+                            date: event.date,
+                            start_date: event.start_date,
+                            due_date: event.due_date,
+                            end_date: event.end_date,
+                            estimated_end_date: event.estimated_end_date,
+                            time: event.time,
+                            duration: event.duration,
+                            project_id: event.project_id,
+                            phase_id: event.phase_id,
+                            ...event
+                          };
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData("application/json", JSON.stringify(eventPayload));
+                          setDraggingEvent(event);
+                        }}
+                        onDragEnd={() => setDraggingEvent(null)}
+                        onClick={() => onEventClick(event)}
+                        className={cn(
+                          "border rounded-lg p-3 cursor-move hover:shadow-md transition-all",
+                          getEventColor(event),
+                          draggingEvent?.id === event.id && "opacity-50"
+                        )}
+                      >
                         <div className="flex items-start gap-2 mb-2">
                           <span className="text-base">{getEventIcon(event)}</span>
                           <div className="flex-1 min-w-0">
@@ -183,8 +208,8 @@ export default function CustomDaysView({ currentDate, daysCount, events, onEvent
                           </div>
                         )}
                       </div>
-                    </DraggableEventItem>
-                  ))}
+                    );
+                  })}
 
                   {dayEvents.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground text-xs">
