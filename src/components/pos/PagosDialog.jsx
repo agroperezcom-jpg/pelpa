@@ -273,7 +273,7 @@ export default function PagosDialog({ isOpen, onClose, total, onConfirm, cliente
           <div>
             <Label className="text-xs font-medium mb-2 block">Medios de Pago Rápidos</Label>
             <div className="grid grid-cols-6 gap-2">
-              {mediosPago.filter(m => ["Efectivo", "Débito", "Crédito", "Transferencia", "Cuenta Corriente", "Cheque"].includes(m.nombre)).map(medio => {
+              {mediosPago.filter(m => ["Efectivo", "Débito", "Crédito", "Transferencia", "Cuenta Corriente"].includes(m.nombre)).map(medio => {
                 const iconMap = {
                   "Efectivo": Banknote,
                   "Débito": CreditCard,
