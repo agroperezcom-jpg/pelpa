@@ -110,7 +110,7 @@ export default function WeekView({ currentDate, events, onEventClick, onEventDro
 
             {/* Events overlay */}
             <div className="absolute inset-0 pointer-events-none">
-              <div className="grid grid-cols-8 h-full">
+              <div className={cn("grid h-full", singleDay ? "grid-cols-2" : "grid-cols-8")}>
                 <div className="border-r" />
                 {days.map((day, dayIndex) => {
                   const dayEvents = getEventsForDay(day);
