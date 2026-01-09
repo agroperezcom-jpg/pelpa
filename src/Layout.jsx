@@ -33,12 +33,19 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function Layout({ children, currentPageName }) {
-  const [user, setUser] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [commandOpen, setCommandOpen] = useState(false);
-  const [commandSearch, setCommandSearch] = useState("");
-  const location = useLocation();
-  const { hasPermission, getAllowedModules, isAdmin, loading: permissionsLoading } = usePermissions();
+    const [user, setUser] = useState(null);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sidebarPinned, setSidebarPinned] = useState(() => {
+      try {
+        return JSON.parse(localStorage.getItem('sidebarPinned')) ?? false;
+      } catch {
+        return false;
+      }
+    });
+    const [commandOpen, setCommandOpen] = useState(false);
+    const [commandSearch, setCommandSearch] = useState("");
+    const location = useLocation();
+    const { hasPermission, getAllowedModules, isAdmin, loading: permissionsLoading } = usePermissions();
 
   const { data: configuracionEmpresa = [] } = useQuery({
     queryKey: ['configuracionEmpresa'],
