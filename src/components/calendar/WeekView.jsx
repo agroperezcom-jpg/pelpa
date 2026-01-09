@@ -90,17 +90,20 @@ export default function WeekView({ currentDate, events, onEventClick, onEventDro
                   {format(new Date().setHours(hour, 0), "HH:mm")}
                 </div>
                 {days.map(day => {
-                  const isDayToday = isToday(day);
-                  return (
-                    <div
-                      key={`${day}-${hour}`}
-                      className={cn(
-                        "min-h-[60px] border-r last:border-r-0 p-1",
-                        isDayToday && "bg-primary/5"
-                      )}
-                    />
-                  );
-                })}
+                   const isDayToday = isToday(day);
+                   return (
+                     <div
+                       key={`${day}-${hour}`}
+                       className={cn(
+                         "min-h-[60px] border-r last:border-r-0 p-1",
+                         isDayToday && "bg-primary/5",
+                         draggingEvent && "bg-slate-100/50"
+                       )}
+                       onDragOver={handleDragOver}
+                       onDrop={(e) => handleDrop(e, day, hour)}
+                     />
+                   );
+                 })}
               </div>
             ))}
 
