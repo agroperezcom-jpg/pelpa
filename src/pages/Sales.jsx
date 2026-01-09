@@ -678,6 +678,19 @@ export default function Sales() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setCart([]);
+    setCurrentSale({
+      client_id: "",
+      client_name: "",
+      client_tipo_iva: "",
+      tipo_lista: "MINORISTA",
+      genera_iva: false,
+      genera_iibb: false,
+      discount: 0,
+      notes: "",
+      talonario_id: "",
+      total_manual: null
+    });
+    setProductSearch("");
   };
 
   const handleCloseTicket = () => {
