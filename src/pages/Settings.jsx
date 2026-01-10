@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 import ThemeSelector from "../components/theme/ThemeSelector";
 import IdentidadEmpresa from "../components/settings/IdentidadEmpresa";
+import RegionalConfig from "../components/settings/RegionalConfig";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -225,6 +226,7 @@ export default function SettingsPage() {
           <TabsTrigger value="sessions">Registro de Sesiones</TabsTrigger>
           <TabsTrigger value="identidad">Identidad</TabsTrigger>
           <TabsTrigger value="theme">Tema Visual</TabsTrigger>
+          <TabsTrigger value="regional">Configuración Regional</TabsTrigger>
           <TabsTrigger value="fiscal">Configuración Fiscal</TabsTrigger>
         </TabsList>
 
@@ -327,6 +329,10 @@ export default function SettingsPage() {
 
         <TabsContent value="theme">
           <ThemeSelector />
+        </TabsContent>
+
+        <TabsContent value="regional">
+          <RegionalConfig />
         </TabsContent>
 
         <TabsContent value="fiscal">
