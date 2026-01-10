@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import PagosDialog from "../components/pos/PagosDialog";
 import ReportesDialog from "../components/pos/ReportesDialog";
 import TicketPrint from "../components/pos/TicketPrint";
+import SaleDetailDialog from "../components/sales/SaleDetailDialog";
 import {
   Dialog,
   DialogContent,
@@ -59,6 +60,9 @@ export default function Sales() {
   const [isTicketDialogOpen, setIsTicketDialogOpen] = useState(false);
   const [ventaConfirmada, setVentaConfirmada] = useState(null);
   const [pagosConfirmados, setPagosConfirmados] = useState([]);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [selectedSale, setSelectedSale] = useState(null);
+  const [selectedSalePagos, setSelectedSalePagos] = useState([]);
   const [user, setUser] = useState(null);
   const [cart, setCart] = useState([]);
   const [currentSale, setCurrentSale] = useState({
@@ -915,6 +919,15 @@ export default function Sales() {
   const todaySales = sales.filter(s => s.created_date?.startsWith(today));
   const todayTotal = todaySales.reduce((acc, s) => acc + (s.total || 0), 0);
 
+  const handleViewSaleDetail = async (sale) => {
+    setSelectedSale(sale);
+    // Cargar pagos de la venta
+    const allPagos = await base44.entities.PagoVenta.list();
+    const ventaPagos = allPagos.filter(p => p.venta_id === sale.id);
+    setSelectedSalePagos(ventaPagos);
+    setIsDetailDialogOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -1002,7 +1015,11 @@ export default function Sales() {
           </TableHeader>
           <TableBody>
             {filteredSales.map((sale) => (
-              <TableRow key={sale.id} className={sale.estado === "ANULADA" ? "bg-red-50 opacity-60" : "hover:bg-slate-50"}>
+              <TableRow 
+                key={sale.id} 
+                className={sale.estado === "ANULADA" ? "bg-red-50 opacity-60 cursor-pointer" : "hover:bg-slate-50 cursor-pointer"}
+                onClick={() => handleViewSaleDetail(sale)}
+              >
                 <TableCell className="text-slate-500 text-sm">
                   {format(new Date(sale.created_date), "d MMM HH:mm", { locale: es })}
                 </TableCell>
@@ -1041,7 +1058,8 @@ export default function Sales() {
                       variant="ghost"
                       size="sm"
                       className="text-red-600 hover:text-red-700"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         const motivo = prompt("Motivo de anulación:");
                         if (motivo) {
                           anularVentaMutation.mutate({ ventaId: sale.id, motivo });
@@ -1490,6 +1508,18 @@ export default function Sales() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Sale Detail Dialog */}
+      <SaleDetailDialog
+        isOpen={isDetailDialogOpen}
+        onClose={() => {
+          setIsDetailDialogOpen(false);
+          setSelectedSale(null);
+          setSelectedSalePagos([]);
+        }}
+        sale={selectedSale}
+        pagos={selectedSalePagos}
+      />
     </div>
   );
 }
