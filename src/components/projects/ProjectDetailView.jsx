@@ -29,6 +29,7 @@ import ProjectBudgetingTab from "./ProjectBudgetingTab";
 import { AlertTriangle } from "lucide-react";
 
 export default function ProjectDetailView({ project, onBack, onEdit }) {
+  const [activeView, setActiveView] = useState("budgeting");
   const queryClient = useQueryClient();
 
   const { data: phases = [] } = useQuery({
@@ -201,10 +202,7 @@ export default function ProjectDetailView({ project, onBack, onEdit }) {
 
       <div className="flex items-center gap-4 mb-6">
         <span className="text-sm font-medium text-slate-700">Vista:</span>
-        <Select defaultValue="budgeting" onValueChange={(value) => {
-          const element = document.getElementById(`tab-content-${value}`);
-          if (element) element.scrollIntoView({ behavior: 'smooth' });
-        }}>
+        <Select value={activeView} onValueChange={setActiveView}>
           <SelectTrigger className="w-64">
             <SelectValue />
           </SelectTrigger>
@@ -220,29 +218,29 @@ export default function ProjectDetailView({ project, onBack, onEdit }) {
       </div>
 
       <div className="space-y-4">
-        <div id="tab-content-budgeting">
+        {activeView === "budgeting" && (
           <ProjectBudgetingTab projectId={project.id} projectStatus={project.status} />
-        </div>
+        )}
 
-        <div id="tab-content-phases">
+        {activeView === "phases" && (
           <ProjectPhasesTab projectId={project.id} projectStatus={project.status} />
-        </div>
+        )}
 
-        <div id="tab-content-tasks">
+        {activeView === "tasks" && (
           <ProjectTasksTab projectId={project.id} phases={phases} projectStatus={project.status} />
-        </div>
+        )}
 
-        <div id="tab-content-milestones">
+        {activeView === "milestones" && (
           <ProjectMilestonesTab projectId={project.id} phases={phases} />
-        </div>
+        )}
 
-        <div id="tab-content-documents">
+        {activeView === "documents" && (
           <ProjectDocumentsTab projectId={project.id} phases={phases} tasks={tasks} />
-        </div>
+        )}
 
-        <div id="tab-content-activity">
+        {activeView === "activity" && (
           <ProjectActivityTab projectId={project.id} />
-        </div>
+        )}
       </div>
     </div>
   );

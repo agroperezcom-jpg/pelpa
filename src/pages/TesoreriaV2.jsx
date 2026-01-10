@@ -22,6 +22,7 @@ import CuentaCorrienteView from "@/components/tesoreria/CuentaCorrienteView";
 import MediosPagoView from "@/components/tesoreria/MediosPagoView";
 
 export default function TesoreriaV2() {
+  const [activeView, setActiveView] = useState("movimientos");
   const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
   const { data: cajas = [] } = useQuery({
     queryKey: ['cajas'],
@@ -83,10 +84,7 @@ export default function TesoreriaV2() {
       {/* Vista Selector */}
       <div className="flex items-center gap-4 mb-6">
         <span className="text-sm font-medium text-slate-700">Vista:</span>
-        <Select defaultValue="movimientos" onValueChange={(value) => {
-          const element = document.getElementById(`tab-content-${value}`);
-          if (element) element.scrollIntoView({ behavior: 'smooth' });
-        }}>
+        <Select value={activeView} onValueChange={setActiveView}>
           <SelectTrigger className="w-64">
             <SelectValue />
           </SelectTrigger>
@@ -101,25 +99,11 @@ export default function TesoreriaV2() {
       </div>
 
       <div className="space-y-4">
-        <div id="tab-content-movimientos">
-          <MovimientosView />
-        </div>
-
-        <div id="tab-content-cajas">
-          <CajasView />
-        </div>
-
-        <div id="tab-content-bancos">
-          <BancosView />
-        </div>
-
-        <div id="tab-content-cuentas">
-          <CuentaCorrienteView />
-        </div>
-
-        <div id="tab-content-medios">
-          <MediosPagoView />
-        </div>
+        {activeView === "movimientos" && <MovimientosView />}
+        {activeView === "cajas" && <CajasView />}
+        {activeView === "bancos" && <BancosView />}
+        {activeView === "cuentas" && <CuentaCorrienteView />}
+        {activeView === "medios" && <MediosPagoView />}
       </div>
 
       <TransferenciasDialog 
