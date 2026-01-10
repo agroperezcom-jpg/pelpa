@@ -118,12 +118,15 @@ export const printTicket = (venta, pagos = [], isCopia = false) => {
     </html>
   `;
 
-  // Crear iframe oculto
+  // Crear iframe oculto pero visible para el navegador
   const iframe = document.createElement('iframe');
   iframe.style.position = 'absolute';
-  iframe.style.width = '0';
-  iframe.style.height = '0';
+  iframe.style.width = '80mm';
+  iframe.style.height = '100%';
+  iframe.style.left = '-9999px';
+  iframe.style.top = '0';
   iframe.style.border = 'none';
+  iframe.setAttribute('id', 'ticket-print-iframe');
   document.body.appendChild(iframe);
 
   // Escribir contenido en el iframe
@@ -132,23 +135,40 @@ export const printTicket = (venta, pagos = [], isCopia = false) => {
   iframeDoc.write(ticketHTML);
   iframeDoc.close();
 
-  // Esperar a que cargue y luego imprimir
-  iframe.onload = () => {
-    setTimeout(() => {
-      try {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-      } catch (e) {
-        console.error('Error al imprimir:', e);
-        alert('Error al intentar imprimir. Por favor, intenta nuevamente.');
-      }
-      
-      // Remover iframe después de imprimir
+  // Esperar a que el documento esté completamente listo
+  const waitAndPrint = () => {
+    if (iframeDoc.readyState === 'complete') {
+      // Esperar un tiempo adicional para asegurar renderizado completo
       setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 1000);
-    }, 100);
+        try {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+          
+          // Limpiar después de un tiempo prudencial
+          setTimeout(() => {
+            if (iframe && iframe.parentNode) {
+              document.body.removeChild(iframe);
+            }
+          }, 2000);
+        } catch (e) {
+          console.error('Error al imprimir:', e);
+          alert('Error al intentar imprimir. Por favor, intenta nuevamente.');
+          if (iframe && iframe.parentNode) {
+            document.body.removeChild(iframe);
+          }
+        }
+      }, 500);
+    } else {
+      setTimeout(waitAndPrint, 100);
+    }
   };
+
+  // Iniciar el proceso de espera
+  if (iframeDoc.readyState === 'complete') {
+    waitAndPrint();
+  } else {
+    iframe.onload = waitAndPrint;
+  }
 };
 
 export default function TicketPrint({ venta, pagos, isCopia = false }) {
