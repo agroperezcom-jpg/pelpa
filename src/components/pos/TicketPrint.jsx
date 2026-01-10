@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { generateTicketText, printThermalTicket, PAPER_WIDTHS } from "../thermal/thermalPrinterService";
-import { printTicketQZ, checkQZStatus, getPrinters, printTestTicket } from "../thermal/qzTrayService";
+import TicketService from "../tickets/ticketService";
+import TicketPrinterAdapter from "../tickets/ticketPrinterAdapter";
+import { checkQZStatus, getPrinters } from "../thermal/qzTrayService";
 import QZTrayGuide from "../thermal/QZTrayGuide";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -9,13 +10,21 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Printer, AlertCircle, CheckCircle2, HelpCircle, Zap } from "lucide-react";
 
-// Función para imprimir el ticket usando impresión térmica directa
-export const printTicket = (venta, pagos = [], isCopia = false, paperWidth = PAPER_WIDTHS.LARGE) => {
+const PAPER_WIDTHS = {
+  SMALL: 32,  // 58mm
+  MEDIUM: 42, // 72mm
+  LARGE: 48   // 80mm
+};
+
+// Función para imprimir el ticket usando impresión genérica
+export const printTicket = (venta, pagos = [], empresaConfig = null, isCopia = false, paperWidth = PAPER_WIDTHS.LARGE) => {
   if (!venta) return;
   
   try {
-    const ticketText = generateTicketText(venta, pagos, isCopia, paperWidth);
-    printThermalTicket(ticketText, paperWidth);
+    // Generar documento
+    const ticketDocument = TicketService.generateDocument(venta, pagos, empresaConfig, isCopia, paperWidth);
+    // Imprimir usando método genérico
+    TicketPrinterAdapter.printGeneric(ticketDocument);
   } catch (error) {
     console.error('Error al imprimir ticket:', error);
     alert('Error al generar el ticket. Por favor, intente nuevamente.');
@@ -83,13 +92,16 @@ export default function TicketPrint({ venta, pagos, isCopia = false }) {
   if (!venta) return null;
 
   const handlePrint = () => {
-    printTicket(venta, pagos, isCopia, paperWidth);
+    printTicket(venta, pagos, empresaConfig, isCopia, paperWidth);
   };
 
   const handlePrintQZ = async () => {
     setPrinting(true);
     try {
-      await printTicketQZ(venta, pagos, isCopia, selectedPrinter, empresaConfig);
+      // Generar documento ESC/POS
+      const ticketCommands = TicketService.generateESCPOS(venta, pagos, empresaConfig, isCopia);
+      // Imprimir usando QZ Tray
+      await TicketPrinterAdapter.printQZ(ticketCommands, selectedPrinter);
       alert('✓ Ticket impreso correctamente');
     } catch (error) {
       alert('Error al imprimir: ' + error.message);
@@ -101,7 +113,27 @@ export default function TicketPrint({ venta, pagos, isCopia = false }) {
   const handleTestPrint = async () => {
     setPrinting(true);
     try {
-      await printTestTicket(selectedPrinter, empresaConfig);
+      // Generar venta de prueba
+      const testVenta = {
+        created_date: new Date().toISOString(),
+        tipo_comprobante: 'X',
+        numero_comprobante: '00001-00000001',
+        client_name: 'Cliente de Prueba',
+        employee_name: 'Vendedor de Prueba',
+        items: [
+          { name: 'Producto de prueba 1', quantity: 2, precio_venta: 100, type: 'product' },
+          { name: 'Producto de prueba 2', quantity: 1, precio_venta: 50, type: 'product' }
+        ],
+        subtotal: 250,
+        discount: 0,
+        total: 250,
+        genera_iva: false,
+        iva_21: 0
+      };
+      const testPagos = [{ medio_nombre: 'Efectivo', monto: 250 }];
+      
+      const ticketCommands = TicketService.generateESCPOS(testVenta, testPagos, empresaConfig, false);
+      await TicketPrinterAdapter.printQZ(ticketCommands, selectedPrinter);
       alert('✓ Ticket de prueba impreso');
     } catch (error) {
       alert('Error al imprimir prueba: ' + error.message);
@@ -219,7 +251,7 @@ export default function TicketPrint({ venta, pagos, isCopia = false }) {
       <div className="border rounded-lg bg-slate-50 p-4 mx-auto" style={{ maxWidth: '400px' }}>
         <div className="bg-white p-4 rounded border">
           <pre className="text-xs" style={{ fontFamily: 'Courier New, monospace', lineHeight: '1.2', whiteSpace: 'pre', overflow: 'auto' }}>
-            {generateTicketText(venta, pagos, isCopia, paperWidth)}
+            {TicketService.generateDocument(venta, pagos, empresaConfig, isCopia, paperWidth)}
           </pre>
         </div>
       </div>
