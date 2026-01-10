@@ -15,13 +15,14 @@ export default function MonthView({
   canEditEvents = true,
   canEditTasks = true,
   canEditProjects = true,
-  getEventColor
+  getEventColor,
+  weekStartsOn = 1
 }) {
   const [draggingEvent, setDraggingEvent] = useState(null);
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
-  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
-  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn });
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn });
 
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   const weekDays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];

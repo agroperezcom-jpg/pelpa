@@ -16,13 +16,14 @@ export default function WeekView({
   canEditTasks = true,
   canEditProjects = true,
   snapMinutes = 30,
-  getEventColor
+  getEventColor,
+  weekStartsOn = 1
 }) {
   const [draggingEvent, setDraggingEvent] = useState(null);
   const [resizingEvent, setResizingEvent] = useState(null);
   const resizeRef = useRef(null);
-  const weekStart = singleDay ? currentDate : startOfWeek(currentDate, { weekStartsOn: 1 });
-  const weekEnd = singleDay ? currentDate : endOfWeek(currentDate, { weekStartsOn: 1 });
+  const weekStart = singleDay ? currentDate : startOfWeek(currentDate, { weekStartsOn });
+  const weekEnd = singleDay ? currentDate : endOfWeek(currentDate, { weekStartsOn });
   const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   const hours = Array.from({ length: 24 }, (_, i) => i);

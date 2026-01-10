@@ -150,6 +150,11 @@ export default function Calendar() {
     enabled: !!currentUser?.email
   });
 
+  const { data: regionalConfig = [] } = useQuery({
+    queryKey: ['configuracionEmpresa'],
+    queryFn: () => base44.entities.ConfiguracionEmpresa.list()
+  });
+
   const { data: auditLogs = [] } = useQuery({
     queryKey: ['calendarAuditLogs'],
     queryFn: () => base44.entities.CalendarAuditLog.list('-timestamp', 100),
@@ -157,6 +162,7 @@ export default function Calendar() {
   });
 
   const calendarConfig = calendarConfigs[0];
+  const weekStartsOn = regionalConfig[0]?.week_starts_on ?? 1;
 
   const createFreeTaskMutation = useMutation({
     mutationFn: async (taskData) => {
@@ -946,6 +952,7 @@ export default function Calendar() {
           canEditTasks={canEditTasks}
           canEditProjects={canEditProjects}
           getEventColor={getEventColor}
+          weekStartsOn={weekStartsOn}
         />
       )}
 
@@ -961,6 +968,7 @@ export default function Calendar() {
           canEditProjects={canEditProjects}
           snapMinutes={snapMinutes}
           getEventColor={getEventColor}
+          weekStartsOn={weekStartsOn}
         />
       )}
 
@@ -968,8 +976,13 @@ export default function Calendar() {
         <WeekView
           currentDate={currentDate}
           events={events.filter(e => {
-            const eventDate = new Date(e.date || e.start_date || e.created_date);
-            return eventDate.toDateString() === currentDate.toDateString();
+            const eventDateStr = e.date || e.start_date || e.created_date;
+            if (!eventDateStr) return false;
+            const dateStr = eventDateStr.split('T')[0];
+            const year = currentDate.getFullYear();
+            const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+            const day = String(currentDate.getDate()).padStart(2, '0');
+            return dateStr === `${year}-${month}-${day}`;
           })}
           onEventClick={handleEventClick}
           onEventDrop={handleEventDrop}
@@ -979,6 +992,7 @@ export default function Calendar() {
           canEditProjects={canEditProjects}
           snapMinutes={snapMinutes}
           getEventColor={getEventColor}
+          weekStartsOn={weekStartsOn}
           singleDay={true}
         />
       )}
