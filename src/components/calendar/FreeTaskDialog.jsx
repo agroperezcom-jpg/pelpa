@@ -27,20 +27,24 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
 
   useEffect(() => {
     if (initialData && initialData.id) {
-      // Editando tarea existente
+      // Editando tarea existente - preservar fecha sin conversión
       setFormData({
         ...initialData,
         tags: initialData.tags || []
       });
     } else {
-      // Nueva tarea (con o sin fecha pre-seleccionada)
+      // Nueva tarea
       const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const localDate = `${year}-${month}-${day}`;
       const defaultTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       
       setFormData({
         name: "",
         description: "",
-        date: initialData?.date || new Date().toISOString().split('T')[0],
+        date: initialData?.date || localDate,
         time: defaultTime,
         duration: "60",
         status: "pendiente",

@@ -524,7 +524,11 @@ export default function Calendar() {
     if ((event.type === "task" || event.type === "phase") && !canEditTasks) return;
 
     const snappedDate = snapToGrid(newDate);
-    const dateStr = snappedDate.toISOString().split('T')[0];
+    // Usar fecha local sin conversión UTC
+    const year = snappedDate.getFullYear();
+    const month = String(snappedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(snappedDate.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
     const timeStr = `${String(snappedDate.getHours()).padStart(2, '0')}:${String(snappedDate.getMinutes()).padStart(2, '0')}`;
 
     // Registrar auditoría
