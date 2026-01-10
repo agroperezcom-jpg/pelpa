@@ -15,14 +15,20 @@ export const printTicket = (venta, pagos = [], isCopia = false) => {
       <style>
         @page {
           size: 80mm auto;
+          margin: 0mm;
+        }
+        * {
           margin: 0;
+          padding: 0;
+          box-sizing: border-box;
         }
         body {
           margin: 0;
-          padding: 10mm;
+          padding: 5mm;
           font-family: 'Courier New', monospace;
-          font-size: 12px;
+          font-size: 10px;
           width: 80mm;
+          max-width: 80mm;
           background: white;
           color: black;
         }
