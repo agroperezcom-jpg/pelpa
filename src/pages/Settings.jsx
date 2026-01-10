@@ -230,6 +230,7 @@ export default function SettingsPage() {
           <TabsTrigger value="theme">Tema Visual</TabsTrigger>
           <TabsTrigger value="regional">Configuración Regional</TabsTrigger>
           <TabsTrigger value="proyectos">Proyectos</TabsTrigger>
+          <TabsTrigger value="printers">Impresoras</TabsTrigger>
           <TabsTrigger value="fiscal">Configuración Fiscal</TabsTrigger>
         </TabsList>
 
@@ -340,6 +341,10 @@ export default function SettingsPage() {
 
         <TabsContent value="proyectos">
           <ConfiguracionProyectos />
+        </TabsContent>
+
+        <TabsContent value="printers">
+          <ConfiguracionImpresoras />
         </TabsContent>
 
         <TabsContent value="fiscal">
