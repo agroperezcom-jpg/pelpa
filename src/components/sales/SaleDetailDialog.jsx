@@ -6,13 +6,13 @@ import { Separator } from "@/components/ui/separator";
 import { Receipt, Printer, FileCheck, Calendar, User, Package, X } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import TicketPrint from "../pos/TicketPrint";
+import { printTicket } from "../pos/TicketPrint";
 
 export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) {
   if (!sale) return null;
 
   const handlePrint = () => {
-    window.print();
+    printTicket(sale, pagos, true);
   };
 
   return (
@@ -231,11 +231,6 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
             </Button>
           )}
         </DialogFooter>
-
-        {/* Ticket oculto para impresión */}
-        <div className="hidden">
-          <TicketPrint venta={sale} pagos={pagos} isCopia={true} />
-        </div>
       </DialogContent>
     </Dialog>
   );
