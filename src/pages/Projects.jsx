@@ -54,6 +54,7 @@ export default function Projects() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['allProjectTasks'] });
       setIsDialogOpen(false);
       setEditingProject(null);
     }
@@ -77,11 +78,13 @@ export default function Projects() {
     setIsDialogOpen(true);
   };
 
-  const handleSaveProject = (data) => {
+  const handleSaveProject = async (data) => {
     if (editingProject) {
       updateProjectMutation.mutate({ id: editingProject.id, data });
+      return null;
     } else {
-      createProjectMutation.mutate(data);
+      const result = await createProjectMutation.mutateAsync(data);
+      return result;
     }
   };
 

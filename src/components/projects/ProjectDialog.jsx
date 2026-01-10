@@ -31,6 +31,7 @@ export default function ProjectDialog({ isOpen, onClose, project, onSave }) {
   });
 
   const [tagInput, setTagInput] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState("");
 
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
@@ -40,6 +41,11 @@ export default function ProjectDialog({ isOpen, onClose, project, onSave }) {
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
     queryFn: () => base44.entities.User.list()
+  });
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ['projectTemplates'],
+    queryFn: () => base44.entities.ProjectTemplate.list()
   });
 
   useEffect(() => {
@@ -125,7 +131,21 @@ export default function ProjectDialog({ isOpen, onClose, project, onSave }) {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleTemplateChange = (templateId) => {
+    setSelectedTemplate(templateId);
+    if (!templateId) return;
+
+    const template = templates.find(t => t.id === templateId);
+    if (template) {
+      setFormData({
+        ...formData,
+        type: template.type,
+        description: template.description
+      });
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     const cliente = clients.find(c => c.id === formData.client_id);
@@ -138,7 +158,40 @@ export default function ProjectDialog({ isOpen, onClose, project, onSave }) {
       estimated_budget: parseFloat(formData.estimated_budget) || 0
     };
 
-    onSave(dataToSave);
+    const savedProject = await onSave(dataToSave);
+
+    // Si se seleccionó una plantilla, crear fases y tareas
+    if (selectedTemplate && savedProject) {
+      const template = templates.find(t => t.id === selectedTemplate);
+      if (template) {
+        // Crear fases
+        const createdPhases = [];
+        for (const phase of template.phases || []) {
+          const newPhase = await base44.entities.ProjectPhase.create({
+            project_id: savedProject.id,
+            name: phase.name,
+            description: phase.description,
+            order: phase.order,
+            status: "pendiente"
+          });
+          createdPhases.push(newPhase);
+        }
+
+        // Crear tareas
+        for (const task of template.tasks || []) {
+          const phase = createdPhases.find(p => p.name === task.phase_name);
+          await base44.entities.ProjectTask.create({
+            project_id: savedProject.id,
+            phase_id: phase?.id || null,
+            name: task.name,
+            description: task.description,
+            priority: task.priority || "media",
+            status: "pendiente",
+            assigned_to: []
+          });
+        }
+      }
+    }
   };
 
   return (
@@ -150,6 +203,30 @@ export default function ProjectDialog({ isOpen, onClose, project, onSave }) {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
+            {!project && (
+              <div className="col-span-2 space-y-2">
+                <Label>Usar Plantilla (Opcional)</Label>
+                <Select value={selectedTemplate} onValueChange={handleTemplateChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar plantilla..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={null}>Sin plantilla</SelectItem>
+                    {templates.map(t => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name} ({t.phases?.length || 0} fases, {t.tasks?.length || 0} tareas)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedTemplate && (
+                  <p className="text-xs text-slate-500">
+                    Al crear el proyecto se copiarán las fases y tareas de la plantilla
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="col-span-2 space-y-2">
               <Label>Nombre del Proyecto *</Label>
               <Input
