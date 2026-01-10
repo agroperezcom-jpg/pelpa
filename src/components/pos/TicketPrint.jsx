@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { generateTicketText, printThermalTicket, PAPER_WIDTHS } from "../thermal/thermalPrinterService";
-import { printTicketQZ, checkQZStatus, getPrinters } from "../thermal/qzTrayService";
+import { printTicketQZ, checkQZStatus, getPrinters, printTestTicket } from "../thermal/qzTrayService";
 import QZTrayGuide from "../thermal/QZTrayGuide";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Printer, AlertCircle, CheckCircle2, HelpCircle } from "lucide-react";
+import { Printer, AlertCircle, CheckCircle2, HelpCircle, Zap } from "lucide-react";
 
 // Función para imprimir el ticket usando impresión térmica directa
 export const printTicket = (venta, pagos = [], isCopia = false, paperWidth = PAPER_WIDTHS.LARGE) => {
@@ -28,9 +30,24 @@ export default function TicketPrint({ venta, pagos, isCopia = false }) {
   const [showGuide, setShowGuide] = useState(false);
   const [printing, setPrinting] = useState(false);
   
+  const { data: configuracionEmpresa = [] } = useQuery({
+    queryKey: ['configuracionEmpresa'],
+    queryFn: () => base44.entities.ConfiguracionEmpresa.list()
+  });
+
+  const empresaConfig = configuracionEmpresa[0];
+  
   useEffect(() => {
     checkQZ();
   }, []);
+
+  useEffect(() => {
+    // Cargar impresora guardada
+    const saved = localStorage.getItem('qz_preferred_printer');
+    if (saved && qzPrinters.includes(saved)) {
+      setSelectedPrinter(saved);
+    }
+  }, [qzPrinters]);
 
   const checkQZ = async () => {
     const status = await checkQZStatus();
@@ -40,6 +57,13 @@ export default function TicketPrint({ venta, pagos, isCopia = false }) {
       const printers = await getPrinters();
       setQzPrinters(printers);
       if (printers.length > 0) {
+        // Intentar cargar preferida
+        const saved = localStorage.getItem('qz_preferred_printer');
+        if (saved && printers.includes(saved)) {
+          setSelectedPrinter(saved);
+          return;
+        }
+        
         // Buscar térmica Hasar/Epson o usar la primera
         const thermal = printers.find(p => 
           p.toLowerCase().includes('hasar') || 
@@ -49,6 +73,11 @@ export default function TicketPrint({ venta, pagos, isCopia = false }) {
         setSelectedPrinter(thermal || printers[0]);
       }
     }
+  };
+
+  const handlePrinterChange = (printer) => {
+    setSelectedPrinter(printer);
+    localStorage.setItem('qz_preferred_printer', printer);
   };
   
   if (!venta) return null;
@@ -60,10 +89,22 @@ export default function TicketPrint({ venta, pagos, isCopia = false }) {
   const handlePrintQZ = async () => {
     setPrinting(true);
     try {
-      await printTicketQZ(venta, pagos, isCopia, selectedPrinter);
+      await printTicketQZ(venta, pagos, isCopia, selectedPrinter, empresaConfig);
       alert('✓ Ticket impreso correctamente');
     } catch (error) {
       alert('Error al imprimir: ' + error.message);
+    } finally {
+      setPrinting(false);
+    }
+  };
+
+  const handleTestPrint = async () => {
+    setPrinting(true);
+    try {
+      await printTestTicket(selectedPrinter, empresaConfig);
+      alert('✓ Ticket de prueba impreso');
+    } catch (error) {
+      alert('Error al imprimir prueba: ' + error.message);
     } finally {
       setPrinting(false);
     }
@@ -107,7 +148,7 @@ export default function TicketPrint({ venta, pagos, isCopia = false }) {
       {qzStatus?.running && qzPrinters.length > 0 && (
         <div className="space-y-2">
           <Label className="text-sm font-medium">Impresora térmica</Label>
-          <Select value={selectedPrinter} onValueChange={setSelectedPrinter}>
+          <Select value={selectedPrinter} onValueChange={handlePrinterChange}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -123,6 +164,18 @@ export default function TicketPrint({ venta, pagos, isCopia = false }) {
             </SelectContent>
           </Select>
         </div>
+      )}
+
+      {/* Botón de prueba */}
+      {qzStatus?.running && selectedPrinter && (
+        <button
+          onClick={handleTestPrint}
+          disabled={printing}
+          className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors text-sm"
+        >
+          <Zap className="w-4 h-4" />
+          IMPRIMIR TICKET DE PRUEBA
+        </button>
       )}
 
       {/* Botón QZ Tray (prioritario) */}
