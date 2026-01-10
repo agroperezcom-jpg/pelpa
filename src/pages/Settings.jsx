@@ -53,6 +53,7 @@ import ThemeSelector from "../components/theme/ThemeSelector";
 import IdentidadEmpresa from "../components/settings/IdentidadEmpresa";
 import RegionalConfig from "../components/settings/RegionalConfig";
 import ConfiguracionProyectos from "../components/settings/ConfiguracionProyectos";
+import ConfiguracionImpresoras from "../components/settings/ConfiguracionImpresoras";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 

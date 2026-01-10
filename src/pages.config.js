@@ -14,6 +14,7 @@ import Marketing from './pages/Marketing';
 import PagosProveedores from './pages/PagosProveedores';
 import Presupuestos from './pages/Presupuestos';
 import Products from './pages/Products';
+import ProjectTemplates from './pages/ProjectTemplates';
 import Projects from './pages/Projects';
 import Proveedores from './pages/Proveedores';
 import Purchases from './pages/Purchases';
@@ -26,7 +27,6 @@ import Talonarios from './pages/Talonarios';
 import TesoreriaV2 from './pages/TesoreriaV2';
 import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
-import ProjectTemplates from './pages/ProjectTemplates';
 import __Layout from './Layout.jsx';
 
 
@@ -47,6 +47,7 @@ export const PAGES = {
     "PagosProveedores": PagosProveedores,
     "Presupuestos": Presupuestos,
     "Products": Products,
+    "ProjectTemplates": ProjectTemplates,
     "Projects": Projects,
     "Proveedores": Proveedores,
     "Purchases": Purchases,
@@ -59,7 +60,6 @@ export const PAGES = {
     "TesoreriaV2": TesoreriaV2,
     "TiposArticulo": TiposArticulo,
     "Treasury": Treasury,
-    "ProjectTemplates": ProjectTemplates,
 }
 
 export const pagesConfig = {
