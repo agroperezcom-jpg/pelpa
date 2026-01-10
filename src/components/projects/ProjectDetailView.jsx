@@ -7,6 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import {
   ArrowLeft, Calendar, Users, DollarSign, Activity, MessageSquare,
   FileText, CheckSquare, Flag, Clock, Edit, Trash2
 } from "lucide-react";
@@ -192,40 +199,51 @@ export default function ProjectDetailView({ project, onBack, onEdit }) {
         )}
       </div>
 
-      <Tabs defaultValue="budgeting" className="space-y-4">
-        <TabsList className="bg-white border shadow-sm">
-          <TabsTrigger value="budgeting">Presupuestación</TabsTrigger>
-          <TabsTrigger value="tasks">Tareas</TabsTrigger>
-          <TabsTrigger value="phases">Fases</TabsTrigger>
-          <TabsTrigger value="milestones">Hitos</TabsTrigger>
-          <TabsTrigger value="documents">Documentos</TabsTrigger>
-          <TabsTrigger value="activity">Actividad</TabsTrigger>
-        </TabsList>
+      <div className="flex items-center gap-4 mb-6">
+        <span className="text-sm font-medium text-slate-700">Vista:</span>
+        <Select defaultValue="budgeting" onValueChange={(value) => {
+          const element = document.getElementById(`tab-content-${value}`);
+          if (element) element.scrollIntoView({ behavior: 'smooth' });
+        }}>
+          <SelectTrigger className="w-64">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="budgeting">Presupuestación</SelectItem>
+            <SelectItem value="phases">Fases</SelectItem>
+            <SelectItem value="tasks">Tareas</SelectItem>
+            <SelectItem value="milestones">Hitos</SelectItem>
+            <SelectItem value="documents">Documentos</SelectItem>
+            <SelectItem value="activity">Actividad</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-        <TabsContent value="budgeting">
+      <div className="space-y-4">
+        <div id="tab-content-budgeting">
           <ProjectBudgetingTab projectId={project.id} projectStatus={project.status} />
-        </TabsContent>
+        </div>
 
-        <TabsContent value="tasks">
-          <ProjectTasksTab projectId={project.id} phases={phases} projectStatus={project.status} />
-        </TabsContent>
-
-        <TabsContent value="phases">
+        <div id="tab-content-phases">
           <ProjectPhasesTab projectId={project.id} projectStatus={project.status} />
-        </TabsContent>
+        </div>
 
-        <TabsContent value="milestones">
+        <div id="tab-content-tasks">
+          <ProjectTasksTab projectId={project.id} phases={phases} projectStatus={project.status} />
+        </div>
+
+        <div id="tab-content-milestones">
           <ProjectMilestonesTab projectId={project.id} phases={phases} />
-        </TabsContent>
+        </div>
 
-        <TabsContent value="documents">
+        <div id="tab-content-documents">
           <ProjectDocumentsTab projectId={project.id} phases={phases} tasks={tasks} />
-        </TabsContent>
+        </div>
 
-        <TabsContent value="activity">
+        <div id="tab-content-activity">
           <ProjectActivityTab projectId={project.id} />
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   );
 }
