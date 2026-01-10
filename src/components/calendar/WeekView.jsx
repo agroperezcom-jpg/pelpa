@@ -29,8 +29,13 @@ export default function WeekView({
 
   const getEventsForDay = (day) => {
     return events.filter(event => {
-      const eventDate = new Date(event.date || event.start_date || event.created_date);
-      return isSameDay(eventDate, day);
+      const dateStr = event.date || event.start_date || event.created_date;
+      if (!dateStr) return false;
+      
+      // Comparar solo las fechas como strings para evitar problemas de zona horaria
+      const eventDateStr = dateStr.split('T')[0];
+      const dayStr = day.toISOString().split('T')[0];
+      return eventDateStr === dayStr;
     });
   };
 
