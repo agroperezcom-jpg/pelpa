@@ -646,7 +646,7 @@ export default function RolesPermisos() {
               <Button 
                 onClick={() => savePermisosMutation.mutate({ 
                   rolId: selectedRol.id, 
-                  permisos: selectedPermisos 
+                  permisosSeleccionados: selectedPermisos 
                 })}
                 disabled={savePermisosMutation.isPending || !selectedRol}
                 className="bg-slate-700 hover:bg-slate-800 text-white"
