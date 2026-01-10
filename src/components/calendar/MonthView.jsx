@@ -28,8 +28,17 @@ export default function MonthView({
 
   const getEventsForDay = (day) => {
     return events.filter(event => {
-      const eventDate = new Date(event.date || event.start_date || event.created_date);
-      return isSameDay(eventDate, day);
+      const eventDateStr = event.date || event.start_date || event.created_date;
+      if (!eventDateStr) return false;
+      
+      // Comparar solo las fechas en formato YYYY-MM-DD
+      const dateStr = eventDateStr.split('T')[0];
+      const year = day.getFullYear();
+      const month = String(day.getMonth() + 1).padStart(2, '0');
+      const dayNum = String(day.getDate()).padStart(2, '0');
+      const targetDateStr = `${year}-${month}-${dayNum}`;
+      
+      return dateStr === targetDateStr;
     });
   };
 
