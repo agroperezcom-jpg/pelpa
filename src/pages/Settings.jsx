@@ -52,6 +52,7 @@ import {
 import ThemeSelector from "../components/theme/ThemeSelector";
 import IdentidadEmpresa from "../components/settings/IdentidadEmpresa";
 import RegionalConfig from "../components/settings/RegionalConfig";
+import ConfiguracionProyectos from "../components/settings/ConfiguracionProyectos";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -227,6 +228,7 @@ export default function SettingsPage() {
           <TabsTrigger value="identidad">Identidad</TabsTrigger>
           <TabsTrigger value="theme">Tema Visual</TabsTrigger>
           <TabsTrigger value="regional">Configuración Regional</TabsTrigger>
+          <TabsTrigger value="proyectos">Proyectos</TabsTrigger>
           <TabsTrigger value="fiscal">Configuración Fiscal</TabsTrigger>
         </TabsList>
 
@@ -333,6 +335,10 @@ export default function SettingsPage() {
 
         <TabsContent value="regional">
           <RegionalConfig />
+        </TabsContent>
+
+        <TabsContent value="proyectos">
+          <ConfiguracionProyectos />
         </TabsContent>
 
         <TabsContent value="fiscal">

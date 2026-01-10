@@ -48,6 +48,13 @@ export default function ProjectDialog({ isOpen, onClose, project, onSave }) {
     queryFn: () => base44.entities.ProjectTemplate.list()
   });
 
+  const { data: configuraciones = [] } = useQuery({
+    queryKey: ['configuracionProyectos'],
+    queryFn: () => base44.entities.ConfiguracionProyectos.list()
+  });
+
+  const configuracion = configuraciones[0];
+
   useEffect(() => {
     if (project) {
       setFormData({
@@ -68,11 +75,21 @@ export default function ProjectDialog({ isOpen, onClose, project, onSave }) {
         color: project.color || "#3b82f6",
         team_members: project.team_members || []
       });
+      setSelectedTemplate("");
     } else {
+      // Aplicar plantilla por defecto si está configurada
+      const plantillaDefecto = configuracion?.usar_plantilla_automaticamente 
+        ? configuracion.plantilla_por_defecto_id 
+        : "";
+      
+      setSelectedTemplate(plantillaDefecto || "");
+      
+      const template = templates.find(t => t.id === plantillaDefecto);
+      
       setFormData({
         name: "",
-        description: "",
-        type: "desarrollo",
+        description: template?.description || "",
+        type: template?.type || "desarrollo",
         status: "en_presupuestacion",
         priority: "media",
         start_date: "",
@@ -88,7 +105,7 @@ export default function ProjectDialog({ isOpen, onClose, project, onSave }) {
         team_members: []
       });
     }
-  }, [project, isOpen]);
+  }, [project, isOpen, configuracion, templates]);
 
   const handleAddTag = () => {
     if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
