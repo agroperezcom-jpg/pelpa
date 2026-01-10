@@ -13,31 +13,41 @@ export const printTicket = (venta, pagos = [], isCopia = false) => {
       <meta charset="utf-8">
       <title>Ticket ${venta.numero_comprobante || 'SIN-NUM'}</title>
       <style>
-        @page {
-          size: 80mm auto;
-          margin: 0mm;
+        @media print {
+          @page {
+            size: 80mm auto;
+            margin: 0;
+          }
         }
         * {
           margin: 0;
           padding: 0;
           box-sizing: border-box;
         }
-        body {
+        html, body {
           margin: 0;
-          padding: 5mm;
-          font-family: 'Courier New', monospace;
-          font-size: 10px;
+          padding: 0;
           width: 80mm;
           max-width: 80mm;
+        }
+        body {
+          padding: 3mm 5mm;
+          font-family: 'Courier New', 'Courier', monospace;
+          font-size: 11px;
+          line-height: 1.3;
           background: white;
-          color: black;
+          color: #000;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
         .center { text-align: center; }
         .bold { font-weight: bold; }
         .right { text-align: right; }
-        .dashed { border-top: 1px dashed #000; margin: 3mm 0; }
-        .solid { border-top: 1px solid #000; margin: 1mm 0; }
-        .thick { border-top: 2px solid #000; padding-top: 2mm; }
+        .dashed { border-top: 1px dashed #000; margin: 2mm 0; clear: both; }
+        .solid { border-top: 1px solid #000; margin: 1mm 0; clear: both; }
+        .thick { border-top: 2px solid #000; padding-top: 2mm; clear: both; }
+        table { width: 100%; border-collapse: collapse; }
+        img { max-width: 100%; height: auto; }
       </style>
     </head>
     <body>
