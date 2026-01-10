@@ -214,20 +214,6 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
                 </div>
               </>
             )}
-
-            {/* Vista previa del ticket */}
-            {sale.estado === "CONFIRMADA" && (
-              <>
-                <Separator />
-                <div>
-                  <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                    <Receipt className="h-4 w-4 text-muted-foreground" />
-                    Vista Previa del Ticket
-                  </h3>
-                  <TicketPrint venta={sale} pagos={pagos} isCopia={true} />
-                </div>
-              </>
-            )}
           </div>
         </div>
 
@@ -235,7 +221,21 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
           <Button variant="outline" onClick={onClose}>
             Cerrar
           </Button>
+          {sale.estado === "CONFIRMADA" && (
+            <Button 
+              onClick={handlePrint}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Reimprimir Ticket
+            </Button>
+          )}
         </DialogFooter>
+
+        {/* Ticket oculto para impresión */}
+        <div className="hidden">
+          <TicketPrint venta={sale} pagos={pagos} isCopia={true} />
+        </div>
       </DialogContent>
     </Dialog>
   );
