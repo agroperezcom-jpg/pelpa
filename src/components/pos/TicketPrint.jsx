@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { generateTicketText, printThermalTicket, PAPER_WIDTHS } from "../../utils/thermalPrinterService";
+import { generateTicketText, printThermalTicket, PAPER_WIDTHS } from "../thermal/thermalPrinterService";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 

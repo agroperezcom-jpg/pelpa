@@ -1,18 +1,23 @@
-import React from "react";
+import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Receipt, Printer, FileCheck, Calendar, User, Package, X } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { printTicket } from "../pos/TicketPrint";
+import { PAPER_WIDTHS } from "../thermal/thermalPrinterService";
 
 export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) {
+  const [paperWidth, setPaperWidth] = useState(PAPER_WIDTHS.LARGE);
+  
   if (!sale) return null;
 
   const handlePrint = () => {
-    printTicket(sale, pagos, true);
+    printTicket(sale, pagos, true, paperWidth);
   };
 
   return (
@@ -217,17 +222,40 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
           </div>
         </div>
 
-        <DialogFooter className="px-6 py-4 border-t bg-slate-50 gap-2">
-          <Button variant="outline" onClick={onClose}>
-            Cerrar
-          </Button>
+        <DialogFooter className="px-6 py-4 border-t bg-slate-50">
           {sale.estado === "CONFIRMADA" && (
-            <Button 
-              onClick={handlePrint}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Printer className="h-4 w-4 mr-2" />
-              Reimprimir Ticket
+            <div className="w-full space-y-3">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Ancho de papel</Label>
+                <Select value={String(paperWidth)} onValueChange={(v) => setPaperWidth(Number(v))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={String(PAPER_WIDTHS.SMALL)}>58mm (32 caracteres)</SelectItem>
+                    <SelectItem value={String(PAPER_WIDTHS.MEDIUM)}>72mm (42 caracteres)</SelectItem>
+                    <SelectItem value={String(PAPER_WIDTHS.LARGE)}>80mm (48 caracteres)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={onClose}>
+                  Cerrar
+                </Button>
+                <Button 
+                  onClick={handlePrint}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  Impresión Térmica Directa
+                </Button>
+              </div>
+            </div>
+          )}
+          {sale.estado !== "CONFIRMADA" && (
+            <Button variant="outline" onClick={onClose}>
+              Cerrar
             </Button>
           )}
         </DialogFooter>
