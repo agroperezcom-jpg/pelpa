@@ -2,226 +2,188 @@ import React from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
-// Función para generar el HTML del ticket e imprimirlo en una nueva ventana
+// Función para imprimir el ticket usando el DOM actual
 export const printTicket = (venta, pagos = [], isCopia = false) => {
   if (!venta) return;
 
+  // Crear elemento temporal para impresión
+  const printContainer = document.createElement('div');
+  printContainer.id = 'ticket-print-container';
+  
   const ticketHTML = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>Ticket ${venta.numero_comprobante || 'SIN-NUM'}</title>
-      <style>
-        @page {
-          size: 80mm auto;
-          margin: 0;
-        }
-        body {
-          margin: 0;
-          padding: 10mm;
-          font-family: 'Courier New', monospace;
-          font-size: 12px;
-          width: 80mm;
-          background: white;
-        }
-        .ticket {
-          width: 100%;
-        }
-        .center {
-          text-align: center;
-        }
-        .bold {
-          font-weight: bold;
-        }
-        .dashed {
-          border-top: 1px dashed #000;
-          margin: 3mm 0;
-        }
-        .solid {
-          border-top: 1px solid #000;
-          margin: 1mm 0;
-        }
-        .thick {
-          border-top: 2px solid #000;
-          padding-top: 2mm;
-        }
-        .header {
-          font-size: 16px;
-          font-weight: bold;
-        }
-        .small {
-          font-size: 10px;
-        }
-        .tiny {
-          font-size: 9px;
-          color: #666;
-        }
-        .right {
-          text-align: right;
-        }
-        .flex {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 2mm;
-        }
-        .item {
-          margin-bottom: 2mm;
-        }
-        .item-detail {
-          margin-left: 6mm;
-          font-size: 9px;
-          color: #666;
-        }
-        .green {
-          color: #059669;
-        }
-        .space {
-          height: 10mm;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="ticket">
-        <!-- Encabezado -->
-        <div class="center" style="margin-bottom: 5mm;">
-          <div class="header">LIBRERÍA PAPELERÍA</div>
-          <div class="small">Razón Social SRL</div>
-          <div class="small">CUIT: 20-12345678-9</div>
-          <div class="small">Av. Principal 1234</div>
-          <div class="small">Tel: (011) 4444-5555</div>
+    <div id="ticket-to-print" style="
+      width: 80mm;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      padding: 10mm;
+      background: white;
+      color: black;
+    ">
+      <!-- Encabezado -->
+      <div style="text-align: center; margin-bottom: 5mm;">
+        <div style="font-size: 16px; font-weight: bold;">LIBRERÍA PAPELERÍA</div>
+        <div style="font-size: 10px;">Razón Social SRL</div>
+        <div style="font-size: 10px;">CUIT: 20-12345678-9</div>
+        <div style="font-size: 10px;">Av. Principal 1234</div>
+        <div style="font-size: 10px;">Tel: (011) 4444-5555</div>
+      </div>
+
+      <div style="border-top: 1px dashed #000; margin: 3mm 0;"></div>
+
+      ${isCopia ? '<div style="text-align: center; font-size: 14px; font-weight: bold; margin: 3mm 0;">*** COPIA ***</div>' : ''}
+
+      <!-- Info Venta -->
+      <div style="font-size: 10px; margin-bottom: 3mm;">
+        <div style="font-size: 12px; font-weight: bold;">
+          TICKET ${venta.tipo_comprobante} N°: ${venta.numero_comprobante || 'SIN-NUM'}
         </div>
+        <div>FECHA: ${format(new Date(venta.created_date), "dd/MM/yyyy HH:mm", { locale: es })}</div>
+        <div>CLIENTE: ${venta.client_name || 'CONSUMIDOR FINAL'}</div>
+        <div>CAJERO: ${venta.employee_name}</div>
+        <div>LISTA: ${venta.tipo_lista}</div>
+      </div>
 
-        <div class="dashed"></div>
+      <div style="border-top: 1px dashed #000; margin: 3mm 0;"></div>
 
-        ${isCopia ? '<div class="center bold" style="margin: 3mm 0; font-size: 14px;">*** COPIA ***</div>' : ''}
-
-        <!-- Info Venta -->
-        <div class="small" style="margin-bottom: 3mm;">
-          <div class="bold" style="font-size: 12px;">
-            TICKET ${venta.tipo_comprobante} N°: ${venta.numero_comprobante || 'SIN-NUM'}
-          </div>
-          <div>FECHA: ${format(new Date(venta.created_date), "dd/MM/yyyy HH:mm", { locale: es })}</div>
-          <div>CLIENTE: ${venta.client_name || 'CONSUMIDOR FINAL'}</div>
-          <div>CAJERO: ${venta.employee_name}</div>
-          <div>LISTA: ${venta.tipo_lista}</div>
+      <!-- Artículos -->
+      <div style="font-size: 11px;">
+        <div style="font-weight: bold; margin-bottom: 2mm;">
+          <span>CANT</span>
+          <span style="margin-left: 8mm;">DESCRIPCIÓN</span>
+          <span style="float: right;">SUBTOTAL</span>
         </div>
-
-        <div class="dashed"></div>
-
-        <!-- Artículos -->
-        <div style="font-size: 11px;">
-          <div class="bold" style="margin-bottom: 2mm;">
-            <span>CANT</span>
-            <span style="margin-left: 8mm;">DESCRIPCIÓN</span>
-            <span style="float: right;">SUBTOTAL</span>
-          </div>
-          <div class="solid"></div>
-          
-          ${venta.items?.map(item => `
-            <div class="item">
-              <div>
-                <span style="display: inline-block; width: 6mm;">${item.quantity}</span>
-                <span style="display: inline-block; width: 42mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                  ${item.name}
-                </span>
-                <span style="float: right;">$${item.total?.toFixed(2)}</span>
+        <div style="border-top: 1px solid #000; margin: 1mm 0; clear: both;"></div>
+        
+        ${venta.items?.map(item => `
+          <div style="margin-bottom: 2mm;">
+            <div>
+              <span style="display: inline-block; width: 6mm;">${item.quantity}</span>
+              <span style="display: inline-block; width: 42mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                ${item.name}
+              </span>
+              <span style="float: right;">$${item.total?.toFixed(2)}</span>
+            </div>
+            ${item.precio_venta ? `
+              <div style="font-size: 9px; color: #666; margin-left: 6mm; clear: both;">
+                $${item.precio_venta?.toFixed(2)} x ${item.quantity}
               </div>
-              ${item.precio_venta ? `
-                <div class="item-detail">
-                  $${item.precio_venta?.toFixed(2)} x ${item.quantity}
-                </div>
-              ` : ''}
+            ` : ''}
+          </div>
+        `).join('')}
+      </div>
+
+      <div style="border-top: 1px dashed #000; margin: 3mm 0; clear: both;"></div>
+
+      <!-- Totales -->
+      <div style="text-align: right; font-size: 14px; font-weight: bold; margin-bottom: 5mm;">
+        <div style="font-size: 12px; font-weight: normal; margin-bottom: 2mm;">
+          Subtotal: $${venta.subtotal?.toFixed(2)}
+        </div>
+        ${venta.discount > 0 ? `
+          <div style="font-size: 12px; font-weight: normal; margin-bottom: 2mm;">
+            Descuento: -$${venta.discount?.toFixed(2)}
+          </div>
+        ` : ''}
+        ${venta.genera_iva && venta.neto_gravado ? `
+          <div style="border-top: 1px dashed #000; margin: 2mm 0;"></div>
+          <div style="font-size: 12px; font-weight: normal; margin-bottom: 1mm;">
+            Neto Gravado: $${venta.neto_gravado?.toFixed(2)}
+          </div>
+          <div style="font-size: 12px; font-weight: bold; margin-bottom: 2mm; color: #059669;">
+            IVA 21%: $${venta.iva_21?.toFixed(2)}
+          </div>
+        ` : ''}
+        <div style="border-top: 2px solid #000; padding-top: 2mm;">
+          TOTAL: $${venta.total?.toFixed(2)}
+        </div>
+      </div>
+
+      <div style="border-top: 1px dashed #000; margin: 3mm 0;"></div>
+
+      <!-- Detalle de Pagos -->
+      ${pagos && pagos.length > 0 ? `
+        <div style="font-size: 11px; margin-bottom: 5mm;">
+          <div style="font-weight: bold; margin-bottom: 2mm;">FORMA DE PAGO:</div>
+          ${pagos.map(pago => `
+            <div style="margin-bottom: 1mm;">
+              <span>${pago.medio_pago_nombre}</span>
+              ${pago.banco_nombre ? `<span style="font-size: 9px;"> (${pago.banco_nombre})</span>` : ''}
+              ${pago.caja_nombre ? `<span style="font-size: 9px;"> (${pago.caja_nombre})</span>` : ''}
+              <span style="float: right;">$${pago.importe?.toFixed(2)}</span>
             </div>
           `).join('')}
         </div>
+      ` : ''}
 
-        <div class="dashed"></div>
-
-        <!-- Totales -->
-        <div class="right" style="font-size: 14px; font-weight: bold; margin-bottom: 5mm;">
-          <div style="font-size: 12px; font-weight: normal; margin-bottom: 2mm;">
-            Subtotal: $${venta.subtotal?.toFixed(2)}
-          </div>
-          ${venta.discount > 0 ? `
-            <div style="font-size: 12px; font-weight: normal; margin-bottom: 2mm;">
-              Descuento: -$${venta.discount?.toFixed(2)}
-            </div>
-          ` : ''}
-          ${venta.genera_iva && venta.neto_gravado ? `
-            <div class="dashed"></div>
-            <div style="font-size: 12px; font-weight: normal; margin-bottom: 1mm;">
-              Neto Gravado: $${venta.neto_gravado?.toFixed(2)}
-            </div>
-            <div style="font-size: 12px; font-weight: bold; margin-bottom: 2mm; color: #059669;">
-              IVA 21%: $${venta.iva_21?.toFixed(2)}
-            </div>
-          ` : ''}
-          <div class="thick">
-            TOTAL: $${venta.total?.toFixed(2)}
+      <!-- Tipo de Venta -->
+      ${venta.tipo_venta ? `
+        <div style="font-size: 10px; text-align: center; margin-bottom: 3mm;">
+          <div style="font-weight: bold;">
+            ${venta.tipo_venta === "CONTADO" ? "VENTA DE CONTADO" : ""}
+            ${venta.tipo_venta === "CTA_CTE" ? "VENTA EN CUENTA CORRIENTE" : ""}
+            ${venta.tipo_venta === "MIXTA" ? "VENTA MIXTA (CONTADO + CTA CTE)" : ""}
           </div>
         </div>
+      ` : ''}
 
-        <div class="dashed"></div>
+      <div style="border-top: 1px dashed #000; margin: 3mm 0;"></div>
 
-        <!-- Detalle de Pagos -->
-        ${pagos && pagos.length > 0 ? `
-          <div style="font-size: 11px; margin-bottom: 5mm;">
-            <div class="bold" style="margin-bottom: 2mm;">FORMA DE PAGO:</div>
-            ${pagos.map(pago => `
-              <div style="margin-bottom: 1mm;">
-                <span>${pago.medio_pago_nombre}</span>
-                ${pago.banco_nombre ? `<span class="tiny"> (${pago.banco_nombre})</span>` : ''}
-                ${pago.caja_nombre ? `<span class="tiny"> (${pago.caja_nombre})</span>` : ''}
-                <span style="float: right;">$${pago.importe?.toFixed(2)}</span>
-              </div>
-            `).join('')}
-          </div>
-        ` : ''}
-
-        <!-- Tipo de Venta -->
-        ${venta.tipo_venta ? `
-          <div class="small center" style="margin-bottom: 3mm;">
-            <div class="bold">
-              ${venta.tipo_venta === "CONTADO" ? "VENTA DE CONTADO" : ""}
-              ${venta.tipo_venta === "CTA_CTE" ? "VENTA EN CUENTA CORRIENTE" : ""}
-              ${venta.tipo_venta === "MIXTA" ? "VENTA MIXTA (CONTADO + CTA CTE)" : ""}
-            </div>
-          </div>
-        ` : ''}
-
-        <div class="dashed"></div>
-
-        <!-- Pie -->
-        <div class="center" style="font-size: 11px; margin-top: 5mm;">
-          <div class="bold" style="margin-bottom: 2mm;">¡GRACIAS POR SU COMPRA!</div>
-          <div class="tiny">Conserve este ticket</div>
-        </div>
-
-        <div class="space"></div>
+      <!-- Pie -->
+      <div style="text-align: center; font-size: 11px; margin-top: 5mm;">
+        <div style="font-weight: bold; margin-bottom: 2mm;">¡GRACIAS POR SU COMPRA!</div>
+        <div style="font-size: 9px;">Conserve este ticket</div>
       </div>
-    </body>
-    </html>
+
+      <div style="height: 10mm;"></div>
+    </div>
   `;
 
-  // Abrir nueva ventana e imprimir
-  const printWindow = window.open('', '_blank', 'width=300,height=600');
-  if (printWindow) {
-    printWindow.document.write(ticketHTML);
-    printWindow.document.close();
+  printContainer.innerHTML = ticketHTML;
+  
+  // Agregar estilos para impresión
+  const styleElement = document.createElement('style');
+  styleElement.innerHTML = `
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #ticket-print-container,
+      #ticket-print-container * {
+        visibility: visible;
+      }
+      #ticket-print-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+      }
+      @page {
+        size: 80mm auto;
+        margin: 0;
+      }
+    }
+    @media screen {
+      #ticket-print-container {
+        position: fixed;
+        left: -9999px;
+        top: 0;
+      }
+    }
+  `;
+  
+  // Agregar al DOM
+  document.head.appendChild(styleElement);
+  document.body.appendChild(printContainer);
+  
+  // Imprimir
+  setTimeout(() => {
+    window.print();
     
-    // Esperar a que el contenido cargue antes de imprimir
-    printWindow.onload = () => {
-      printWindow.focus();
-      printWindow.print();
-      // Cerrar la ventana después de imprimir (opcional)
-      setTimeout(() => {
-        printWindow.close();
-      }, 500);
-    };
-  } else {
-    alert('Por favor, habilita las ventanas emergentes para imprimir el ticket.');
-  }
+    // Limpiar después de imprimir
+    setTimeout(() => {
+      document.body.removeChild(printContainer);
+      document.head.removeChild(styleElement);
+    }, 1000);
+  }, 100);
 };
 
 export default function TicketPrint({ venta, pagos, isCopia = false }) {
