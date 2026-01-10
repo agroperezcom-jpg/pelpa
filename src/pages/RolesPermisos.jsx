@@ -214,57 +214,77 @@ export default function RolesPermisos() {
     mutationFn: async ({ rolId, permisos }) => {
       if (!rolId) throw new Error("Rol no seleccionado");
       
+      console.log('Guardando permisos para rol:', rolId);
+      console.log('Permisos a guardar:', permisos);
+      
       // Eliminar permisos existentes
       const existing = rolPermisos.filter(rp => rp.rol_id === rolId);
+      console.log('Eliminando permisos existentes:', existing.length);
       for (const rp of existing) {
         await base44.entities.RolPermiso.delete(rp.id);
       }
 
       // Crear nuevos permisos
+      const permisosACrear = [];
       for (const [key, value] of Object.entries(permisos)) {
         if (value) {
           const parts = key.split('_');
-          if (parts.length < 2) continue; // Skip invalid keys
+          if (parts.length < 2) continue;
           
           const accion = parts[parts.length - 1];
           const modulo = parts.slice(0, -1).join('_');
           
-          const permiso = await base44.entities.Permiso.filter({ modulo, accion });
+          permisosACrear.push({ modulo, accion });
+        }
+      }
+
+      console.log('Permisos a crear:', permisosACrear.length);
+
+      // Crear todos los permisos
+      for (const { modulo, accion } of permisosACrear) {
+        try {
+          // Buscar o crear el permiso
+          let permisoId = null;
+          const existingPermiso = permisos.filter(p => p.modulo === modulo && p.accion === accion);
           
-          if (permiso.length === 0) {
-            // Crear permiso si no existe
-            const nuevoPermiso = await base44.entities.Permiso.create({
+          if (!existingPermiso || existingPermiso.length === 0) {
+            const newPermiso = await base44.entities.Permiso.create({
               modulo,
               accion,
               descripcion: `${accion} en ${modulo}`
             });
-            
-            await base44.entities.RolPermiso.create({
-              rol_id: rolId,
-              rol_nombre: selectedRol?.nombre || "",
-              permiso_id: nuevoPermiso.id,
-              modulo,
-              accion
-            });
+            permisoId = newPermiso.id;
           } else {
-            await base44.entities.RolPermiso.create({
-              rol_id: rolId,
-              rol_nombre: selectedRol?.nombre || "",
-              permiso_id: permiso[0].id,
-              modulo,
-              accion
-            });
+            permisoId = existingPermiso[0].id;
           }
+
+          // Crear rol-permiso
+          await base44.entities.RolPermiso.create({
+            rol_id: rolId,
+            rol_nombre: selectedRol?.nombre || "",
+            permiso_id: permisoId,
+            modulo,
+            accion
+          });
+          console.log(`Permiso creado: ${modulo}_${accion}`);
+        } catch (error) {
+          console.error(`Error creando permiso ${modulo}_${accion}:`, error);
+          throw error;
         }
       }
     },
     onSuccess: () => {
+      console.log('Permisos guardados exitosamente');
+      // Invalidad ambos queries para asegurar actualización
       queryClient.invalidateQueries({ queryKey: ['rolPermisos'] });
+      queryClient.invalidateQueries({ queryKey: ['permisos'] });
       setPermisosDialogOpen(false);
       setSelectedRol(null);
       setSelectedPermisos({});
+      alert('✓ Permisos guardados correctamente');
     },
     onError: (error) => {
+      console.error('Error guardando permisos:', error);
       alert("Error al guardar permisos: " + error.message);
     }
   });
