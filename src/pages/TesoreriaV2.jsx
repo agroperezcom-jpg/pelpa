@@ -4,6 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { Landmark, Wallet, Building2, Users, Package, ArrowRightLeft, Settings } from "lucide-react";
 
 import ResumenTesoreria from "@/components/tesoreria/ResumenTesoreria";
@@ -73,51 +80,47 @@ export default function TesoreriaV2() {
         totalDeudaProveedores={totalDeudaProveedores}
       />
 
-      {/* Tabs */}
-      <Tabs defaultValue="movimientos" className="space-y-4">
-        <TabsList className="bg-white border shadow-sm">
-          <TabsTrigger value="movimientos" className="gap-2">
-            <ArrowRightLeft className="h-4 w-4" />
-            Movimientos
-          </TabsTrigger>
-          <TabsTrigger value="cajas" className="gap-2">
-            <Wallet className="h-4 w-4" />
-            Cajas
-          </TabsTrigger>
-          <TabsTrigger value="bancos" className="gap-2">
-            <Building2 className="h-4 w-4" />
-            Bancos
-          </TabsTrigger>
-          <TabsTrigger value="cuentas" className="gap-2">
-            <Users className="h-4 w-4" />
-            Cuenta Corriente
-          </TabsTrigger>
-          <TabsTrigger value="medios" className="gap-2">
-            <Settings className="h-4 w-4" />
-            Medios de Pago
-          </TabsTrigger>
-        </TabsList>
+      {/* Vista Selector */}
+      <div className="flex items-center gap-4 mb-6">
+        <span className="text-sm font-medium text-slate-700">Vista:</span>
+        <Select defaultValue="movimientos" onValueChange={(value) => {
+          const element = document.getElementById(`tab-content-${value}`);
+          if (element) element.scrollIntoView({ behavior: 'smooth' });
+        }}>
+          <SelectTrigger className="w-64">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="movimientos">Movimientos</SelectItem>
+            <SelectItem value="cajas">Cajas</SelectItem>
+            <SelectItem value="bancos">Bancos</SelectItem>
+            <SelectItem value="cuentas">Cuenta Corriente</SelectItem>
+            <SelectItem value="medios">Medios de Pago</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-        <TabsContent value="movimientos">
+      <div className="space-y-4">
+        <div id="tab-content-movimientos">
           <MovimientosView />
-        </TabsContent>
+        </div>
 
-        <TabsContent value="cajas">
+        <div id="tab-content-cajas">
           <CajasView />
-        </TabsContent>
+        </div>
 
-        <TabsContent value="bancos">
+        <div id="tab-content-bancos">
           <BancosView />
-        </TabsContent>
+        </div>
 
-        <TabsContent value="cuentas">
+        <div id="tab-content-cuentas">
           <CuentaCorrienteView />
-        </TabsContent>
+        </div>
 
-        <TabsContent value="medios">
+        <div id="tab-content-medios">
           <MediosPagoView />
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
 
       <TransferenciasDialog 
         isOpen={isTransferDialogOpen}
