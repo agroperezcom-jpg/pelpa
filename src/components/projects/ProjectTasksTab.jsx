@@ -30,6 +30,8 @@ export default function ProjectTasksTab({ projectId, phases, projectStatus }) {
     assigned_to: [],
     start_date: "",
     due_date: "",
+    duration_days: "",
+    duration_hours: "",
     estimated_hours: "",
     tags: []
   });
@@ -94,6 +96,8 @@ export default function ProjectTasksTab({ projectId, phases, projectStatus }) {
         assigned_to: task.assigned_to || [],
         start_date: task.start_date?.split('T')[0] || "",
         due_date: task.due_date?.split('T')[0] || "",
+        duration_days: task.duration_days || "",
+        duration_hours: task.duration_hours || "",
         estimated_hours: task.estimated_hours || "",
         tags: task.tags || []
       });
@@ -108,6 +112,8 @@ export default function ProjectTasksTab({ projectId, phases, projectStatus }) {
         assigned_to: [],
         start_date: "",
         due_date: "",
+        duration_days: "",
+        duration_hours: "",
         estimated_hours: "",
         tags: []
       });
@@ -126,6 +132,8 @@ export default function ProjectTasksTab({ projectId, phases, projectStatus }) {
     const dataToSave = {
       project_id: projectId,
       ...formData,
+      duration_days: parseFloat(formData.duration_days) || 0,
+      duration_hours: parseFloat(formData.duration_hours) || 0,
       estimated_hours: parseFloat(formData.estimated_hours) || 0,
       start_date: formData.start_date ? new Date(formData.start_date).toISOString() : null,
       due_date: formData.due_date ? new Date(formData.due_date).toISOString() : null
@@ -404,6 +412,29 @@ export default function ProjectTasksTab({ projectId, phases, projectStatus }) {
                   step="0.5"
                   value={formData.estimated_hours}
                   onChange={(e) => setFormData({ ...formData, estimated_hours: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Duración (Días)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={formData.duration_days}
+                  onChange={(e) => setFormData({ ...formData, duration_days: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Duración (Horas)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="23"
+                  value={formData.duration_hours}
+                  onChange={(e) => setFormData({ ...formData, duration_hours: e.target.value })}
                   placeholder="0"
                 />
               </div>

@@ -26,6 +26,8 @@ export default function ProjectPhasesTab({ projectId, projectStatus }) {
     order: "",
     start_date: "",
     end_date: "",
+    duration_days: "",
+    duration_hours: "",
     responsible_email: "",
     depends_on_phase_id: ""
   });
@@ -86,6 +88,8 @@ export default function ProjectPhasesTab({ projectId, projectStatus }) {
         order: phase.order,
         start_date: phase.start_date || "",
         end_date: phase.end_date || "",
+        duration_days: phase.duration_days || "",
+        duration_hours: phase.duration_hours || "",
         responsible_email: phase.responsible_email || "",
         depends_on_phase_id: phase.depends_on_phase_id || ""
       });
@@ -97,6 +101,8 @@ export default function ProjectPhasesTab({ projectId, projectStatus }) {
         order: phases.length + 1,
         start_date: "",
         end_date: "",
+        duration_days: "",
+        duration_hours: "",
         responsible_email: "",
         depends_on_phase_id: ""
       });
@@ -120,6 +126,8 @@ export default function ProjectPhasesTab({ projectId, projectStatus }) {
       order: parseInt(formData.order),
       start_date: formData.start_date || null,
       end_date: formData.end_date || null,
+      duration_days: parseFloat(formData.duration_days) || 0,
+      duration_hours: parseFloat(formData.duration_hours) || 0,
       responsible_email: formData.responsible_email || null,
       responsible_name: user?.full_name || null,
       depends_on_phase_id: formData.depends_on_phase_id || null,
@@ -436,6 +444,29 @@ export default function ProjectPhasesTab({ projectId, projectStatus }) {
                   type="date"
                   value={formData.end_date}
                   onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Duración (Días)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={formData.duration_days}
+                  onChange={(e) => setFormData({ ...formData, duration_days: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Duración (Horas)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="23"
+                  value={formData.duration_hours}
+                  onChange={(e) => setFormData({ ...formData, duration_hours: e.target.value })}
+                  placeholder="0"
                 />
               </div>
 
