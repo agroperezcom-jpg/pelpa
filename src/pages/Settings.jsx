@@ -30,7 +30,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Users, Clock, UserPlus, Globe, Palette, Briefcase, Printer, Shield, Plus, Edit, Lock, CheckCircle2, Power, Trash2 } from "lucide-react";
 import ConfiguracionProyectos from "../components/settings/ConfiguracionProyectos";
 import IdentidadEmpresa from "../components/settings/IdentidadEmpresa";
-import { ThemeSelector } from "../components/theme/ThemeSelector";
+import ThemeSelector from "../components/theme/ThemeSelector";
 import RegionalConfig from "../components/settings/RegionalConfig";
 import ConfiguracionImpresoras from "../components/settings/ConfiguracionImpresoras";
 
