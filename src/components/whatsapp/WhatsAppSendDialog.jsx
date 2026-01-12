@@ -58,8 +58,8 @@ export default function WhatsAppSendDialog({
         throw new Error("Error al generar PDF");
       }
 
-      const signedUrl = response.data.signed_url;
-      setGeneratedUrl(signedUrl);
+      const fileUrl = response.data.file_url;
+      setGeneratedUrl(fileUrl);
 
       // Formatear número para WhatsApp (remover caracteres especiales)
       const cleanPhone = phoneNumber.replace(/\D/g, "");
@@ -75,7 +75,7 @@ export default function WhatsAppSendDialog({
       // Mensaje
       const ticketNumber = ticketData.numero || ticketData.numero_presupuesto || "Documento";
       const ticketTypeLabel = ticketType === "budget" ? "presupuesto" : "ticket de venta";
-      const message = `Hola ${clientName || ""}! Te envío el ${ticketTypeLabel} #${ticketNumber}. Descargalo desde aquí: ${signedUrl}`;
+      const message = `Hola ${clientName || ""}! Te envío el ${ticketTypeLabel} #${ticketNumber}. Descargalo desde aquí: ${fileUrl}`;
 
       // Abrir WhatsApp Web
       const whatsappUrl = `https://wa.me/${formattedPhone}/?text=${encodeURIComponent(message)}`;
