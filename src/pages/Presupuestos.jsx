@@ -119,6 +119,11 @@ export default function Presupuestos() {
     queryFn: () => base44.entities.ConfiguracionIIBB.list()
   });
 
+  const { data: projectTemplates = [] } = useQuery({
+    queryKey: ['projectTemplates'],
+    queryFn: () => base44.entities.ProjectTemplate.list()
+  });
+
   const createPresupuestoMutation = useMutation({
     mutationFn: async ({ presupuestoData, nuevoEstado }) => {
       const cliente = clients.find(c => c.id === presupuestoData.cliente_id);
