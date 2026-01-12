@@ -29,7 +29,9 @@ export default function ProjectTasksTab({ projectId, phases, projectStatus }) {
     priority: "media",
     assigned_to: [],
     start_date: "",
+    start_time: "",
     due_date: "",
+    due_time: "",
     duration_days: "",
     duration_hours: "",
     estimated_hours: "",
@@ -95,7 +97,9 @@ export default function ProjectTasksTab({ projectId, phases, projectStatus }) {
         priority: task.priority,
         assigned_to: task.assigned_to || [],
         start_date: task.start_date?.split('T')[0] || "",
+        start_time: task.start_time || "",
         due_date: task.due_date?.split('T')[0] || "",
+        due_time: task.due_time || "",
         duration_days: task.duration_days || "",
         duration_hours: task.duration_hours || "",
         estimated_hours: task.estimated_hours || "",
@@ -111,7 +115,9 @@ export default function ProjectTasksTab({ projectId, phases, projectStatus }) {
         priority: "media",
         assigned_to: [],
         start_date: "",
+        start_time: "",
         due_date: "",
+        due_time: "",
         duration_days: "",
         duration_hours: "",
         estimated_hours: "",
@@ -129,14 +135,38 @@ export default function ProjectTasksTab({ projectId, phases, projectStatus }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     
+    // Construir fecha/hora completa para start_date
+    let startDateTime = null;
+    if (formData.start_date) {
+      const dateObj = new Date(formData.start_date + 'T00:00:00');
+      if (formData.start_time) {
+        const [hours, minutes] = formData.start_time.split(':');
+        dateObj.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      }
+      startDateTime = dateObj.toISOString();
+    }
+
+    // Construir fecha/hora completa para due_date
+    let dueDateTime = null;
+    if (formData.due_date) {
+      const dateObj = new Date(formData.due_date + 'T00:00:00');
+      if (formData.due_time) {
+        const [hours, minutes] = formData.due_time.split(':');
+        dateObj.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      }
+      dueDateTime = dateObj.toISOString();
+    }
+    
     const dataToSave = {
       project_id: projectId,
       ...formData,
       duration_days: parseFloat(formData.duration_days) || 0,
       duration_hours: parseFloat(formData.duration_hours) || 0,
       estimated_hours: parseFloat(formData.estimated_hours) || 0,
-      start_date: formData.start_date ? new Date(formData.start_date).toISOString() : null,
-      due_date: formData.due_date ? new Date(formData.due_date).toISOString() : null
+      start_date: startDateTime,
+      start_time: formData.start_time || null,
+      due_date: dueDateTime,
+      due_time: formData.due_time || null
     };
 
     if (editingTask) {
@@ -163,7 +193,32 @@ export default function ProjectTasksTab({ projectId, phases, projectStatus }) {
     });
   };
 
-  const filteredTasks = tasks.filter(task => 
+  // Ordenar tareas por fase (orden de fase) y luego por fecha
+  const sortedTasks = [...tasks].sort((a, b) => {
+    const phaseA = phases.find(p => p.id === a.phase_id);
+    const phaseB = phases.find(p => p.id === b.phase_id);
+    
+    // Tareas sin fase van al final
+    if (!phaseA && phaseB) return 1;
+    if (phaseA && !phaseB) return -1;
+    if (!phaseA && !phaseB) return 0;
+    
+    // Ordenar por orden de fase
+    if (phaseA.order !== phaseB.order) {
+      return phaseA.order - phaseB.order;
+    }
+    
+    // Si están en la misma fase, ordenar por fecha de inicio
+    if (a.start_date && b.start_date) {
+      return new Date(a.start_date) - new Date(b.start_date);
+    }
+    if (a.start_date) return -1;
+    if (b.start_date) return 1;
+    
+    return 0;
+  });
+
+  const filteredTasks = sortedTasks.filter(task => 
     filterStatus === "all" || task.status === filterStatus
   );
 
@@ -290,7 +345,8 @@ export default function ProjectTasksTab({ projectId, phases, projectStatus }) {
                     {task.due_date ? (
                       <div className={`text-xs ${isOverdue ? 'text-red-600 font-medium' : 'text-slate-600'}`}>
                         {format(new Date(task.due_date), 'd MMM', { locale: es })}
-                        {isOverdue && ' (vencida)'}
+                        {task.due_time && <span className="ml-1">{task.due_time}</span>}
+                        {isOverdue && <div className="text-red-600">(vencida)</div>}
                       </div>
                     ) : (
                       <span className="text-xs text-slate-400">—</span>
@@ -449,11 +505,29 @@ export default function ProjectTasksTab({ projectId, phases, projectStatus }) {
               </div>
 
               <div className="space-y-2">
+                <Label>Hora Inicio</Label>
+                <Input
+                  type="time"
+                  value={formData.start_time}
+                  onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label>Fecha Vencimiento</Label>
                 <Input
                   type="date"
                   value={formData.due_date}
                   onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Hora Vencimiento</Label>
+                <Input
+                  type="time"
+                  value={formData.due_time}
+                  onChange={(e) => setFormData({ ...formData, due_time: e.target.value })}
                 />
               </div>
 
