@@ -42,7 +42,7 @@ import {
 import {
   FileText, Plus, Search, Trash2, Eye, Send, CheckCircle2,
   XCircle, Clock, AlertTriangle, Package, Briefcase, Download,
-  Edit, Ban, Printer, X
+  Edit, Ban, Printer, X, ExternalLink
 } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { es } from "date-fns/locale";
