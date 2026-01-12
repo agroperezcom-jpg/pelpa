@@ -11,7 +11,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import toast from 'react-hot-toast';
 
 export default function ProjectTemplateDialog({ isOpen, onClose, template, onSave, isSaving = false }) {
   const { data: tiposProyecto = [] } = useQuery({
@@ -119,54 +118,37 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
     setFormData({ ...formData, tasks: items });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    
-    console.log('handleSubmit - formData:', formData);
     
     // Validar campos requeridos
     if (!formData.name || !formData.name.trim()) {
-      toast.error('Por favor ingresa un nombre para la plantilla');
+      alert('Por favor ingresa un nombre para la plantilla');
       return;
     }
     
     if (!Array.isArray(formData.type) || formData.type.length === 0) {
-      toast.error('Por favor selecciona al menos un tipo de proyecto');
+      alert('Por favor selecciona al menos un tipo de proyecto');
       return;
     }
     
     // Limpiar datos antes de guardar
     const cleanedData = {
+      ...formData,
       name: formData.name.trim(),
-      description: formData.description || "",
-      type: formData.type,
       phases: formData.phases.map(phase => ({
-        name: phase.name,
-        description: phase.description || "",
-        order: phase.order,
+        ...phase,
         duration_days: phase.duration_days === "" ? 0 : Number(phase.duration_days) || 0,
         duration_hours: phase.duration_hours === "" ? 0 : Number(phase.duration_hours) || 0
       })),
       tasks: formData.tasks.map(task => ({
-        name: task.name,
-        description: task.description || "",
-        phase_name: task.phase_name || "",
+        ...task,
         duration_days: task.duration_days === "" ? 0 : Number(task.duration_days) || 0,
-        duration_hours: task.duration_hours === "" ? 0 : Number(task.duration_hours) || 0,
-        priority: task.priority
-      })),
-      estimated_duration_days: Number(formData.estimated_duration_days) || 0,
-      is_active: true
+        duration_hours: task.duration_hours === "" ? 0 : Number(task.duration_hours) || 0
+      }))
     };
     
-    console.log('handleSubmit - cleanedData:', cleanedData);
-    
-    try {
-      await onSave(cleanedData);
-    } catch (error) {
-      console.error('Error en handleSubmit:', error);
-      toast.error('Error al guardar: ' + error.message);
-    }
+    onSave(cleanedData);
   };
 
   return (

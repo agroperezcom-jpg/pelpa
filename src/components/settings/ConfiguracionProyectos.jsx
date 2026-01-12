@@ -74,47 +74,29 @@ export default function ConfiguracionProyectos() {
   });
 
   const createTemplateMutation = useMutation({
-    mutationFn: async (data) => {
-      console.log('Creando plantilla con datos:', data);
-      const result = await base44.entities.ProjectTemplate.create(data);
-      console.log('Plantilla creada:', result);
-      return result;
-    },
+    mutationFn: (data) => base44.entities.ProjectTemplate.create(data),
     onSuccess: async (newTemplate) => {
-      console.log('onSuccess - plantilla creada:', newTemplate);
+      queryClient.invalidateQueries({ queryKey: ['projectTemplates'] });
       
-      await queryClient.invalidateQueries({ queryKey: ['projectTemplates'] });
-      
-      try {
-        // Guardar automáticamente como plantilla predeterminada
-        if (configuracion[0]) {
-          console.log('Actualizando configuración existente');
-          await base44.entities.ConfiguracionProyectos.update(configuracion[0].id, {
-            plantilla_por_defecto_id: newTemplate.id,
-            plantilla_por_defecto_nombre: newTemplate.name,
-            usar_plantilla_automaticamente: true
-          });
-        } else {
-          console.log('Creando nueva configuración');
-          await base44.entities.ConfiguracionProyectos.create({
-            plantilla_por_defecto_id: newTemplate.id,
-            plantilla_por_defecto_nombre: newTemplate.name,
-            usar_plantilla_automaticamente: true
-          });
-        }
-        
-        await queryClient.invalidateQueries({ queryKey: ['configuracionProyectos'] });
-        setTemplateDialogOpen(false);
-        setEditingTemplate(null);
-        toast.success('Plantilla creada y configurada como predeterminada');
-      } catch (error) {
-        console.error('Error al configurar plantilla predeterminada:', error);
-        toast.error('Plantilla creada pero error al configurar como predeterminada');
+      // Guardar automáticamente como plantilla predeterminada
+      if (configuracion[0]) {
+        await base44.entities.ConfiguracionProyectos.update(configuracion[0].id, {
+          plantilla_por_defecto_id: newTemplate.id,
+          plantilla_por_defecto_nombre: newTemplate.name,
+          usar_plantilla_automaticamente: true
+        });
+      } else {
+        await base44.entities.ConfiguracionProyectos.create({
+          plantilla_por_defecto_id: newTemplate.id,
+          plantilla_por_defecto_nombre: newTemplate.name,
+          usar_plantilla_automaticamente: true
+        });
       }
-    },
-    onError: (error) => {
-      console.error('Error al crear plantilla:', error);
-      toast.error('Error al crear la plantilla: ' + error.message);
+      
+      queryClient.invalidateQueries({ queryKey: ['configuracionProyectos'] });
+      setTemplateDialogOpen(false);
+      setEditingTemplate(null);
+      toast.success('Plantilla creada y configurada como predeterminada');
     }
   });
 
@@ -190,18 +172,11 @@ export default function ConfiguracionProyectos() {
     });
   };
 
-  const handleSaveTemplate = async (data) => {
-    try {
-      console.log('Guardando plantilla:', data);
-      
-      if (editingTemplate) {
-        await updateTemplateMutation.mutateAsync({ id: editingTemplate.id, data });
-      } else {
-        await createTemplateMutation.mutateAsync(data);
-      }
-    } catch (error) {
-      console.error('Error al guardar plantilla:', error);
-      toast.error('Error al guardar la plantilla: ' + error.message);
+  const handleSaveTemplate = (data) => {
+    if (editingTemplate) {
+      updateTemplateMutation.mutate({ id: editingTemplate.id, data });
+    } else {
+      createTemplateMutation.mutate(data);
     }
   };
 
