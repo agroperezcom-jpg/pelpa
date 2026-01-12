@@ -23,7 +23,9 @@ export default function WhatsAppSendDialog({
   useEffect(() => {
     if (isOpen && clientData) {
       setClientName(clientData.name || "");
-      setPhoneNumber(clientData.phone || "");
+      // Si tiene teléfono, usarlo; sino mostrar +54
+      const phone = clientData.phone || "+54";
+      setPhoneNumber(phone);
     }
   }, [isOpen, clientData]);
 
@@ -172,8 +174,9 @@ export default function WhatsAppSendDialog({
               id="phone"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
-              placeholder="+54 9 11 1234 5678 o 1112345678"
+              placeholder="+54 9 11 1234 5678"
               type="tel"
+              autoFocus
             />
             <p className="text-xs text-muted-foreground">
               Ingresa el número con código de país (54 para Argentina) o sin él
