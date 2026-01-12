@@ -121,107 +121,125 @@ export default function Layout({ children, currentPageName }) {
 
   const allowedModules = permissionsLoading ? [] : getAllowedModules();
 
-  const moduleIcons = {
-    general: LayoutDashboard,
-    ventas: ShoppingCart,
-    compras: ShoppingBag,
-    inventario: Package,
-    tesoreria: Landmark,
-    analisis: BarChart3,
-    proyectos: Briefcase,
-    calendario: CalendarIcon,
-    config: Settings
-  };
+  const sectionIcons = {
+      general: LayoutDashboard,
+      ventas: ShoppingCart,
+      compras: ShoppingBag,
+      inventario: Package,
+      tesoreria: Landmark,
+      analisis: BarChart3,
+      proyectos: Briefcase,
+      calendario: CalendarIcon,
+      sistema: Settings
+    };
 
-  const allModules = [
-      {
-        id: "general",
-        name: "General",
-        permiso: null,
-        items: [
-          { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard, permiso: null },
-        ]
-      },
-      {
-        id: "ventas",
-        name: "Ventas",
-        permiso: "ventas",
-        items: [
-          { name: "Ventas", page: "Sales", icon: ShoppingCart, permiso: "ventas" },
-          { name: "Presupuestos", page: "Presupuestos", icon: FileText, permiso: "presupuestos" },
-          { name: "Clientes", page: "Clients", icon: Users, permiso: "clientes" },
-          { name: "Servicios", page: "Services", icon: Wrench, permiso: "ventas" },
-          { name: "Talonarios", page: "Talonarios", icon: FileCheck, permiso: "talonarios" },
-        ]
-      },
-      {
-        id: "compras",
-        name: "Compras",
-        permiso: "compras",
-        items: [
-          { name: "Compras", page: "Purchases", icon: ShoppingBag, permiso: "compras" },
-          { name: "Proveedores", page: "Proveedores", icon: Building2, permiso: "proveedores" },
-          { name: "Pagos Proveedores", page: "PagosProveedores", icon: CreditCard, permiso: "compras" },
-        ]
-      },
-      {
-        id: "inventario",
-        name: "Inventario",
-        permiso: "inventario",
-        items: [
-          { name: "Productos", page: "Products", icon: Package, permiso: "productos" },
-          { name: "Inventario", page: "Inventory", icon: Check, permiso: "inventario" },
-          { name: "Control de Stock", page: "HistorialControlesStock", icon: BarChart3, permiso: "control_stock" },
-        ]
-      },
-      {
-        id: "tesoreria",
-        name: "Tesorería",
-        permiso: "tesoreria",
-        items: [
-          { name: "Tesorería", page: "TesoreriaV2", icon: null, permiso: "tesoreria" },
-          { name: "Cheques", page: "Cheques", icon: CreditCard, permiso: "cheques" },
-          { name: "Gastos", page: "Expenses", icon: DollarSign, permiso: "gastos" },
-        ]
-      },
-      {
-        id: "analisis",
-        name: "Análisis",
-        permiso: "analytics",
-        items: [
-          { name: "Dashboard Ejecutivo", page: "DashboardEjecutivo", icon: null, permiso: "analytics" },
-          { name: "Analytics", page: "Analytics", icon: TrendingUp, permiso: "analytics" },
-          { name: "Tablero Fiscal", page: "TableroFiscal", icon: FileText, permiso: "tablero_fiscal" },
-          { name: "IVA Mensual", page: "IVAMensual", icon: Percent, permiso: "iva_mensual" },
-          { name: "Ingresos Brutos", page: "IngresosBrutos", icon: Percent, permiso: "ingresos_brutos" },
-          { name: "Finanzas", page: "Finance", icon: DollarSign, permiso: "analytics" },
-        ]
-      },
-      {
-        id: "proyectos",
-        name: "Proyectos",
-        permiso: "proyectos",
-        items: [
-          { name: "Proyectos", page: "Projects", icon: null, permiso: "proyectos" },
-        ]
-      },
-      {
-        id: "calendario",
-        name: "Agenda",
-        permiso: "calendario",
-        items: [
-          { name: "Calendario", page: "Calendar", icon: null, permiso: "calendario" },
-        ]
-      },
-      ...(isAdmin ? [{
-        id: "config",
-        name: "Sistema",
-        permiso: null,
-        items: [
-          { name: "Configuración", page: "Settings", icon: Settings, permiso: "configuracion" },
-        ]
-      }] : [])
-    ];
+    const allModules = [
+        {
+          id: "general",
+          name: "General",
+          section: "general",
+          icon: LayoutDashboard,
+          permiso: null,
+          items: [
+            { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard, permiso: null },
+          ]
+        },
+        {
+          id: "ventas",
+          name: "Ventas",
+          section: "ventas",
+          icon: ShoppingCart,
+          permiso: "ventas",
+          items: [
+            { name: "Ventas", page: "Sales", icon: ShoppingCart, permiso: "ventas" },
+            { name: "Presupuestos", page: "Presupuestos", icon: FileText, permiso: "presupuestos" },
+            { name: "Clientes", page: "Clients", icon: Users, permiso: "clientes" },
+            { name: "Servicios", page: "Services", icon: Wrench, permiso: "ventas" },
+            { name: "Talonarios", page: "Talonarios", icon: FileCheck, permiso: "talonarios" },
+          ]
+        },
+        {
+          id: "compras",
+          name: "Compras",
+          section: "compras",
+          icon: ShoppingBag,
+          permiso: "compras",
+          items: [
+            { name: "Compras", page: "Purchases", icon: ShoppingBag, permiso: "compras" },
+            { name: "Proveedores", page: "Proveedores", icon: Building2, permiso: "proveedores" },
+            { name: "Pagos Proveedores", page: "PagosProveedores", icon: CreditCard, permiso: "compras" },
+          ]
+        },
+        {
+          id: "inventario",
+          name: "Inventario",
+          section: "inventario",
+          icon: Package,
+          permiso: "inventario",
+          items: [
+            { name: "Productos", page: "Products", icon: Package, permiso: "productos" },
+            { name: "Inventario", page: "Inventory", icon: Check, permiso: "inventario" },
+            { name: "Control de Stock", page: "HistorialControlesStock", icon: BarChart3, permiso: "control_stock" },
+          ]
+        },
+        {
+          id: "tesoreria",
+          name: "Tesorería",
+          section: "tesoreria",
+          icon: Landmark,
+          permiso: "tesoreria",
+          items: [
+            { name: "Tesorería", page: "TesoreriaV2", icon: Landmark, permiso: "tesoreria" },
+            { name: "Cheques", page: "Cheques", icon: CreditCard, permiso: "cheques" },
+            { name: "Gastos", page: "Expenses", icon: DollarSign, permiso: "gastos" },
+          ]
+        },
+        {
+          id: "analisis",
+          name: "Análisis",
+          section: "analisis",
+          icon: TrendingUp,
+          permiso: "analytics",
+          items: [
+            { name: "Dashboard Ejecutivo", page: "DashboardEjecutivo", icon: BarChart3, permiso: "analytics" },
+            { name: "Analytics", page: "Analytics", icon: TrendingUp, permiso: "analytics" },
+            { name: "Tablero Fiscal", page: "TableroFiscal", icon: FileText, permiso: "tablero_fiscal" },
+            { name: "IVA Mensual", page: "IVAMensual", icon: Percent, permiso: "iva_mensual" },
+            { name: "Ingresos Brutos", page: "IngresosBrutos", icon: Percent, permiso: "ingresos_brutos" },
+            { name: "Finanzas", page: "Finance", icon: DollarSign, permiso: "analytics" },
+          ]
+        },
+        {
+          id: "proyectos",
+          name: "Proyectos",
+          section: "proyectos",
+          icon: Briefcase,
+          permiso: "proyectos",
+          items: [
+            { name: "Proyectos", page: "Projects", icon: Briefcase, permiso: "proyectos" },
+          ]
+        },
+        {
+          id: "calendario",
+          name: "Agenda",
+          section: "calendario",
+          icon: CalendarIcon,
+          permiso: "calendario",
+          items: [
+            { name: "Calendario", page: "Calendar", icon: CalendarIcon, permiso: "calendario" },
+          ]
+        },
+        ...(isAdmin ? [{
+          id: "sistema",
+          name: "Sistema",
+          section: "sistema",
+          icon: Settings,
+          permiso: null,
+          items: [
+            { name: "Configuración", page: "Settings", icon: Settings, permiso: "configuracion" },
+          ]
+        }] : [])
+      ];
 
   // Filtrar módulos según permisos
   const modules = allModules
