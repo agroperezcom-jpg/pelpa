@@ -179,7 +179,7 @@ export default function Layout({ children, currentPageName }) {
         name: "Tesorería",
         permiso: "tesoreria",
         items: [
-          { name: "Tesorería", page: "TesoreriaV2", icon: Landmark, permiso: "tesoreria" },
+          { name: "Tesorería", page: "TesoreriaV2", icon: null, permiso: "tesoreria" },
           { name: "Cheques", page: "Cheques", icon: CreditCard, permiso: "cheques" },
           { name: "Gastos", page: "Expenses", icon: DollarSign, permiso: "gastos" },
         ]
@@ -189,7 +189,7 @@ export default function Layout({ children, currentPageName }) {
         name: "Análisis",
         permiso: "analytics",
         items: [
-          { name: "Dashboard Ejecutivo", page: "DashboardEjecutivo", icon: BarChart3, permiso: "analytics" },
+          { name: "Dashboard Ejecutivo", page: "DashboardEjecutivo", icon: null, permiso: "analytics" },
           { name: "Analytics", page: "Analytics", icon: TrendingUp, permiso: "analytics" },
           { name: "Tablero Fiscal", page: "TableroFiscal", icon: FileText, permiso: "tablero_fiscal" },
           { name: "IVA Mensual", page: "IVAMensual", icon: Percent, permiso: "iva_mensual" },
@@ -202,7 +202,7 @@ export default function Layout({ children, currentPageName }) {
         name: "Proyectos",
         permiso: "proyectos",
         items: [
-          { name: "Proyectos", page: "Projects", icon: Briefcase, permiso: "proyectos" },
+          { name: "Proyectos", page: "Projects", icon: null, permiso: "proyectos" },
         ]
       },
       {
@@ -210,7 +210,7 @@ export default function Layout({ children, currentPageName }) {
         name: "Agenda",
         permiso: "calendario",
         items: [
-          { name: "Calendario", page: "Calendar", icon: CalendarIcon, permiso: "calendario" },
+          { name: "Calendario", page: "Calendar", icon: null, permiso: "calendario" },
         ]
       },
       ...(isAdmin ? [{
