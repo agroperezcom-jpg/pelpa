@@ -52,7 +52,7 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
   const handleAddPhase = () => {
     setFormData({
       ...formData,
-      phases: [...formData.phases, { name: "", description: "", order: formData.phases.length + 1, duration_days: 0 }]
+      phases: [...formData.phases, { name: "", description: "", order: formData.phases.length + 1, duration_days: "" }]
     });
   };
 
@@ -74,7 +74,7 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
   const handleAddTask = () => {
     setFormData({
       ...formData,
-      tasks: [...formData.tasks, { name: "", description: "", phase_name: "", duration_days: 0, priority: "media" }]
+      tasks: [...formData.tasks, { name: "", description: "", phase_name: "", duration_days: "", priority: "media" }]
     });
   };
 
@@ -217,7 +217,7 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
                               <Input
                                 type="number"
                                 value={phase.duration_days}
-                                onChange={(e) => handleUpdatePhase(index, 'duration_days', parseInt(e.target.value) || 0)}
+                                onChange={(e) => handleUpdatePhase(index, 'duration_days', e.target.value === "" ? "" : parseInt(e.target.value) || "")}
                                 placeholder="0"
                                 className="bg-white"
                               />
@@ -307,7 +307,7 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
                               <Input
                                 type="number"
                                 value={task.duration_days}
-                                onChange={(e) => handleUpdateTask(index, 'duration_days', parseInt(e.target.value) || 0)}
+                                onChange={(e) => handleUpdateTask(index, 'duration_days', e.target.value === "" ? "" : parseInt(e.target.value) || "")}
                                 placeholder="0"
                                 className="bg-white"
                               />
