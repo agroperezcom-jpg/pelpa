@@ -119,26 +119,19 @@ Deno.serve(async (req) => {
       doc.text(noteLines, 20, yPosition);
     }
 
-    // Generar PDF
-    const pdfBuffer = doc.output('arraybuffer');
+    // Generar PDF como blob
+    const pdfBlob = doc.output('blob');
     const filename = `${ticketType}-${ticketId}-${Date.now()}.pdf`;
 
-    // Guardar en storage privado
-    const base64PDF = btoa(String.fromCharCode.apply(null, new Uint8Array(pdfBuffer)));
-    const uploadResult = await base44.asServiceRole.integrations.Core.UploadPrivateFile({
-      file: pdfBuffer
-    });
-
-    // Crear signed URL para descargar
-    const signedUrl = await base44.asServiceRole.integrations.Core.CreateFileSignedUrl({
-      file_uri: uploadResult.file_uri,
-      expires_in: 86400 // 24 horas
+    // Convertir blob a ArrayBuffer para UploadFile (público)
+    const arrayBuffer = await pdfBlob.arrayBuffer();
+    const uploadResult = await base44.asServiceRole.integrations.Core.UploadFile({
+      file: new Blob([arrayBuffer], { type: 'application/pdf' })
     });
 
     return Response.json({
       success: true,
-      file_uri: uploadResult.file_uri,
-      signed_url: signedUrl.signed_url,
+      file_url: uploadResult.file_url,
       filename: filename
     });
   } catch (error) {
