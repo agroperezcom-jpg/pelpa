@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Palette, RotateCcw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -81,36 +82,55 @@ export default function CalendarSettingsDialog({ isOpen, onClose, config, onSave
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-4">
                 {Object.entries({
-                  project: "Proyectos",
-                  phase: "Fases",
-                  task: "Tareas de Proyecto",
-                  freeTask: "Tareas Libres",
-                  milestone: "Hitos",
-                  campaign: "Campañas"
+                 project: "Proyectos",
+                 phase: "Fases",
+                 task: "Tareas de Proyecto",
+                 freeTask: "Tareas Libres",
+                 milestone: "Hitos",
+                 campaign: "Campañas"
                 }).map(([type, label]) => (
-                  <div key={type} className="space-y-2">
-                    <Label className="text-sm font-medium">{label}</Label>
-                    <div className="flex gap-2 flex-wrap">
-                      {PRESET_COLORS.map((preset) => (
-                        <button
-                          key={preset.value}
-                          onClick={() => updateTypeColor(type, preset.value)}
-                          className="relative w-10 h-10 rounded-lg border-2 transition-all hover:scale-110"
-                          style={{ 
-                            backgroundColor: preset.value,
-                            borderColor: colorScheme[type] === preset.value ? "#000" : "transparent"
-                          }}
-                          title={preset.name}
-                        >
-                          {colorScheme[type] === preset.value && (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="w-3 h-3 bg-white rounded-full" />
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                 <div key={type} className="space-y-2">
+                   <Label className="text-sm font-medium">{label}</Label>
+                   <div className="flex gap-2 flex-wrap">
+                     {PRESET_COLORS.map((preset) => (
+                       <button
+                         key={preset.value}
+                         onClick={() => updateTypeColor(type, preset.value)}
+                         className="relative w-10 h-10 rounded-lg border-2 transition-all hover:scale-110"
+                         style={{ 
+                           backgroundColor: preset.value,
+                           borderColor: colorScheme[type] === preset.value ? "#000" : "transparent"
+                         }}
+                         title={preset.name}
+                       >
+                         {colorScheme[type] === preset.value && (
+                           <div className="absolute inset-0 flex items-center justify-center">
+                             <div className="w-3 h-3 bg-white rounded-full" />
+                           </div>
+                         )}
+                       </button>
+                     ))}
+                   </div>
+                   <div className="flex gap-2 items-center">
+                     <Input
+                       type="text"
+                       placeholder="#FF5733"
+                       value={colorScheme[type] || ""}
+                       onChange={(e) => {
+                         const value = e.target.value.trim();
+                         if (value.match(/^#[0-9A-Fa-f]{6}$/) || value === "") {
+                           updateTypeColor(type, value);
+                         }
+                       }}
+                       className="w-32 h-9"
+                       maxLength={7}
+                     />
+                     <div 
+                       className="w-9 h-9 rounded border-2 border-border"
+                       style={{ backgroundColor: colorScheme[type] }}
+                     />
+                   </div>
+                 </div>
                 ))}
               </div>
             </ScrollArea>
@@ -146,6 +166,25 @@ export default function CalendarSettingsDialog({ isOpen, onClose, config, onSave
                             )}
                           </button>
                         ))}
+                      </div>
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          type="text"
+                          placeholder="#FF5733"
+                          value={projectColors[project.id] || project.color || ""}
+                          onChange={(e) => {
+                            const value = e.target.value.trim();
+                            if (value.match(/^#[0-9A-Fa-f]{6}$/) || value === "") {
+                              updateProjectColor(project.id, value);
+                            }
+                          }}
+                          className="w-32 h-9"
+                          maxLength={7}
+                        />
+                        <div 
+                          className="w-9 h-9 rounded border-2 border-border"
+                          style={{ backgroundColor: projectColors[project.id] || project.color }}
+                        />
                       </div>
                     </div>
                   ))
