@@ -36,6 +36,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger
+} from "@/components/ui/collapsible";
+import {
   Settings,
   Users,
   Plus,
@@ -47,7 +52,14 @@ import {
   UserPlus,
   Mail,
   Calendar,
-  CheckCircle2
+  CheckCircle2,
+  ChevronDown,
+  Building,
+  Palette,
+  Globe,
+  Briefcase,
+  Printer,
+  FileText
 } from "lucide-react";
 import ThemeSelector from "../components/theme/ThemeSelector";
 import IdentidadEmpresa from "../components/settings/IdentidadEmpresa";
@@ -63,6 +75,16 @@ export default function SettingsPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("user");
   const [currentUser, setCurrentUser] = useState(null);
+  const [openSections, setOpenSections] = useState({
+    users: true,
+    sessions: false,
+    identidad: false,
+    theme: false,
+    regional: false,
+    proyectos: false,
+    printers: false,
+    fiscal: false
+  });
 
   const queryClient = useQueryClient();
 
@@ -222,20 +244,30 @@ export default function SettingsPage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="users" className="space-y-4">
-        <TabsList className="bg-white border shadow-sm">
-          <TabsTrigger value="users">Usuarios</TabsTrigger>
-          <TabsTrigger value="sessions">Registro de Sesiones</TabsTrigger>
-          <TabsTrigger value="identidad">Identidad</TabsTrigger>
-          <TabsTrigger value="theme">Tema Visual</TabsTrigger>
-          <TabsTrigger value="regional">Configuración Regional</TabsTrigger>
-          <TabsTrigger value="proyectos">Proyectos</TabsTrigger>
-          <TabsTrigger value="printers">Impresoras</TabsTrigger>
-          <TabsTrigger value="fiscal">Configuración Fiscal</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="users">
+      {/* Secciones Colapsables */}
+      <div className="space-y-3">
+        {/* Usuarios */}
+        <Collapsible
+          open={openSections.users}
+          onOpenChange={(open) => setOpenSections({ ...openSections, users: open })}
+        >
           <Card className="border-0 shadow-sm overflow-hidden">
+            <CollapsibleTrigger className="w-full">
+              <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                    <Users className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="font-semibold text-slate-900">Usuarios</h3>
+                    <p className="text-xs text-slate-500">Gestión de usuarios del sistema</p>
+                  </div>
+                </div>
+                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${openSections.users ? 'rotate-180' : ''}`} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+            <div className="border-t">
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50">
@@ -277,14 +309,33 @@ export default function SettingsPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
+            </CollapsibleContent>
           </Card>
-        </TabsContent>
+        </Collapsible>
 
-        <TabsContent value="sessions">
+        {/* Registro de Sesiones */}
+        <Collapsible
+          open={openSections.sessions}
+          onOpenChange={(open) => setOpenSections({ ...openSections, sessions: open })}
+        >
           <Card className="border-0 shadow-sm overflow-hidden">
-            <CardHeader>
-              <CardTitle className="text-base">Registro de Sesiones</CardTitle>
-            </CardHeader>
+            <CollapsibleTrigger className="w-full">
+              <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
+                    <Clock className="h-5 w-5 text-emerald-600" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="font-semibold text-slate-900">Registro de Sesiones</h3>
+                    <p className="text-xs text-slate-500">Historial de accesos al sistema</p>
+                  </div>
+                </div>
+                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${openSections.sessions ? 'rotate-180' : ''}`} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+            <div className="border-t">
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50">
@@ -324,30 +375,173 @@ export default function SettingsPage() {
                 )}
               </TableBody>
             </Table>
+            </div>
+            </CollapsibleContent>
           </Card>
-        </TabsContent>
+        </Collapsible>
 
-        <TabsContent value="identidad">
-          <IdentidadEmpresa />
-        </TabsContent>
+        {/* Identidad Empresa */}
+        <Collapsible
+          open={openSections.identidad}
+          onOpenChange={(open) => setOpenSections({ ...openSections, identidad: open })}
+        >
+          <Card className="border-0 shadow-sm overflow-hidden">
+            <CollapsibleTrigger className="w-full">
+              <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+                    <Building className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="font-semibold text-slate-900">Identidad</h3>
+                    <p className="text-xs text-slate-500">Logo y nombre de la empresa</p>
+                  </div>
+                </div>
+                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${openSections.identidad ? 'rotate-180' : ''}`} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="border-t p-4">
+                <IdentidadEmpresa />
+              </div>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
 
-        <TabsContent value="theme">
-          <ThemeSelector />
-        </TabsContent>
+        {/* Tema Visual */}
+        <Collapsible
+          open={openSections.theme}
+          onOpenChange={(open) => setOpenSections({ ...openSections, theme: open })}
+        >
+          <Card className="border-0 shadow-sm overflow-hidden">
+            <CollapsibleTrigger className="w-full">
+              <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-pink-50 rounded-xl flex items-center justify-center">
+                    <Palette className="h-5 w-5 text-pink-600" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="font-semibold text-slate-900">Tema Visual</h3>
+                    <p className="text-xs text-slate-500">Personaliza colores y apariencia</p>
+                  </div>
+                </div>
+                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${openSections.theme ? 'rotate-180' : ''}`} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="border-t p-4">
+                <ThemeSelector />
+              </div>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
 
-        <TabsContent value="regional">
-          <RegionalConfig />
-        </TabsContent>
+        {/* Configuración Regional */}
+        <Collapsible
+          open={openSections.regional}
+          onOpenChange={(open) => setOpenSections({ ...openSections, regional: open })}
+        >
+          <Card className="border-0 shadow-sm overflow-hidden">
+            <CollapsibleTrigger className="w-full">
+              <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-cyan-50 rounded-xl flex items-center justify-center">
+                    <Globe className="h-5 w-5 text-cyan-600" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="font-semibold text-slate-900">Configuración Regional</h3>
+                    <p className="text-xs text-slate-500">Zona horaria y calendario</p>
+                  </div>
+                </div>
+                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${openSections.regional ? 'rotate-180' : ''}`} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="border-t p-4">
+                <RegionalConfig />
+              </div>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
 
-        <TabsContent value="proyectos">
-          <ConfiguracionProyectos />
-        </TabsContent>
+        {/* Proyectos */}
+        <Collapsible
+          open={openSections.proyectos}
+          onOpenChange={(open) => setOpenSections({ ...openSections, proyectos: open })}
+        >
+          <Card className="border-0 shadow-sm overflow-hidden">
+            <CollapsibleTrigger className="w-full">
+              <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
+                    <Briefcase className="h-5 w-5 text-indigo-600" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="font-semibold text-slate-900">Proyectos</h3>
+                    <p className="text-xs text-slate-500">Plantillas y configuración</p>
+                  </div>
+                </div>
+                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${openSections.proyectos ? 'rotate-180' : ''}`} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="border-t p-4">
+                <ConfiguracionProyectos />
+              </div>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
 
-        <TabsContent value="printers">
-          <ConfiguracionImpresoras />
-        </TabsContent>
+        {/* Impresoras */}
+        <Collapsible
+          open={openSections.printers}
+          onOpenChange={(open) => setOpenSections({ ...openSections, printers: open })}
+        >
+          <Card className="border-0 shadow-sm overflow-hidden">
+            <CollapsibleTrigger className="w-full">
+              <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
+                    <Printer className="h-5 w-5 text-orange-600" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="font-semibold text-slate-900">Impresoras</h3>
+                    <p className="text-xs text-slate-500">Configuración de impresoras</p>
+                  </div>
+                </div>
+                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${openSections.printers ? 'rotate-180' : ''}`} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="border-t p-4">
+                <ConfiguracionImpresoras />
+              </div>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
 
-        <TabsContent value="fiscal">
+        {/* Configuración Fiscal */}
+        <Collapsible
+          open={openSections.fiscal}
+          onOpenChange={(open) => setOpenSections({ ...openSections, fiscal: open })}
+        >
+          <Card className="border-0 shadow-sm overflow-hidden">
+            <CollapsibleTrigger className="w-full">
+              <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
+                    <FileText className="h-5 w-5 text-red-600" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="font-semibold text-slate-900">Configuración Fiscal</h3>
+                    <p className="text-xs text-slate-500">Datos fiscales e IVA</p>
+                  </div>
+                </div>
+                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${openSections.fiscal ? 'rotate-180' : ''}`} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="border-t p-4">
           <div className="space-y-6">
             <Card className="border-0 shadow-sm">
               <CardHeader>
@@ -491,8 +685,11 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-      </Tabs>
+              </div>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+      </div>
 
       {/* Invite User Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
