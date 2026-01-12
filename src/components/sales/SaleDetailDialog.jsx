@@ -10,16 +10,26 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { printTicket } from "../pos/TicketPrint";
 import { PAPER_WIDTHS } from "../thermal/thermalPrinterService";
-import WhatsAppSendDialog from "../whatsapp/WhatsAppSendDialog";
+import toast from "react-hot-toast";
 
 export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) {
   const [paperWidth, setPaperWidth] = useState(PAPER_WIDTHS.LARGE);
-  const [showWhatsApp, setShowWhatsApp] = useState(false);
   
   if (!sale) return null;
 
   const handlePrint = () => {
     printTicket(sale, pagos, true, paperWidth);
+  };
+
+  const handleSendWhatsApp = () => {
+    if (!sale.client_name || sale.client_name === 'Consumidor Final') {
+      toast.error("No hay número de teléfono disponible para este cliente");
+      return;
+    }
+
+    const message = `Hola ${sale.client_name}, te envío el detalle de tu compra. Total: $${sale.total?.toFixed(2)}. Gracias.`;
+    const whatsappUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
   };
 
   return (
@@ -246,7 +256,7 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
                   Cerrar
                 </Button>
                 <Button 
-                  onClick={() => setShowWhatsApp(true)}
+                  onClick={handleSendWhatsApp}
                   className="bg-green-600 hover:bg-green-700"
                 >
                   <MessageCircle className="h-4 w-4 mr-2" />
@@ -269,24 +279,7 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
           )}
           </DialogFooter>
 
-          <WhatsAppSendDialog
-          isOpen={showWhatsApp}
-          onClose={() => setShowWhatsApp(false)}
-          ticketType="sale"
-          ticketId={sale.id}
-          ticketData={{
-           id: sale.id,
-           numero: sale.numero_comprobante,
-           clientName: sale.client_name,
-           items: sale.items,
-           subtotal: sale.subtotal,
-           discount: sale.discount,
-           iva_21: sale.iva_21,
-           total: sale.total,
-           notes: sale.notes
-          }}
-          clientName={sale.client_name}
-          />
+
           </DialogContent>
           </Dialog>
           );
