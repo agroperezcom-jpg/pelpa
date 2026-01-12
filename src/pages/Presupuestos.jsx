@@ -362,10 +362,13 @@ export default function Presupuestos() {
 
         // Aplicar plantilla si fue seleccionada
         if (plantilla) {
+          // Mapa para guardar fase_name -> phase_id
+          const phaseMap = {};
+
           // Crear fases de la plantilla
           if (plantilla.phases && plantilla.phases.length > 0) {
             for (const phaseTemplate of plantilla.phases) {
-              await base44.asServiceRole.entities.ProjectPhase.create({
+              const newPhase = await base44.entities.ProjectPhase.create({
                 project_id: proyecto.id,
                 name: phaseTemplate.name,
                 description: phaseTemplate.description || "",
@@ -374,17 +377,23 @@ export default function Presupuestos() {
                 duration_days: phaseTemplate.duration_days || 0,
                 duration_hours: phaseTemplate.duration_hours || 0
               });
+              
+              // Guardar el mapeo nombre -> id
+              phaseMap[phaseTemplate.name] = newPhase.id;
             }
           }
 
           // Crear tareas de la plantilla
           if (plantilla.tasks && plantilla.tasks.length > 0) {
             for (const taskTemplate of plantilla.tasks) {
-              await base44.asServiceRole.entities.ProjectTask.create({
+              // Buscar el phase_id usando el phase_name del template
+              const phaseId = taskTemplate.phase_name ? phaseMap[taskTemplate.phase_name] : null;
+              
+              await base44.entities.ProjectTask.create({
                 project_id: proyecto.id,
+                phase_id: phaseId,
                 name: taskTemplate.name,
                 description: taskTemplate.description || "",
-                phase_name: taskTemplate.phase_name || "",
                 priority: taskTemplate.priority || "media",
                 status: "pendiente",
                 duration_days: taskTemplate.duration_days || 0,
