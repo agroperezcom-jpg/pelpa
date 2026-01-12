@@ -10,7 +10,7 @@ import PagosDialog from "../components/pos/PagosDialog";
 import ReportesDialog from "../components/pos/ReportesDialog";
 import TicketPrint from "../components/pos/TicketPrint";
 import SaleDetailDialog from "../components/sales/SaleDetailDialog";
-import WhatsAppSendDialog from "../components/whatsapp/WhatsAppSendDialog";
+import WhatsAppTicketDialog from "../components/whatsapp/WhatsAppTicketDialog";
 import {
   Dialog,
   DialogContent,
@@ -1533,13 +1533,11 @@ export default function Sales() {
       />
 
       {/* WhatsApp Dialog */}
-      <WhatsAppSendDialog
+      <WhatsAppTicketDialog
         isOpen={isWhatsAppDialogOpen}
         onClose={() => setIsWhatsAppDialogOpen(false)}
-        clientData={ventaConfirmada ? clients.find(c => c.id === ventaConfirmada.client_id) : null}
-        ticketData={ventaConfirmada}
         ticketType="sale"
-        onSuccess={handleCloseTicket}
+        ticketId={ventaConfirmada?.id}
       />
     </div>
   );
