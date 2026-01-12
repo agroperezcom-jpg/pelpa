@@ -46,6 +46,7 @@ export default function Settings() {
   const [permisosDialogOpen, setPermisosDialogOpen] = useState(false);
   const [selectedRol, setSelectedRol] = useState(null);
   const [selectedPermisos, setSelectedPermisos] = useState({});
+  const [permisosOriginales, setPermisosOriginales] = useState({});
   const [formRol, setFormRol] = useState({ nombre: "", descripcion: "" });
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [rolToDelete, setRolToDelete] = useState(null);
