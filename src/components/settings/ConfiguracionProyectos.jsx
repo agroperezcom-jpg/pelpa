@@ -373,10 +373,14 @@ export default function ConfiguracionProyectos() {
                         <span className="text-xs text-slate-500">
                           {template.phases?.length || 0} fases · {template.tasks?.length || 0} tareas
                         </span>
-                        {template.type && (
-                          <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded">
-                            {template.type}
-                          </span>
+                        {Array.isArray(template.type) && template.type.length > 0 && (
+                          <div className="flex gap-1 flex-wrap">
+                            {template.type.map((tipo, idx) => (
+                              <span key={idx} className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded">
+                                {tiposProyecto.find(t => t.valor === tipo)?.nombre || tipo}
+                              </span>
+                            ))}
+                          </div>
                         )}
                       </div>
                     </div>

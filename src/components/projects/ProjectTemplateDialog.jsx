@@ -33,7 +33,7 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
       setFormData({
         name: template.name || "",
         description: template.description || "",
-        type: template.type || [],
+        type: Array.isArray(template.type) ? template.type : (template.type ? [template.type] : []),
         phases: template.phases || [],
         tasks: template.tasks || [],
         estimated_duration_days: template.estimated_duration_days || 0
