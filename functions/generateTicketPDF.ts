@@ -1,5 +1,4 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
-import { jsPDF } from 'npm:jspdf@2.5.1';
 
 Deno.serve(async (req) => {
   try {
@@ -10,133 +9,42 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { ticketType, ticketId, ticketData } = await req.json();
+    const { base64PDF, ticketType, ticketId } = await req.json();
 
-    if (!ticketType || !ticketId || !ticketData) {
+    if (!base64PDF || !ticketType || !ticketId) {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    let yPosition = 20;
-
-    // Encabezado
-    doc.setFontSize(20);
-    doc.text(ticketType === 'budget' ? 'PRESUPUESTO' : 'TICKET DE VENTA', 20, yPosition);
-    yPosition += 15;
-
-    // Información general
-    doc.setFontSize(10);
-    doc.text(`Número: ${ticketData.numero || ticketId}`, 20, yPosition);
-    yPosition += 7;
-    doc.text(`Fecha: ${new Date().toLocaleDateString('es-AR')}`, 20, yPosition);
-    yPosition += 7;
-
-    // Cliente
-    if (ticketData.clientName) {
-      doc.text(`Cliente: ${ticketData.clientName}`, 20, yPosition);
-      yPosition += 7;
+    // Convertir base64 a bytes
+    const binaryString = atob(base64PDF);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
     }
 
-    yPosition += 5;
+    // Usar el SDK de forma correcta con un archivo temporal
+    const filename = `${ticketType}-${ticketId}-${Date.now()}.pdf`;
 
-    // Tabla de items
-    doc.setFontSize(9);
-    const startY = yPosition;
-    
-    // Headers de tabla
-    doc.text('Descripción', 20, yPosition);
-    doc.text('Cantidad', 100, yPosition);
-    doc.text('Unitario', 130, yPosition);
-    doc.text('Total', 160, yPosition);
-    
-    yPosition += 7;
-    doc.setDrawColor(200);
-    doc.line(20, yPosition - 1, pageWidth - 20, yPosition - 1);
-    yPosition += 3;
+    // Crear una forma que funcione con el API
+    const formData = new FormData();
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    formData.append('file', blob, filename);
 
-    // Items
-    if (ticketData.items && Array.isArray(ticketData.items)) {
-      ticketData.items.forEach((item) => {
-        const description = item.name || item.descripcion || '';
-        const quantity = item.quantity || item.cantidad || 0;
-        const price = item.price_venta || item.precio_unitario || 0;
-        const total = (quantity * price).toFixed(2);
-
-        doc.text(description.substring(0, 50), 20, yPosition);
-        doc.text(quantity.toString(), 100, yPosition);
-        doc.text(`$${price.toFixed(2)}`, 130, yPosition);
-        doc.text(`$${total}`, 160, yPosition);
-
-        yPosition += 7;
-
-        if (yPosition > pageHeight - 30) {
-          doc.addPage();
-          yPosition = 20;
-        }
-      });
-    }
-
-    yPosition += 3;
-    doc.setDrawColor(200);
-    doc.line(20, yPosition, pageWidth - 20, yPosition);
-    yPosition += 7;
-
-    // Totales
-    doc.setFontSize(10);
-    if (ticketData.subtotal !== undefined) {
-      doc.text('Subtotal:', 130, yPosition);
-      doc.text(`$${ticketData.subtotal.toFixed(2)}`, 160, yPosition);
-      yPosition += 7;
-    }
-
-    if (ticketData.discount && ticketData.discount > 0) {
-      doc.text('Descuento:', 130, yPosition);
-      doc.text(`-$${ticketData.discount.toFixed(2)}`, 160, yPosition);
-      yPosition += 7;
-    }
-
-    if (ticketData.iva_21 && ticketData.iva_21 > 0) {
-      doc.text('IVA (21%):', 130, yPosition);
-      doc.text(`$${ticketData.iva_21.toFixed(2)}`, 160, yPosition);
-      yPosition += 7;
-    }
-
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text('TOTAL:', 130, yPosition);
-    doc.text(`$${(ticketData.total || 0).toFixed(2)}`, 160, yPosition);
-
-    // Notas
-    if (ticketData.notes) {
-      yPosition += 15;
-      doc.setFontSize(9);
-      doc.setFont(undefined, 'normal');
-      doc.text('Notas:', 20, yPosition);
-      yPosition += 5;
-      const noteLines = doc.splitTextToSize(ticketData.notes, 170);
-      doc.text(noteLines, 20, yPosition);
-    }
-
-    // Guardar en archivo temporal y subir
-    const tmpPath = `/tmp/${ticketType}-${ticketId}-${Date.now()}.pdf`;
-    const pdfBytes = doc.output('arraybuffer');
-    await Deno.writeFile(tmpPath, new Uint8Array(pdfBytes));
-
-    // Leer el archivo
-    const fileContent = await Deno.readFile(tmpPath);
-    
-    // Convertir a string para el upload (formato base64)
-    const base64Content = btoa(String.fromCharCode.apply(null, fileContent));
-
-    // Subir el archivo
-    const uploadResult = await base44.asServiceRole.integrations.Core.UploadFile({
-      file: base64Content
+    // Usar fetch directamente al endpoint de upload
+    const uploadResponse = await fetch('https://api.base44.app/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${user.id}`
+      },
+      body: formData
     });
 
-    // Limpiar archivo temporal
-    await Deno.remove(tmpPath);
+    if (!uploadResponse.ok) {
+      const uploadError = await uploadResponse.json();
+      throw new Error(uploadError.message || 'Upload failed');
+    }
+
+    const uploadResult = await uploadResponse.json();
 
     return Response.json({
       success: true,
@@ -144,7 +52,7 @@ Deno.serve(async (req) => {
       filename: filename
     });
   } catch (error) {
-    console.error('Error generating PDF:', error);
+    console.error('Error uploading PDF:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
