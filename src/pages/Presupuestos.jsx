@@ -298,13 +298,22 @@ export default function Presupuestos() {
       return;
     }
 
+    // Validar plantilla antes de guardar
+    const plantillaId = currentPresupuesto.plantilla_proyecto_id && 
+                        currentPresupuesto.plantilla_proyecto_id !== "" && 
+                        currentPresupuesto.plantilla_proyecto_id !== "none" 
+                        ? currentPresupuesto.plantilla_proyecto_id 
+                        : null;
+
+    console.log('Guardando presupuesto con plantilla_proyecto_id:', plantillaId);
+
     createPresupuestoMutation.mutate({
       presupuestoData: {
         fecha: currentPresupuesto.fecha,
         cliente_id: currentPresupuesto.cliente_id,
         validez_hasta: currentPresupuesto.validez_hasta,
         observaciones: currentPresupuesto.observaciones,
-        plantilla_proyecto_id: currentPresupuesto.plantilla_proyecto_id || null,
+        plantilla_proyecto_id: plantillaId,
         items: cart,
         subtotal: subtotal,
         descuento: currentPresupuesto.descuento || 0,
