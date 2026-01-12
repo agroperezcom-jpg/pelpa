@@ -124,26 +124,33 @@ export default function Settings() {
   const savePermisosMutation = useMutation({
     mutationFn: async ({ rolId, permisosSeleccionados }) => {
       if (!rolId) throw new Error("Rol no seleccionado");
-      
-      const response = await base44.functions.invoke('saveRolePermissions', {
-        rolId,
-        permisosSeleccionados,
-        rolNombre: selectedRol?.nombre || ""
-      });
 
-      return response.data;
+      try {
+        const response = await base44.functions.invoke('saveRolePermissions', {
+          rolId,
+          permisosSeleccionados,
+          rolNombre: selectedRol?.nombre || ""
+        });
+        return response.data;
+      } catch (error) {
+        console.error('Error en saveRolePermissions:', error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['rolPermisos'] });
-      queryClient.invalidateQueries({ queryKey: ['permisos'] });
-      setPermisosDialogOpen(false);
-      setSelectedRol(null);
-      setSelectedPermisos({});
-      setPermisosOriginales({});
-      alert(`✓ ${data.message}`);
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['rolPermisos'] });
+        queryClient.invalidateQueries({ queryKey: ['permisos'] });
+        setPermisosDialogOpen(false);
+        setSelectedRol(null);
+        setSelectedPermisos({});
+        setPermisosOriginales({});
+        alert(`✓ Permisos guardados correctamente`);
+      }, 300);
     },
     onError: (error) => {
-      alert('Error al guardar permisos: ' + error.message);
+      console.error('Mutation error:', error);
+      alert('Error: ' + (error.response?.data?.error || error.message || 'Error desconocido'));
     }
   });
 
@@ -761,13 +768,13 @@ export default function Settings() {
                 Cancelar
               </Button>
               <Button 
-                onClick={() => savePermisosMutation.mutate({ rolId: selectedRol.id, permisosSeleccionados: selectedPermisos })}
-                disabled={!selectedRol || !hayChangesPendientes}
-                className="bg-slate-700 hover:bg-slate-800"
-              >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Guardar permisos
-              </Button>
+                 onClick={() => savePermisosMutation.mutate({ rolId: selectedRol.id, permisosSeleccionados: selectedPermisos })}
+                 disabled={!selectedRol || !hayChangesPendientes || savePermisosMutation.isPending}
+                 className="bg-slate-700 hover:bg-slate-800"
+               >
+                 <CheckCircle2 className="h-4 w-4 mr-2" />
+                 {savePermisosMutation.isPending ? 'Guardando...' : 'Guardar permisos'}
+               </Button>
             </div>
           </div>
         </DialogContent>
