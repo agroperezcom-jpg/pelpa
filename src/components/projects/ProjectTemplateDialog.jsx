@@ -120,7 +120,35 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
+    
+    // Validar campos requeridos
+    if (!formData.name || !formData.name.trim()) {
+      alert('Por favor ingresa un nombre para la plantilla');
+      return;
+    }
+    
+    if (!Array.isArray(formData.type) || formData.type.length === 0) {
+      alert('Por favor selecciona al menos un tipo de proyecto');
+      return;
+    }
+    
+    // Limpiar datos antes de guardar
+    const cleanedData = {
+      ...formData,
+      name: formData.name.trim(),
+      phases: formData.phases.map(phase => ({
+        ...phase,
+        duration_days: phase.duration_days === "" ? 0 : Number(phase.duration_days) || 0,
+        duration_hours: phase.duration_hours === "" ? 0 : Number(phase.duration_hours) || 0
+      })),
+      tasks: formData.tasks.map(task => ({
+        ...task,
+        duration_days: task.duration_days === "" ? 0 : Number(task.duration_days) || 0,
+        duration_hours: task.duration_hours === "" ? 0 : Number(task.duration_hours) || 0
+      }))
+    };
+    
+    onSave(cleanedData);
   };
 
   return (
