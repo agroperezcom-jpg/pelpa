@@ -182,11 +182,11 @@ export default function WhatsAppSendDialog({
     try {
       // Generar PDF en el frontend
       const doc = generatePDF();
-      const pdfBlob = doc.output('blob');
+      const pdfBase64 = doc.output('dataurlstring').split(',')[1];
 
       // Subir el PDF
       const uploadResponse = await base44.integrations.Core.UploadFile({
-        file: pdfBlob
+        file: pdfBase64
       });
 
       const fileUrl = uploadResponse.file_url;
