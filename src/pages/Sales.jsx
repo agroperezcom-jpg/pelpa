@@ -10,6 +10,7 @@ import PagosDialog from "../components/pos/PagosDialog";
 import ReportesDialog from "../components/pos/ReportesDialog";
 import TicketPrint from "../components/pos/TicketPrint";
 import SaleDetailDialog from "../components/sales/SaleDetailDialog";
+import WhatsAppSendDialog from "../components/whatsapp/WhatsAppSendDialog";
 import {
   Dialog,
   DialogContent,
@@ -46,7 +47,8 @@ import {
   AlertTriangle,
   TrendingUp,
   FileText,
-  FileCheck
+  FileCheck,
+  MessageCircle
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -82,6 +84,7 @@ export default function Sales() {
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
   const [clientSearch, setClientSearch] = useState("");
   const [dialogKey, setDialogKey] = useState(0);
+  const [isWhatsAppDialogOpen, setIsWhatsAppDialogOpen] = useState(false);
   const [newClient, setNewClient] = useState({
     name: "",
     email: "",
@@ -1501,8 +1504,16 @@ export default function Sales() {
             )}
           </div>
 
-          <DialogFooter className="px-6 py-4 border-t mt-0">
-            <Button onClick={handleCloseTicket} className="w-full bg-emerald-600 hover:bg-emerald-700">
+          <DialogFooter className="px-6 py-4 border-t mt-0 flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => setIsWhatsAppDialogOpen(true)}
+              className="gap-2 flex-1"
+            >
+              <MessageCircle className="h-4 w-4" />
+              WhatsApp
+            </Button>
+            <Button onClick={handleCloseTicket} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
               Cerrar
             </Button>
           </DialogFooter>
@@ -1519,6 +1530,16 @@ export default function Sales() {
         }}
         sale={selectedSale}
         pagos={selectedSalePagos}
+      />
+
+      {/* WhatsApp Dialog */}
+      <WhatsAppSendDialog
+        isOpen={isWhatsAppDialogOpen}
+        onClose={() => setIsWhatsAppDialogOpen(false)}
+        clientData={ventaConfirmada ? clients.find(c => c.id === ventaConfirmada.client_id) : null}
+        ticketData={ventaConfirmada}
+        ticketType="sale"
+        onSuccess={handleCloseTicket}
       />
     </div>
   );
