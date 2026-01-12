@@ -506,8 +506,13 @@ export default function Calendar() {
   const handleDeleteEvent = async (event) => {
     if (event.type !== "freeTask") return;
     
-    // Si es una instancia de recurrencia, mostrar diálogo
-    if (event.is_recurrence_instance || event.data?.recurrence !== "none") {
+    // Si es una instancia de recurrencia O la tarea padre tiene recurrencia, mostrar diálogo
+    if (event.is_recurrence_instance) {
+      // Es una instancia generada por recurrencia
+      setEventToDelete(event);
+      setDeleteDialogOpen(true);
+    } else if (event.data?.recurrence && event.data.recurrence !== "none") {
+      // Es la tarea original con recurrencia configurada
       setEventToDelete(event);
       setDeleteDialogOpen(true);
     } else {
