@@ -283,6 +283,8 @@ export default function Settings() {
     setSelectedPermisos(newPermisos);
   };
 
+  const hayChangesPendientes = JSON.stringify(selectedPermisos) !== JSON.stringify(permisosOriginales);
+
   const getRolUsers = (rolId) => users.filter(u => u.rol_id === rolId);
   const getRolPermisosCount = (rolId) => rolPermisos.filter(rp => rp.rol_id === rolId).length;
 
