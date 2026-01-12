@@ -393,7 +393,8 @@ export default function Presupuestos() {
       cliente_id: "",
       validez_hasta: format(addDays(new Date(), 15), 'yyyy-MM-dd'),
       observaciones: "",
-      descuento: 0
+      descuento: 0,
+      plantilla_proyecto_id: ""
     });
     setProductSearch("");
     setIsDialogOpen(true);
