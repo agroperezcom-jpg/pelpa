@@ -32,16 +32,45 @@ export default function WeekView({
     return events.filter(event => {
       const eventDateStr = event.date || event.start_date || event.created_date;
       if (!eventDateStr) return false;
-      
+
       // Comparar solo las fechas en formato YYYY-MM-DD
       const dateStr = eventDateStr.split('T')[0];
       const year = day.getFullYear();
       const month = String(day.getMonth() + 1).padStart(2, '0');
       const dayNum = String(day.getDate()).padStart(2, '0');
       const targetDateStr = `${year}-${month}-${dayNum}`;
-      
+
       return dateStr === targetDateStr;
     });
+  };
+
+  const getEventPosition = (event) => {
+    // Obtener la hora del evento
+    const timeStr = event.start_time || event.time;
+    if (!timeStr) return { top: '4px', height: 'auto' };
+
+    // Parsear HH:MM
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    if (isNaN(hours) || isNaN(minutes)) return { top: '4px', height: 'auto' };
+
+    // Calcular posición: cada hora = 60px
+    const topPercent = ((hours * 60 + minutes) / (24 * 60)) * 100;
+
+    // Calcular altura basada en duración (si tiene due_time o end_time)
+    let heightPercent = null;
+    const endTimeStr = event.due_time || event.end_time;
+    if (endTimeStr) {
+      const [endHours, endMinutes] = endTimeStr.split(':').map(Number);
+      if (!isNaN(endHours) && !isNaN(endMinutes)) {
+        const durationMinutes = (endHours * 60 + endMinutes) - (hours * 60 + minutes);
+        heightPercent = (durationMinutes / (24 * 60)) * 100;
+      }
+    }
+
+    return { 
+      top: `${topPercent}%`, 
+      height: heightPercent ? `${heightPercent}%` : 'auto'
+    };
   };
 
   const hasConflict = (event, dayEvents) => {
@@ -253,13 +282,14 @@ export default function WeekView({
                 {days.map((day, dayIndex) => {
                   const dayEvents = getEventsForDay(day);
                   return (
-                    <div key={day.toString()} className="relative">
-                      <div className="absolute inset-0 p-1 space-y-1 pointer-events-auto">
+                    <div key={day.toString()} className="relative h-screen" style={{ minHeight: `${24 * 60}px` }}>
+                      <div className="absolute inset-0 pointer-events-auto">
                         {dayEvents.map((event, idx) => {
                           const clickable = canClickEvent(event);
                           const draggable = canDragEvent(event);
                           const resizable = canResizeEvent(event);
                           const conflict = hasConflict(event, dayEvents);
+                          const position = getEventPosition(event);
 
                           return (
                             <div
@@ -293,7 +323,7 @@ export default function WeekView({
                                 if (clickable) onEventClick(event);
                               }}
                               className={cn(
-                                "relative rounded px-2 py-1 text-xs transition-shadow group",
+                                "absolute rounded px-2 py-1 text-xs transition-shadow group w-[95%] mx-[2.5%] left-0",
                                 getEventBgClass(event),
                                 clickable && "cursor-pointer hover:shadow-md",
                                 draggable && "cursor-move",
@@ -301,7 +331,10 @@ export default function WeekView({
                                 draggingEvent?.id === event.id && "opacity-50",
                                 conflict && "ring-2 ring-red-500 ring-offset-1"
                               )}
-                              style={getEventStyle(event)}
+                              style={{ 
+                                ...getEventStyle(event),
+                                ...position
+                              }}
                               title={!clickable && !draggable ? "No tienes permisos para editar" : conflict ? "⚠️ Conflicto de horario" : undefined}
                             >
                               {conflict && (
