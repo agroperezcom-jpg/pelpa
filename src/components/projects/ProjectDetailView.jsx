@@ -38,7 +38,9 @@ import ProjectActivityTab from "./ProjectActivityTab";
 import ProjectBudgetingTab from "./ProjectBudgetingTab";
 
 export default function ProjectDetailView({ project, onBack, onEdit }) {
-  const [activeView, setActiveView] = useState("budgeting");
+  const [activeView, setActiveView] = useState(
+    project.origen_proyecto === 'presupuesto' ? "phases" : "budgeting"
+  );
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const queryClient = useQueryClient();
 
@@ -147,8 +149,25 @@ export default function ProjectDetailView({ project, onBack, onEdit }) {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Alertas de Estado No Operativo */}
-      {!['aprobado', 'en_ejecucion', 'finalizado'].includes(project.status) && (
+      {/* Alertas de Origen y Estado */}
+      {project.origen_proyecto === 'presupuesto' && (
+        <Card className="border-2 border-green-200 bg-green-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <FileText className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="text-sm font-bold text-green-900">Proyecto desde Presupuesto</p>
+                <p className="text-xs text-green-700">
+                  Este proyecto fue generado automáticamente desde un presupuesto aprobado. 
+                  Las fases, tareas y presupuesto ya están cargados.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {project.origen_proyecto === 'manual' && !['aprobado', 'en_ejecucion', 'finalizado'].includes(project.status) && (
         <Card className="border-2 border-amber-200 bg-amber-50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -267,7 +286,9 @@ export default function ProjectDetailView({ project, onBack, onEdit }) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="budgeting">Presupuestación</SelectItem>
+            {project.origen_proyecto === 'manual' && (
+              <SelectItem value="budgeting">Presupuestación</SelectItem>
+            )}
             <SelectItem value="phases">Fases</SelectItem>
             <SelectItem value="tasks">Tareas</SelectItem>
             <SelectItem value="milestones">Hitos</SelectItem>
@@ -278,16 +299,25 @@ export default function ProjectDetailView({ project, onBack, onEdit }) {
       </div>
 
       <div className="space-y-4">
-        {activeView === "budgeting" && (
+        {activeView === "budgeting" && project.origen_proyecto === 'manual' && (
           <ProjectBudgetingTab projectId={project.id} projectStatus={project.status} />
         )}
 
         {activeView === "phases" && (
-          <ProjectPhasesTab projectId={project.id} projectStatus={project.status} />
+          <ProjectPhasesTab 
+            projectId={project.id} 
+            projectStatus={project.status}
+            origenProyecto={project.origen_proyecto}
+          />
         )}
 
         {activeView === "tasks" && (
-          <ProjectTasksTab projectId={project.id} phases={phases} projectStatus={project.status} />
+          <ProjectTasksTab 
+            projectId={project.id} 
+            phases={phases} 
+            projectStatus={project.status}
+            origenProyecto={project.origen_proyecto}
+          />
         )}
 
         {activeView === "milestones" && (
