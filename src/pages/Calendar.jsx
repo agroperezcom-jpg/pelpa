@@ -18,6 +18,7 @@ import CalendarAuditDialog from "@/components/calendar/CalendarAuditDialog";
 import CalendarSearchDialog from "@/components/calendar/CalendarSearchDialog";
 import CalendarExportDialog from "@/components/calendar/CalendarExportDialog";
 import EventDetailDialog from "@/components/calendar/EventDetailDialog";
+import DeleteRecurrenceDialog from "@/components/calendar/DeleteRecurrenceDialog";
 import { usePermissions } from "@/components/permissions/usePermissions";
 import { Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -50,6 +51,8 @@ export default function Calendar() {
   const [dragGhost, setDragGhost] = useState(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState(null);
 
   const queryClient = useQueryClient();
   const { hasPermission, isAdmin, loading: permissionsLoading } = usePermissions();
@@ -495,11 +498,46 @@ export default function Calendar() {
   const handleDeleteEvent = async (event) => {
     if (event.type !== "freeTask") return;
     
+    // Si es una instancia de recurrencia, mostrar diálogo
+    if (event.is_recurrence_instance || event.data?.recurrence !== "none") {
+      setEventToDelete(event);
+      setDeleteDialogOpen(true);
+    } else {
+      // Si no tiene recurrencia, eliminar directamente
+      performDelete(event, "this");
+    }
+  };
+
+  const performDelete = async (event, deleteOption) => {
     try {
-      await base44.entities.FreeTask.delete(event.id);
+      if (deleteOption === "this") {
+        // Eliminar solo esta instancia
+        await base44.entities.FreeTask.delete(event.id);
+      } else if (deleteOption === "thisAndFuture") {
+        // Obtener la fecha de esta instancia
+        const instanceDate = new Date(event.date || event.start_date);
+        const parentTaskId = event.parent_task_id || event.id;
+        
+        // Actualizar la tarea padre para terminar la recurrencia antes de esta fecha
+        const parentTask = freeTasks.find(t => t.id === parentTaskId);
+        if (parentTask) {
+          // Establecer recurrencia a "none" para detener futuras instancias
+          await base44.entities.FreeTask.update(parentTaskId, {
+            recurrence: "none",
+            recurrence_days: []
+          });
+        }
+      } else if (deleteOption === "all") {
+        // Eliminar la tarea padre (todas las instancias)
+        const parentTaskId = event.parent_task_id || event.id;
+        await base44.entities.FreeTask.delete(parentTaskId);
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['freeTasks'] });
       setDetailDialogOpen(false);
       setSelectedEvent(null);
+      setDeleteDialogOpen(false);
+      setEventToDelete(null);
       toast.success('Tarea eliminada');
     } catch (error) {
       toast.error('Error al eliminar: ' + error.message);
@@ -1175,6 +1213,21 @@ export default function Calendar() {
         onDelete={handleDeleteEvent}
         onNavigate={handleNavigateToProject}
         getEventColor={getEventColor}
+      />
+
+      <DeleteRecurrenceDialog
+        isOpen={deleteDialogOpen}
+        onClose={() => {
+          setDeleteDialogOpen(false);
+          setEventToDelete(null);
+        }}
+        onConfirm={(deleteOption) => {
+          if (eventToDelete) {
+            performDelete(eventToDelete, deleteOption);
+          }
+        }}
+        taskName={eventToDelete?.name}
+        isRecurrenceInstance={eventToDelete?.is_recurrence_instance}
       />
 
       {/* Loading overlay during sync */}
