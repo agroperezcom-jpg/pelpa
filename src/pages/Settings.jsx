@@ -124,7 +124,7 @@ export default function Settings() {
     mutationFn: async ({ rolId, permisosSeleccionados }) => {
       if (!rolId) throw new Error("Rol no seleccionado");
       
-      const response = await base44.functions.invoke('updateRolePermissions', {
+      const response = await base44.functions.invoke('saveRolePermissions', {
         rolId,
         permisosSeleccionados,
         rolNombre: selectedRol?.nombre || ""
@@ -132,13 +132,13 @@ export default function Settings() {
 
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['rolPermisos'] });
       queryClient.invalidateQueries({ queryKey: ['permisos'] });
       setPermisosDialogOpen(false);
       setSelectedRol(null);
       setSelectedPermisos({});
-      alert('✓ Permisos guardados correctamente');
+      alert(`✓ ${data.message}`);
     },
     onError: (error) => {
       alert('Error al guardar permisos: ' + error.message);
