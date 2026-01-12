@@ -13,7 +13,8 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
     name: "",
     description: "",
     date: new Date().toISOString().split('T')[0],
-    time: "",
+    start_time: "",
+    end_time: "",
     duration: "",
     status: "pendiente",
     priority: "media",
@@ -45,7 +46,8 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
         name: "",
         description: "",
         date: initialData?.date || localDate,
-        time: defaultTime,
+        start_time: defaultTime,
+        end_time: initialData?.end_time || "",
         duration: "60",
         status: "pendiente",
         priority: "media",
@@ -64,8 +66,8 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
     }
     
     if (!canEdit) return;
-    if (!formData.name?.trim() || !formData.date || !formData.time) {
-      alert("Complete el nombre, fecha y hora");
+    if (!formData.name?.trim() || !formData.date || !formData.start_time) {
+      alert("Complete el nombre, fecha y hora de inicio");
       return;
     }
     
@@ -73,7 +75,8 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
       name: formData.name.trim(),
       description: formData.description?.trim() || "",
       date: formData.date,
-      time: formData.time,
+      start_time: formData.start_time,
+      end_time: formData.end_time || "",
       duration: parseInt(formData.duration) || 60,
       status: formData.status,
       priority: formData.priority,
@@ -142,7 +145,7 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
             />
           </div>
 
-          {/* Fecha, Hora y Duración */}
+          {/* Fecha, Hora Inicio y Hora Fin */}
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-2">
               <Label>Fecha *</Label>
@@ -154,13 +157,13 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
               />
             </div>
             <div className="space-y-2">
-              <Label>Hora *</Label>
+              <Label>Hora Inicio *</Label>
               <div className="relative">
                 <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="time"
-                  value={formData.time}
-                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                  value={formData.start_time}
+                  onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
                   className="pl-10"
                   disabled={!canEdit}
                   required
@@ -168,15 +171,17 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Duración (min)</Label>
-              <Input
-                type="number"
-                value={formData.duration}
-                onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                placeholder="60"
-                min="0"
-                disabled={!canEdit}
-              />
+              <Label>Hora Fin</Label>
+              <div className="relative">
+                <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="time"
+                  value={formData.end_time}
+                  onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+                  className="pl-10"
+                  disabled={!canEdit}
+                />
+              </div>
             </div>
           </div>
 
