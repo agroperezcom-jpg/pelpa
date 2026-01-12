@@ -39,7 +39,7 @@ export default function TicketTemplate({ ticketData, ticketType = "sale" }) {
         padding: "5mm",
         backgroundColor: "#fff",
         color: "#000",
-        fontWeight: "400",
+        fontWeight: "600",
       }}
     >
       {/* Header */}
