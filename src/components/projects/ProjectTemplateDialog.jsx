@@ -282,14 +282,14 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
                             <div className="col-span-3">
                               <Label className="text-xs text-slate-600 mb-1 block">Fase</Label>
                               <Select
-                                value={task.phase_name}
-                                onValueChange={(v) => handleUpdateTask(index, 'phase_name', v)}
+                                value={task.phase_name || "none"}
+                                onValueChange={(v) => handleUpdateTask(index, 'phase_name', v === "none" ? "" : v)}
                               >
                                 <SelectTrigger className="bg-white">
                                   <SelectValue placeholder="Seleccionar" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value={null}>Sin fase</SelectItem>
+                                  <SelectItem value="none">Sin fase</SelectItem>
                                   {formData.phases.map(p => (
                                     <SelectItem key={p.name} value={p.name}>{p.name}</SelectItem>
                                   ))}
