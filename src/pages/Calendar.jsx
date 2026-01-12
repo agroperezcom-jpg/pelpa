@@ -382,6 +382,8 @@ export default function Calendar() {
               let currentDate = new Date(baseDate);
               currentDate.setHours(0, 0, 0, 0);
 
+              const excludedDates = task.excluded_dates || [];
+
               while (currentDate <= maxDate) {
                 if (currentDate > baseDate) {
                   let shouldInclude = false;
@@ -398,23 +400,29 @@ export default function Calendar() {
 
                   if (shouldInclude) {
                     const dateStr = currentDate.toISOString().split('T')[0];
-                    events.push({
-                      id: `${task.id}-${dateStr}`,
-                      name: task.name,
-                      type: "freeTask",
-                      date: dateStr,
-                      start_date: dateStr,
-                      start_time: task.start_time,
-                      estimated_end_date: dateStr,
-                      end_time: task.end_time,
-                      status: task.status,
-                      priority: task.priority,
-                      duration: task.duration,
-                      tags: task.tags,
-                      data: task,
-                      is_recurrence_instance: true,
-                      parent_task_id: task.id
-                    });
+                    
+                    // Verificar si esta fecha está excluida
+                    const isExcluded = excludedDates.includes(dateStr);
+                    
+                    if (!isExcluded) {
+                      events.push({
+                        id: `${task.id}-${dateStr}`,
+                        name: task.name,
+                        type: "freeTask",
+                        date: dateStr,
+                        start_date: dateStr,
+                        start_time: task.start_time,
+                        estimated_end_date: dateStr,
+                        end_time: task.end_time,
+                        status: task.status,
+                        priority: task.priority,
+                        duration: task.duration,
+                        tags: task.tags,
+                        data: task,
+                        is_recurrence_instance: true,
+                        parent_task_id: task.id
+                      });
+                    }
                   }
                 }
 
@@ -510,26 +518,34 @@ export default function Calendar() {
 
   const performDelete = async (event, deleteOption) => {
     try {
+      const parentTaskId = event.parent_task_id || event.id;
+      const instanceDate = event.date || event.start_date;
+      
       if (deleteOption === "this") {
-        // Eliminar solo esta instancia
-        await base44.entities.FreeTask.delete(event.id);
-      } else if (deleteOption === "thisAndFuture") {
-        // Obtener la fecha de esta instancia
-        const instanceDate = new Date(event.date || event.start_date);
-        const parentTaskId = event.parent_task_id || event.id;
-        
-        // Actualizar la tarea padre para terminar la recurrencia antes de esta fecha
+        // Eliminar solo esta instancia - agregar a excluded_dates
         const parentTask = freeTasks.find(t => t.id === parentTaskId);
         if (parentTask) {
-          // Establecer recurrencia a "none" para detener futuras instancias
+          const excludedDates = parentTask.excluded_dates || [];
+          if (!excludedDates.includes(instanceDate)) {
+            excludedDates.push(instanceDate);
+          }
+          await base44.entities.FreeTask.update(parentTaskId, {
+            excluded_dates: excludedDates
+          });
+        }
+      } else if (deleteOption === "thisAndFuture") {
+        // Eliminar esta y todas las futuras - detener recurrencia
+        const parentTask = freeTasks.find(t => t.id === parentTaskId);
+        if (parentTask) {
+          // Excluir esta fecha y todas las futuras dejando la recurrencia como "none"
           await base44.entities.FreeTask.update(parentTaskId, {
             recurrence: "none",
-            recurrence_days: []
+            recurrence_days: [],
+            excluded_dates: parentTask.excluded_dates || []
           });
         }
       } else if (deleteOption === "all") {
         // Eliminar la tarea padre (todas las instancias)
-        const parentTaskId = event.parent_task_id || event.id;
         await base44.entities.FreeTask.delete(parentTaskId);
       }
       
@@ -538,9 +554,10 @@ export default function Calendar() {
       setSelectedEvent(null);
       setDeleteDialogOpen(false);
       setEventToDelete(null);
-      toast.success('Tarea eliminada');
+      toast.success('Tarea eliminada correctamente');
     } catch (error) {
       toast.error('Error al eliminar: ' + error.message);
+      console.error(error);
     }
   };
 
