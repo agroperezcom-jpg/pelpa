@@ -10,21 +10,33 @@ import { Calendar, Clock, Tag, X } from "lucide-react";
 
 export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, users, currentUser, canEdit = true }) {
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    date: new Date().toISOString().split('T')[0],
-    start_time: "",
-    end_time: "",
-    duration: "",
-    status: "pendiente",
-    priority: "media",
-    assigned_to: currentUser?.email || "",
-    assigned_to_name: currentUser?.full_name || "",
-    tags: [],
-    recurrence: "none"
-  });
+     name: "",
+     description: "",
+     date: new Date().toISOString().split('T')[0],
+     start_time: "",
+     end_time: "",
+     duration: "",
+     status: "pendiente",
+     priority: "media",
+     assigned_to: currentUser?.email || "",
+     assigned_to_name: currentUser?.full_name || "",
+     tags: [],
+     recurrence: "none",
+     recurrence_days: []
+   });
 
   const [newTag, setNewTag] = useState("");
+  const [showRecurrenceDays, setShowRecurrenceDays] = useState(false);
+
+  const daysOfWeek = [
+    { label: "Lunes", value: 1 },
+    { label: "Martes", value: 2 },
+    { label: "Miércoles", value: 3 },
+    { label: "Jueves", value: 4 },
+    { label: "Viernes", value: 5 },
+    { label: "Sábado", value: 6 },
+    { label: "Domingo", value: 0 }
+  ];
 
   useEffect(() => {
     if (initialData && initialData.id) {
@@ -43,19 +55,20 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
       const defaultTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       
       setFormData({
-        name: "",
-        description: "",
-        date: initialData?.date || localDate,
-        start_time: defaultTime,
-        end_time: initialData?.end_time || "",
-        duration: "60",
-        status: "pendiente",
-        priority: "media",
-        assigned_to: currentUser?.email || "",
-        assigned_to_name: currentUser?.full_name || "",
-        tags: [],
-        recurrence: "none"
-      });
+         name: "",
+         description: "",
+         date: initialData?.date || localDate,
+         start_time: defaultTime,
+         end_time: initialData?.end_time || "",
+         duration: "60",
+         status: "pendiente",
+         priority: "media",
+         assigned_to: currentUser?.email || "",
+         assigned_to_name: currentUser?.full_name || "",
+         tags: [],
+         recurrence: "none",
+         recurrence_days: []
+       });
     }
   }, [initialData, isOpen, currentUser]);
 
@@ -72,19 +85,20 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
     }
     
     const taskToSave = {
-      name: formData.name.trim(),
-      description: formData.description?.trim() || "",
-      date: formData.date,
-      start_time: formData.start_time,
-      end_time: formData.end_time || "",
-      duration: parseInt(formData.duration) || 60,
-      status: formData.status,
-      priority: formData.priority,
-      assigned_to: formData.assigned_to,
-      assigned_to_name: formData.assigned_to_name,
-      tags: formData.tags || [],
-      recurrence: formData.recurrence
-    };
+       name: formData.name.trim(),
+       description: formData.description?.trim() || "",
+       date: formData.date,
+       start_time: formData.start_time,
+       end_time: formData.end_time || "",
+       duration: parseInt(formData.duration) || 60,
+       status: formData.status,
+       priority: formData.priority,
+       assigned_to: formData.assigned_to,
+       assigned_to_name: formData.assigned_to_name,
+       tags: formData.tags || [],
+       recurrence: formData.recurrence,
+       recurrence_days: formData.recurrence_days || []
+     };
     
     onSave(taskToSave);
   };
@@ -234,7 +248,10 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
           {/* Repetición */}
           <div className="space-y-2">
             <Label>Repetición</Label>
-            <Select value={formData.recurrence} onValueChange={(v) => setFormData({ ...formData, recurrence: v })} disabled={!canEdit}>
+            <Select value={formData.recurrence} onValueChange={(v) => {
+              setFormData({ ...formData, recurrence: v });
+              if (v === "weekly") setShowRecurrenceDays(true);
+            }} disabled={!canEdit}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -246,6 +263,39 @@ export default function FreeTaskDialog({ isOpen, onClose, onSave, initialData, u
               </SelectContent>
             </Select>
           </div>
+
+          {/* Seleccionar días de repetición (para recurrencia semanal) */}
+          {formData.recurrence === "weekly" && canEdit && (
+            <div className="space-y-3 p-4 bg-secondary/30 rounded-lg border border-border">
+              <Label className="font-medium">Seleccionar días a repetir</Label>
+              <div className="grid grid-cols-4 gap-2">
+                {daysOfWeek.map(day => (
+                  <button
+                    key={day.value}
+                    type="button"
+                    onClick={() => {
+                      const newDays = formData.recurrence_days.includes(day.value)
+                        ? formData.recurrence_days.filter(d => d !== day.value)
+                        : [...formData.recurrence_days, day.value];
+                      setFormData({ ...formData, recurrence_days: newDays });
+                    }}
+                    className={`p-2 rounded-md text-sm font-medium transition-colors ${
+                      formData.recurrence_days.includes(day.value)
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background border border-border hover:bg-secondary"
+                    }`}
+                  >
+                    {day.label.substring(0, 3)}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {formData.recurrence_days.length === 0 
+                  ? "Selecciona al menos un día" 
+                  : `${formData.recurrence_days.length} día${formData.recurrence_days.length !== 1 ? 's' : ''} seleccionado${formData.recurrence_days.length !== 1 ? 's' : ''}`}
+              </p>
+            </div>
+          )}
 
           {/* Etiquetas */}
           <div className="space-y-2">
