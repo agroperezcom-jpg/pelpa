@@ -75,18 +75,44 @@ export default function ConfiguracionProyectos() {
 
   const createTemplateMutation = useMutation({
     mutationFn: (data) => base44.entities.ProjectTemplate.create(data),
-    onSuccess: () => {
+    onSuccess: async (newTemplate) => {
       queryClient.invalidateQueries({ queryKey: ['projectTemplates'] });
+      
+      // Guardar automáticamente como plantilla predeterminada
+      if (configuracion[0]) {
+        await base44.entities.ConfiguracionProyectos.update(configuracion[0].id, {
+          plantilla_por_defecto_id: newTemplate.id,
+          plantilla_por_defecto_nombre: newTemplate.name,
+          usar_plantilla_automaticamente: true
+        });
+      } else {
+        await base44.entities.ConfiguracionProyectos.create({
+          plantilla_por_defecto_id: newTemplate.id,
+          plantilla_por_defecto_nombre: newTemplate.name,
+          usar_plantilla_automaticamente: true
+        });
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['configuracionProyectos'] });
       setTemplateDialogOpen(false);
       setEditingTemplate(null);
-      toast.success('Plantilla creada correctamente');
+      toast.success('Plantilla creada y configurada como predeterminada');
     }
   });
 
   const updateTemplateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.ProjectTemplate.update(id, data),
-    onSuccess: () => {
+    onSuccess: async (updatedTemplate, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['projectTemplates'] });
+      
+      // Si esta plantilla es la predeterminada, actualizar su nombre en la config
+      if (configuracion[0]?.plantilla_por_defecto_id === id) {
+        await base44.entities.ConfiguracionProyectos.update(configuracion[0].id, {
+          plantilla_por_defecto_nombre: updatedTemplate.name
+        });
+        queryClient.invalidateQueries({ queryKey: ['configuracionProyectos'] });
+      }
+      
       setTemplateDialogOpen(false);
       setEditingTemplate(null);
       toast.success('Plantilla actualizada correctamente');
