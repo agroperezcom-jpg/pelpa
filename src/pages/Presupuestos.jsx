@@ -504,6 +504,7 @@ export default function Presupuestos() {
         cliente_id: currentPresupuesto.cliente_id,
         validez_hasta: currentPresupuesto.validez_hasta,
         observaciones: currentPresupuesto.observaciones,
+        plantilla_proyecto_id: currentPresupuesto.plantilla_proyecto_id || null,
         items: cart,
         subtotal: subtotal,
         descuento: currentPresupuesto.descuento || 0,
