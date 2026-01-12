@@ -1,96 +1,56 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger
-} from "@/components/ui/collapsible";
-import {
-  Settings,
-  Users,
-  Plus,
-  MoreVertical,
-  Edit,
-  Trash2,
-  Clock,
-  Shield,
-  UserPlus,
-  Mail,
-  Calendar,
-  CheckCircle2,
-  ChevronDown,
-  Building,
-  Palette,
-  Globe,
-  Briefcase,
-  Printer,
-  FileText
-} from "lucide-react";
-import ThemeSelector from "../components/theme/ThemeSelector";
-import IdentidadEmpresa from "../components/settings/IdentidadEmpresa";
-import RegionalConfig from "../components/settings/RegionalConfig";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Users, Clock, UserPlus, Globe, Palette, Briefcase, Printer, Shield, Plus, Edit, Lock, CheckCircle2, Power, Trash2 } from "lucide-react";
 import ConfiguracionProyectos from "../components/settings/ConfiguracionProyectos";
+import IdentidadEmpresa from "../components/settings/IdentidadEmpresa";
+import { ThemeSelector } from "../components/theme/ThemeSelector";
+import RegionalConfig from "../components/settings/RegionalConfig";
 import ConfiguracionImpresoras from "../components/settings/ConfiguracionImpresoras";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 
-export default function SettingsPage() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
+export default function Settings() {
+  const [user, setUser] = useState(null);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("user");
-  const [currentUser, setCurrentUser] = useState(null);
-  const [openSections, setOpenSections] = useState({
-    users: true,
-    sessions: false,
-    identidad: false,
-    theme: false,
-    regional: false,
-    proyectos: false,
-    printers: false,
-    fiscal: false
-  });
+  const [activeView, setActiveView] = useState("usuarios");
+  
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingRol, setEditingRol] = useState(null);
+  const [permisosDialogOpen, setPermisosDialogOpen] = useState(false);
+  const [selectedRol, setSelectedRol] = useState(null);
+  const [selectedPermisos, setSelectedPermisos] = useState({});
+  const [formRol, setFormRol] = useState({ nombre: "", descripcion: "" });
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [rolToDelete, setRolToDelete] = useState(null);
 
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
-  }, []);
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
@@ -117,643 +77,769 @@ export default function SettingsPage() {
     queryFn: () => base44.entities.RolPermiso.list()
   });
 
+  useEffect(() => {
+    const loadUser = async () => {
+      const currentUser = await base44.auth.me();
+      setUser(currentUser);
+    };
+    loadUser();
+  }, []);
+
   const inviteUserMutation = useMutation({
     mutationFn: async ({ email, role }) => {
-      const result = await base44.users.inviteUser(email, role);
-      return result;
+      return await base44.users.inviteUser(email, role);
     },
     onSuccess: () => {
-      alert("✓ Invitación enviada correctamente");
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setInviteDialogOpen(false);
       setInviteEmail("");
       setInviteRole("user");
-      setIsDialogOpen(false);
+      alert('Usuario invitado correctamente');
     },
     onError: (error) => {
-      alert("Error al enviar invitación: " + error.message);
+      alert('Error al invitar usuario: ' + error.message);
     }
   });
 
-  // Check if current user is admin
-  if (currentUser?.role !== 'admin') {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Card className="max-w-md">
-          <CardContent className="p-8 text-center">
-            <Shield className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-slate-800">Acceso Restringido</h2>
-            <p className="text-slate-500 mt-2">
-              Solo los administradores pueden acceder a esta sección.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Group session logs by user
-  const userSessionStats = users.map(user => {
-    const userLogs = sessionLogs.filter(log => log.user_email === user.email);
-    const totalMinutes = userLogs.reduce((acc, log) => acc + (log.duration_minutes || 0), 0);
-    const totalHours = Math.round(totalMinutes / 60 * 10) / 10;
-    const lastSession = userLogs[0];
-    
-    return {
-      ...user,
-      totalHours,
-      sessionsCount: userLogs.length,
-      lastLogin: lastSession?.login_time
-    };
+  const createRolMutation = useMutation({
+    mutationFn: (data) => base44.entities.Rol.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      setDialogOpen(false);
+      setFormRol({ nombre: "", descripcion: "" });
+    }
   });
 
-  // Group logs by date for today
-  const today = new Date().toISOString().split('T')[0];
-  const todayLogs = sessionLogs.filter(log => log.date === today);
-
-  // Group logs by month
-  const thisMonth = format(new Date(), 'yyyy-MM');
-  const monthLogs = sessionLogs.filter(log => log.date?.startsWith(thisMonth));
-
-  const handleInvite = (e) => {
-    e.preventDefault();
-    if (!inviteEmail.trim()) {
-      alert("Por favor ingresa un email válido");
-      return;
+  const updateRolMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Rol.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      setDialogOpen(false);
+      setEditingRol(null);
+      setFormRol({ nombre: "", descripcion: "" });
     }
+  });
+
+  const savePermisosMutation = useMutation({
+    mutationFn: async ({ rolId, permisosSeleccionados }) => {
+      if (!rolId) throw new Error("Rol no seleccionado");
+      
+      const rolPermisosExistentes = rolPermisos.filter(rp => rp.rol_id === rolId);
+      for (const rp of rolPermisosExistentes) {
+        await base44.entities.RolPermiso.delete(rp.id);
+      }
+
+      for (const [key, isSelected] of Object.entries(permisosSeleccionados)) {
+        if (!isSelected) continue;
+
+        const parts = key.split('_');
+        if (parts.length < 2) continue;
+        
+        const accion = parts[parts.length - 1];
+        const modulo = parts.slice(0, -1).join('_');
+
+        const permisoBD = permisos.find(p => p.modulo === modulo && p.accion === accion);
+        
+        let permisoId = null;
+        if (permisoBD) {
+          permisoId = permisoBD.id;
+        } else {
+          const nuevoPermiso = await base44.entities.Permiso.create({
+            modulo,
+            accion,
+            descripcion: `${accion} en ${modulo}`
+          });
+          permisoId = nuevoPermiso.id;
+        }
+
+        await base44.entities.RolPermiso.create({
+          rol_id: rolId,
+          rol_nombre: selectedRol?.nombre || "",
+          permiso_id: permisoId,
+          modulo,
+          accion
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rolPermisos'] });
+      queryClient.invalidateQueries({ queryKey: ['permisos'] });
+      setPermisosDialogOpen(false);
+      setSelectedRol(null);
+      setSelectedPermisos({});
+      alert('✓ Permisos guardados correctamente');
+    }
+  });
+
+  const deleteRolMutation = useMutation({
+    mutationFn: async (rolId) => {
+      const rol = roles.find(r => r.id === rolId);
+      if (!rol) throw new Error("Rol no encontrado");
+      
+      if (rol.es_sistema) {
+        throw new Error("No se pueden eliminar roles del sistema");
+      }
+
+      const usuariosAsignados = users.filter(u => u.rol_id === rolId);
+      if (usuariosAsignados.length > 0) {
+        throw new Error(`No se puede eliminar: hay ${usuariosAsignados.length} usuario(s) asignado(s)`);
+      }
+
+      const permisosDel = rolPermisos.filter(rp => rp.rol_id === rolId);
+      for (const p of permisosDel) {
+        await base44.entities.RolPermiso.delete(p.id);
+      }
+
+      await base44.entities.Rol.delete(rolId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      queryClient.invalidateQueries({ queryKey: ['rolPermisos'] });
+      setDeleteConfirmOpen(false);
+      setRolToDelete(null);
+    },
+    onError: (error) => {
+      alert("Error: " + error.message);
+    }
+  });
+
+  const updateUserRolMutation = useMutation({
+    mutationFn: ({ userId, rolId, rolNombre }) => 
+      base44.entities.User.update(userId, { rol_id: rolId, rol_nombre: rolNombre }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    }
+  });
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: ({ userId, currentStatus }) => 
+      base44.entities.User.update(userId, { activo: !currentStatus }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    }
+  });
+
+  const handleInvite = () => {
+    if (!inviteEmail) return;
     inviteUserMutation.mutate({ email: inviteEmail, role: inviteRole });
   };
 
+  const MODULOS = [
+    { id: "ventas", nombre: "Ventas", categoria: "Operativa", critico: true },
+    { id: "presupuestos", nombre: "Presupuestos", categoria: "Operativa", critico: false },
+    { id: "compras", nombre: "Compras", categoria: "Operativa", critico: true },
+    { id: "inventario", nombre: "Inventario", categoria: "Operativa", critico: true },
+    { id: "productos", nombre: "Productos", categoria: "Operativa", critico: false },
+    { id: "control_stock", nombre: "Control de Stock", categoria: "Operativa", critico: false },
+    { id: "tesoreria", nombre: "Tesorería", categoria: "Finanzas", critico: true },
+    { id: "cheques", nombre: "Cheques", categoria: "Finanzas", critico: true },
+    { id: "gastos", nombre: "Gastos", categoria: "Finanzas", critico: false },
+    { id: "proyectos", nombre: "Proyectos", categoria: "Gestión", critico: false },
+    { id: "calendario", nombre: "Calendario", categoria: "Gestión", critico: false },
+    { id: "clientes", nombre: "Clientes", categoria: "Contactos", critico: false },
+    { id: "proveedores", nombre: "Proveedores", categoria: "Contactos", critico: false },
+    { id: "analytics", nombre: "Analytics", categoria: "Análisis", critico: false },
+    { id: "tablero_fiscal", nombre: "Tablero Fiscal", categoria: "Análisis", critico: true },
+    { id: "iva_mensual", nombre: "IVA Mensual", categoria: "Análisis", critico: true },
+    { id: "ingresos_brutos", nombre: "Ingresos Brutos", categoria: "Análisis", critico: true },
+    { id: "talonarios", nombre: "Talonarios", categoria: "Sistema", critico: true },
+    { id: "configuracion", nombre: "Configuración", categoria: "Sistema", critico: true },
+    { id: "usuarios", nombre: "Usuarios y Permisos", categoria: "Sistema", critico: true }
+  ];
+
+  const ACCIONES = [
+    { id: "VIEW", nombre: "Ver", desc: "Acceder al módulo" },
+    { id: "CREATE", nombre: "Crear", desc: "Crear nuevos registros" },
+    { id: "EDIT", nombre: "Editar", desc: "Modificar registros" },
+    { id: "DELETE", nombre: "Eliminar", desc: "Eliminar registros" },
+    { id: "CONFIRM", nombre: "Confirmar", desc: "Confirmar operaciones" },
+    { id: "PAY", nombre: "Pagar", desc: "Registrar pagos" },
+    { id: "ANNUL", nombre: "Anular", desc: "Anular operaciones" },
+    { id: "REPORT", nombre: "Reportes", desc: "Generar reportes" },
+    { id: "CLOSE_PERIOD", nombre: "Cerrar períodos", desc: "Cerrar períodos fiscales" },
+    { id: "DELETE_ALL", nombre: "Borrar Todo", desc: "Eliminar todos los registros" },
+    { id: "ADMIN", nombre: "Administrador", desc: "Control total del módulo" }
+  ];
+
+  const handleOpenRolDialog = (rol = null) => {
+    if (rol) {
+      setEditingRol(rol);
+      setFormRol({ nombre: rol.nombre, descripcion: rol.descripcion || "" });
+    } else {
+      setEditingRol(null);
+      setFormRol({ nombre: "", descripcion: "" });
+    }
+    setDialogOpen(true);
+  };
+
+  const handleSaveRol = () => {
+    if (!formRol.nombre) return;
+    if (editingRol) {
+      updateRolMutation.mutate({ id: editingRol.id, data: formRol });
+    } else {
+      createRolMutation.mutate(formRol);
+    }
+  };
+
+  const handleOpenPermisos = (rol) => {
+    setSelectedRol(rol);
+    const permisosActuales = {};
+    rolPermisos
+      .filter(rp => rp.rol_id === rol.id)
+      .forEach(rp => {
+        permisosActuales[`${rp.modulo}_${rp.accion}`] = true;
+      });
+    setSelectedPermisos(permisosActuales);
+    setPermisosDialogOpen(true);
+  };
+
+  const togglePermiso = (modulo, accion) => {
+    const key = `${modulo}_${accion}`;
+    setSelectedPermisos(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const toggleModuloCompleto = (moduloId, value) => {
+    const newPermisos = { ...selectedPermisos };
+    ACCIONES.forEach(accion => {
+      newPermisos[`${moduloId}_${accion.id}`] = value;
+    });
+    setSelectedPermisos(newPermisos);
+  };
+
+  const getRolUsers = (rolId) => users.filter(u => u.rol_id === rolId);
+  const getRolPermisosCount = (rolId) => rolPermisos.filter(rp => rp.rol_id === rolId).length;
+
+  const handleUserRoleChange = (userId, value) => {
+    if (value === "none") {
+      updateUserRolMutation.mutate({ userId, rolId: null, rolNombre: null });
+    } else {
+      const rol = roles.find(r => r.id === value);
+      updateUserRolMutation.mutate({ userId, rolId: value, rolNombre: rol?.nombre });
+    }
+  };
+
+  const handleToggleUserStatus = (userId, currentStatus) => {
+    toggleStatusMutation.mutate({ userId, currentStatus });
+  };
+
+  const admins = users.filter(u => u.role === 'admin').length;
+  const totalUsers = users.length;
+
+  const today = new Date().toISOString().split('T')[0];
+  const sessionsToday = sessionLogs.filter(log => log.login_time?.startsWith(today)).length;
+
+  const now = new Date();
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const sessionsThisMonth = sessionLogs.filter(log => {
+    if (!log.login_time) return false;
+    const logDate = new Date(log.login_time);
+    return logDate >= firstDayOfMonth;
+  }).length;
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-0">
-        <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-2 flex-wrap">
-            <Settings className="h-5 sm:h-6 w-5 sm:w-6 text-slate-600 flex-shrink-0" />
-            Configuración
-          </h1>
-          <p className="text-slate-500 text-sm mt-1">
-            Administración de empleados y sistema
-          </p>
-        </div>
-        <Button onClick={() => setIsDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto whitespace-nowrap">
-          <UserPlus className="h-4 w-4 mr-2" />
-          Invitar Usuario
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">Configuración</h1>
+        <p className="text-slate-500 text-sm mt-1">
+          Gestiona usuarios, configuración del sistema y preferencias
+        </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-2 sm:gap-4">
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-slate-500 uppercase">Total Usuarios</p>
-                <p className="text-2xl font-bold text-slate-800 mt-1">{users.length}</p>
-              </div>
-              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-                <Users className="h-5 w-5 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-slate-500 uppercase">Administradores</p>
-                <p className="text-2xl font-bold text-slate-800 mt-1">
-                  {users.filter(u => u.role === 'admin').length}
-                </p>
-              </div>
-              <div className="w-10 h-10 bg-violet-50 rounded-xl flex items-center justify-center">
-                <Shield className="h-5 w-5 text-violet-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-slate-500 uppercase">Sesiones Hoy</p>
-                <p className="text-2xl font-bold text-slate-800 mt-1">{todayLogs.length}</p>
-              </div>
-              <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
-                <Clock className="h-5 w-5 text-emerald-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-slate-500 uppercase">Sesiones Mes</p>
-                <p className="text-2xl font-bold text-slate-800 mt-1">{monthLogs.length}</p>
-              </div>
-              <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
-                <Calendar className="h-5 w-5 text-amber-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex items-center gap-4">
+        <span className="text-sm font-medium text-slate-700">Vista:</span>
+        <Select value={activeView} onValueChange={setActiveView}>
+          <SelectTrigger className="w-80">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="usuarios">Usuarios</SelectItem>
+            <SelectItem value="sesiones">Registro de Sesiones</SelectItem>
+            <SelectItem value="identidad">Identidad</SelectItem>
+            <SelectItem value="tema">Tema Visual</SelectItem>
+            <SelectItem value="regional">Configuración Regional</SelectItem>
+            <SelectItem value="proyectos">Proyectos</SelectItem>
+            <SelectItem value="impresoras">Impresoras</SelectItem>
+            <SelectItem value="roles">Roles y Permisos</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Secciones Colapsables */}
-      <div className="space-y-3">
-        {/* Usuarios */}
-        <Collapsible
-          open={openSections.users}
-          onOpenChange={(open) => setOpenSections({ ...openSections, users: open })}
-        >
-          <Card className="border-0 shadow-sm overflow-hidden">
-            <CollapsibleTrigger className="w-full">
-              <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+      {user?.role === 'admin' ? (
+        <div className="space-y-6">
+          {activeView === "usuarios" && (
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
                     <Users className="h-5 w-5 text-blue-600" />
+                    <CardTitle className="text-base">Usuarios del Sistema</CardTitle>
                   </div>
-                  <div className="text-left">
-                    <h3 className="font-semibold text-slate-900">Usuarios</h3>
-                    <p className="text-xs text-slate-500">Gestión de usuarios del sistema</p>
-                  </div>
+                  <Button onClick={() => setInviteDialogOpen(true)} size="sm">
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Invitar Usuario
+                  </Button>
                 </div>
-                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${openSections.users ? 'rotate-180' : ''}`} />
-              </div>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-            <div className="border-t">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50">
-                  <TableHead>Usuario</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Rol</TableHead>
-                  <TableHead className="text-center">Horas Totales</TableHead>
-                  <TableHead className="text-center">Sesiones</TableHead>
-                  <TableHead>Último Acceso</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {userSessionStats.map((user) => (
-                  <TableRow key={user.id} className="hover:bg-slate-50">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-medium">
-                          {user.full_name?.charAt(0).toUpperCase() || 'U'}
-                        </div>
-                        <span className="font-medium">{user.full_name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-slate-600">{user.email}</TableCell>
-                    <TableCell>
-                      <Badge className={user.role === 'admin' ? 'bg-violet-100 text-violet-700' : 'bg-slate-100 text-slate-600'}>
-                        {user.role === 'admin' ? 'Administrador' : 'Empleado'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center font-medium">
-                      {user.totalHours}h
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {user.sessionsCount}
-                    </TableCell>
-                    <TableCell className="text-slate-500">
-                      {user.lastLogin ? format(new Date(user.lastLogin), "d MMM yyyy HH:mm", { locale: es }) : 'Sin registro'}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            </div>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
-
-        {/* Registro de Sesiones */}
-        <Collapsible
-          open={openSections.sessions}
-          onOpenChange={(open) => setOpenSections({ ...openSections, sessions: open })}
-        >
-          <Card className="border-0 shadow-sm overflow-hidden">
-            <CollapsibleTrigger className="w-full">
-              <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
-                    <Clock className="h-5 w-5 text-emerald-600" />
-                  </div>
-                  <div className="text-left">
-                    <h3 className="font-semibold text-slate-900">Registro de Sesiones</h3>
-                    <p className="text-xs text-slate-500">Historial de accesos al sistema</p>
-                  </div>
-                </div>
-                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${openSections.sessions ? 'rotate-180' : ''}`} />
-              </div>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-            <div className="border-t">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50">
-                  <TableHead>Usuario</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Hora Inicio</TableHead>
-                  <TableHead>Hora Fin</TableHead>
-                  <TableHead className="text-right">Duración</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sessionLogs.slice(0, 50).map((log) => (
-                  <TableRow key={log.id} className="hover:bg-slate-50">
-                    <TableCell className="font-medium">{log.user_name}</TableCell>
-                    <TableCell className="text-slate-600">
-                      {log.date ? format(new Date(log.date), "d MMM yyyy", { locale: es }) : '-'}
-                    </TableCell>
-                    <TableCell className="text-slate-600">
-                      {log.login_time ? format(new Date(log.login_time), "HH:mm") : '-'}
-                    </TableCell>
-                    <TableCell className="text-slate-600">
-                      {log.logout_time ? format(new Date(log.logout_time), "HH:mm") : (
-                        <Badge className="bg-emerald-100 text-emerald-700">Activo</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {log.duration_minutes ? `${Math.floor(log.duration_minutes / 60)}h ${log.duration_minutes % 60}m` : '-'}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {sessionLogs.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-slate-500">
-                      No hay registros de sesiones
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-            </div>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
-
-        {/* Identidad Empresa */}
-        <Collapsible
-          open={openSections.identidad}
-          onOpenChange={(open) => setOpenSections({ ...openSections, identidad: open })}
-        >
-          <Card className="border-0 shadow-sm overflow-hidden">
-            <CollapsibleTrigger className="w-full">
-              <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
-                    <Building className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div className="text-left">
-                    <h3 className="font-semibold text-slate-900">Identidad</h3>
-                    <p className="text-xs text-slate-500">Logo y nombre de la empresa</p>
-                  </div>
-                </div>
-                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${openSections.identidad ? 'rotate-180' : ''}`} />
-              </div>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="border-t p-4">
-                <IdentidadEmpresa />
-              </div>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
-
-        {/* Tema Visual */}
-        <Collapsible
-          open={openSections.theme}
-          onOpenChange={(open) => setOpenSections({ ...openSections, theme: open })}
-        >
-          <Card className="border-0 shadow-sm overflow-hidden">
-            <CollapsibleTrigger className="w-full">
-              <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-pink-50 rounded-xl flex items-center justify-center">
-                    <Palette className="h-5 w-5 text-pink-600" />
-                  </div>
-                  <div className="text-left">
-                    <h3 className="font-semibold text-slate-900">Tema Visual</h3>
-                    <p className="text-xs text-slate-500">Personaliza colores y apariencia</p>
-                  </div>
-                </div>
-                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${openSections.theme ? 'rotate-180' : ''}`} />
-              </div>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="border-t p-4">
-                <ThemeSelector />
-              </div>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
-
-        {/* Configuración Regional */}
-        <Collapsible
-          open={openSections.regional}
-          onOpenChange={(open) => setOpenSections({ ...openSections, regional: open })}
-        >
-          <Card className="border-0 shadow-sm overflow-hidden">
-            <CollapsibleTrigger className="w-full">
-              <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-cyan-50 rounded-xl flex items-center justify-center">
-                    <Globe className="h-5 w-5 text-cyan-600" />
-                  </div>
-                  <div className="text-left">
-                    <h3 className="font-semibold text-slate-900">Configuración Regional</h3>
-                    <p className="text-xs text-slate-500">Zona horaria y calendario</p>
-                  </div>
-                </div>
-                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${openSections.regional ? 'rotate-180' : ''}`} />
-              </div>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="border-t p-4">
-                <RegionalConfig />
-              </div>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
-
-        {/* Proyectos */}
-        <Collapsible
-          open={openSections.proyectos}
-          onOpenChange={(open) => setOpenSections({ ...openSections, proyectos: open })}
-        >
-          <Card className="border-0 shadow-sm overflow-hidden">
-            <CollapsibleTrigger className="w-full">
-              <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
-                    <Briefcase className="h-5 w-5 text-indigo-600" />
-                  </div>
-                  <div className="text-left">
-                    <h3 className="font-semibold text-slate-900">Proyectos</h3>
-                    <p className="text-xs text-slate-500">Plantillas y configuración</p>
-                  </div>
-                </div>
-                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${openSections.proyectos ? 'rotate-180' : ''}`} />
-              </div>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="border-t p-4">
-                <ConfiguracionProyectos />
-              </div>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
-
-        {/* Impresoras */}
-        <Collapsible
-          open={openSections.printers}
-          onOpenChange={(open) => setOpenSections({ ...openSections, printers: open })}
-        >
-          <Card className="border-0 shadow-sm overflow-hidden">
-            <CollapsibleTrigger className="w-full">
-              <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
-                    <Printer className="h-5 w-5 text-orange-600" />
-                  </div>
-                  <div className="text-left">
-                    <h3 className="font-semibold text-slate-900">Impresoras</h3>
-                    <p className="text-xs text-slate-500">Configuración de impresoras</p>
-                  </div>
-                </div>
-                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${openSections.printers ? 'rotate-180' : ''}`} />
-              </div>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="border-t p-4">
-                <ConfiguracionImpresoras />
-              </div>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
-
-        {/* Configuración Fiscal */}
-        <Collapsible
-          open={openSections.fiscal}
-          onOpenChange={(open) => setOpenSections({ ...openSections, fiscal: open })}
-        >
-          <Card className="border-0 shadow-sm overflow-hidden">
-            <CollapsibleTrigger className="w-full">
-              <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
-                    <FileText className="h-5 w-5 text-red-600" />
-                  </div>
-                  <div className="text-left">
-                    <h3 className="font-semibold text-slate-900">Configuración Fiscal</h3>
-                    <p className="text-xs text-slate-500">Datos fiscales e IVA</p>
-                  </div>
-                </div>
-                <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${openSections.fiscal ? 'rotate-180' : ''}`} />
-              </div>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="border-t p-4">
-          <div className="space-y-6">
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base">Datos Fiscales de la Empresa</CardTitle>
-                <p className="text-xs text-slate-500 mt-1">
-                  Información para comprobantes y reportes
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Razón Social</Label>
-                    <Input defaultValue="Librería Papelería SRL" placeholder="Razón Social" disabled />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>CUIT</Label>
-                    <Input defaultValue="20-12345678-9" placeholder="CUIT" disabled />
-                  </div>
-                  <div className="col-span-2 space-y-2">
-                    <Label>Domicilio Fiscal</Label>
-                    <Input defaultValue="Av. Principal 1234, CABA" placeholder="Dirección" disabled />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Condición IVA</Label>
-                    <Select defaultValue="RESP_INSCRIPTO" disabled>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="RESP_INSCRIPTO">Responsable Inscripto</SelectItem>
-                        <SelectItem value="MONOTRIBUTO">Monotributo</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Inicio Actividades</Label>
-                    <Input type="date" defaultValue="2020-01-01" disabled />
-                  </div>
-                </div>
-                <div className="p-3 bg-slate-50 border rounded-lg">
-                  <p className="text-xs text-slate-600">
-                    ℹ️ Para modificar estos datos, contacta al soporte técnico
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base">Configuración de IVA Ventas</CardTitle>
-                <p className="text-xs text-slate-500 mt-1">
-                  Reglas automáticas para generación de Facturas B
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-4">
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h4 className="font-semibold text-blue-900 mb-2">Generación Automática</h4>
-                    <div className="space-y-2 text-sm text-blue-800">
-                      <div className="flex items-start gap-2">
-                        <CheckCircle2 className="h-4 w-4 mt-0.5 text-blue-600" />
-                        <span>Cliente con tipo IVA: <strong>Responsable Inscripto</strong> o <strong>Monotributo</strong></span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <CheckCircle2 className="h-4 w-4 mt-0.5 text-blue-600" />
-                        <span>Venta mayor a <strong>$50.000</strong> (umbral configurable)</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Monto Mínimo para IVA Automático</Label>
-                    <Input 
-                      type="number" 
-                      defaultValue="50000" 
-                      placeholder="50000"
-                      disabled
-                    />
-                    <p className="text-xs text-slate-500">
-                      Ventas superiores a este monto generarán automáticamente Factura B
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="flex items-center justify-between">
-                      <span>Medios de Pago sin IVA</span>
-                      <Badge className="bg-slate-100 text-slate-600">Solo Efectivo</Badge>
-                    </Label>
-                    <p className="text-xs text-slate-500">
-                      Pagos en efectivo por debajo del umbral pueden no generar IVA
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="flex items-center justify-between">
-                      <span>Override Manual Habilitado</span>
-                      <Badge className="bg-green-100 text-green-700">Sí</Badge>
-                    </Label>
-                    <p className="text-xs text-slate-500">
-                      Los usuarios pueden activar/desactivar IVA manualmente desde el POS
-                    </p>
-                  </div>
-
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                    <p className="text-xs text-amber-800">
-                      ⚠️ <strong>Importante:</strong> El IVA se decide ANTES de confirmar la venta. Una vez confirmada, no puede modificarse.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base">Tipos de Comprobante Habilitados</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <div>
-                      <p className="font-medium">Ticket X - Sin IVA</p>
-                      <p className="text-xs text-slate-500">Para consumidores finales y ventas sin discriminar IVA</p>
-                    </div>
-                    <Badge className="bg-green-100 text-green-700">Activo</Badge>
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-700">Total Usuarios</p>
+                    <p className="text-2xl font-bold text-blue-900 mt-1">{totalUsers}</p>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <div>
-                      <p className="font-medium">Factura B - Con IVA</p>
-                      <p className="text-xs text-slate-500">Para Responsables Inscriptos y Monotributistas</p>
-                    </div>
-                    <Badge className="bg-green-100 text-green-700">Activo</Badge>
+                  <div className="p-4 bg-purple-50 rounded-lg">
+                    <p className="text-sm text-purple-700">Administradores</p>
+                    <p className="text-2xl font-bold text-purple-900 mt-1">{admins}</p>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <div>
-                      <p className="font-medium">Factura A</p>
-                      <p className="text-xs text-slate-500">Solo para Responsables Inscriptos con CUIT válido</p>
-                    </div>
-                    <Badge className="bg-green-100 text-green-700">Activo</Badge>
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <p className="text-sm text-green-700">Sesiones Hoy</p>
+                    <p className="text-2xl font-bold text-green-900 mt-1">{sessionsToday}</p>
                   </div>
                 </div>
+
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50">
+                      <TableHead>Nombre</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Rol</TableHead>
+                      <TableHead>Sesiones (mes)</TableHead>
+                      <TableHead>Último Acceso</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map(u => {
+                      const userSessions = sessionLogs.filter(log => log.user_email === u.email);
+                      const monthSessions = userSessions.filter(log => {
+                        if (!log.login_time) return false;
+                        const logDate = new Date(log.login_time);
+                        return logDate >= firstDayOfMonth;
+                      }).length;
+                      const lastSession = userSessions[0];
+
+                      return (
+                        <TableRow key={u.id}>
+                          <TableCell className="font-medium">{u.full_name}</TableCell>
+                          <TableCell className="text-sm text-slate-600">{u.email}</TableCell>
+                          <TableCell>
+                            <Badge className={u.role === 'admin' ? 'bg-slate-800 text-white' : 'bg-blue-100 text-blue-700'}>
+                              {u.role === 'admin' ? 'Administrador' : 'Empleado'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{monthSessions}</TableCell>
+                          <TableCell className="text-sm text-slate-600">
+                            {lastSession ? new Date(lastSession.login_time).toLocaleString('es-AR') : 'Sin registro'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
-          </div>
-              </div>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
-      </div>
+          )}
 
-      {/* Invite User Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UserPlus className="h-5 w-5 text-blue-600" />
-              Invitar Usuario
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleInvite} className="space-y-4">
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder="correo@ejemplo.com"
-                  className="pl-10"
-                  required
-                />
+          {activeView === "sesiones" && (
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-green-600" />
+                  <CardTitle className="text-base">Registro de Sesiones</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <p className="text-sm text-green-700">Sesiones Hoy</p>
+                    <p className="text-2xl font-bold text-green-900 mt-1">{sessionsToday}</p>
+                  </div>
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-700">Sesiones Este Mes</p>
+                    <p className="text-2xl font-bold text-blue-900 mt-1">{sessionsThisMonth}</p>
+                  </div>
+                </div>
+
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50">
+                      <TableHead>Usuario</TableHead>
+                      <TableHead>Inicio</TableHead>
+                      <TableHead>Fin</TableHead>
+                      <TableHead>Duración</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sessionLogs.slice(0, 50).map(log => (
+                      <TableRow key={log.id}>
+                        <TableCell className="font-medium">{log.user_name}</TableCell>
+                        <TableCell className="text-sm text-slate-600">
+                          {log.login_time ? new Date(log.login_time).toLocaleString('es-AR') : '-'}
+                        </TableCell>
+                        <TableCell className="text-sm text-slate-600">
+                          {log.logout_time ? new Date(log.logout_time).toLocaleString('es-AR') : 'En sesión'}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {log.duration_minutes ? `${log.duration_minutes} min` : '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeView === "identidad" && <IdentidadEmpresa />}
+
+          {activeView === "tema" && (
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-6">
+                <ThemeSelector />
+              </CardContent>
+            </Card>
+          )}
+
+          {activeView === "regional" && <RegionalConfig />}
+
+          {activeView === "proyectos" && <ConfiguracionProyectos />}
+
+          {activeView === "impresoras" && <ConfiguracionImpresoras />}
+
+          {activeView === "roles" && (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-slate-700" />
+                    Roles y Permisos
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-1">Gestión centralizada de accesos y control de seguridad</p>
+                </div>
+                <Button onClick={() => handleOpenRolDialog()} className="bg-slate-700 hover:bg-slate-800">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nuevo Rol
+                </Button>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {roles.map(rol => (
+                  <Card key={rol.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-4 border-b border-slate-100">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <CardTitle className="text-base font-semibold">{rol.nombre}</CardTitle>
+                          <p className="text-sm text-slate-500 mt-1.5 line-clamp-2">
+                            {rol.descripcion || "Sin descripción"}
+                          </p>
+                        </div>
+                        {rol.es_sistema && (
+                          <Badge className="bg-slate-100 text-slate-700 text-xs">Sistema</Badge>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-3 bg-slate-50 rounded-lg">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Users className="h-4 w-4 text-slate-600" />
+                            <span className="text-xs text-slate-600 font-medium">Usuarios</span>
+                          </div>
+                          <p className="text-xl font-bold">{getRolUsers(rol.id).length}</p>
+                        </div>
+                        <div className="p-3 bg-slate-50 rounded-lg">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Lock className="h-4 w-4 text-slate-600" />
+                            <span className="text-xs text-slate-600 font-medium">Permisos</span>
+                          </div>
+                          <p className="text-xl font-bold">{getRolPermisosCount(rol.id)}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleOpenPermisos(rol)}
+                          className="flex-1"
+                        >
+                          <Lock className="h-3.5 w-3.5 mr-1.5" />
+                          Configurar
+                        </Button>
+                        {!rol.es_sistema && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleOpenRolDialog(rol)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => {
+                                setRolToDelete(rol);
+                                setDeleteConfirmOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              <Card className="border-0 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-base">Asignación de Roles a Usuarios</CardTitle>
+                  <CardDescription className="text-xs">Asigna roles personalizados para controlar el acceso</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-50">
+                        <TableHead>Usuario</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Rol Sistema</TableHead>
+                        <TableHead>Rol Personalizado</TableHead>
+                        <TableHead className="w-16">Estado</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map(u => (
+                        <TableRow key={u.id}>
+                          <TableCell className="font-medium">{u.full_name}</TableCell>
+                          <TableCell className="text-sm text-slate-600">{u.email}</TableCell>
+                          <TableCell>
+                            <Badge className={u.role === 'admin' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'}>
+                              {u.role === 'admin' ? 'Admin' : 'Usuario'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {u.role === 'admin' ? (
+                              <span className="text-sm text-muted-foreground italic">Acceso total</span>
+                            ) : (
+                              <Select value={u.rol_id || "none"} onValueChange={(v) => handleUserRoleChange(u.id, v)}>
+                                <SelectTrigger className="w-48">
+                                  <SelectValue placeholder="Sin asignar" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">Sin rol personalizado</SelectItem>
+                                  {roles.filter(r => !r.es_sistema).map(rol => (
+                                    <SelectItem key={rol.id} value={rol.id}>{rol.nombre}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {u.role !== 'admin' && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleToggleUserStatus(u.id, u.activo !== false)}
+                                className={u.activo !== false ? "text-green-600" : "text-red-600"}
+                              >
+                                <Power className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </div>
+      ) : (
+        <Card className="border-l-4 border-l-amber-500 bg-amber-50">
+          <CardContent className="p-6">
+            <p className="text-amber-800">
+              ⚠️ Solo los administradores pueden acceder a esta página
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Dialog Crear/Editar Rol */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingRol ? "Editar Rol" : "Nuevo Rol"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nombre *</Label>
+              <Input
+                value={formRol.nombre}
+                onChange={(e) => setFormRol({ ...formRol, nombre: e.target.value })}
+                placeholder="Ej: Vendedor, Contador..."
+              />
             </div>
             <div className="space-y-2">
-              <Label>Rol</Label>
+              <Label>Descripción</Label>
+              <Textarea
+                value={formRol.descripcion}
+                onChange={(e) => setFormRol({ ...formRol, descripcion: e.target.value })}
+                placeholder="Descripción del rol..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSaveRol} disabled={!formRol.nombre}>
+              {editingRol ? "Guardar" : "Crear"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Permisos */}
+      <Dialog open={permisosDialogOpen} onOpenChange={setPermisosDialogOpen}>
+        <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto p-0">
+          <div className="sticky top-0 z-10 bg-white border-b px-6 py-4">
+            <DialogTitle className="flex items-center gap-3">
+              <Shield className="h-5 w-5 text-slate-700" />
+              <div>
+                <p>Permisos del Rol</p>
+                <p className="text-sm font-semibold mt-0.5">{selectedRol?.nombre}</p>
+              </div>
+            </DialogTitle>
+          </div>
+
+          <div className="px-6 py-6 space-y-8">
+            {['Operativa', 'Finanzas', 'Gestión', 'Contactos', 'Análisis', 'Sistema'].map(categoria => {
+              const modulosCategoria = MODULOS.filter(m => m.categoria === categoria);
+              if (modulosCategoria.length === 0) return null;
+
+              return (
+                <div key={categoria} className="space-y-4">
+                  <h3 className="text-sm font-semibold text-slate-900 uppercase">{categoria}</h3>
+                  <div className="space-y-3">
+                    {modulosCategoria.map(modulo => {
+                      const hasAll = ACCIONES.every(a => selectedPermisos[`${modulo.id}_${a.id}`]);
+                      return (
+                        <div key={modulo.id} className="border rounded-lg overflow-hidden">
+                          <div className="px-4 py-3 bg-slate-50 border-b flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Checkbox
+                                checked={hasAll}
+                                onCheckedChange={(checked) => toggleModuloCompleto(modulo.id, checked)}
+                              />
+                              <p className="font-semibold flex items-center gap-2">
+                                {modulo.nombre}
+                                {modulo.critico && <Badge className="bg-red-100 text-red-700 text-xs">Crítico</Badge>}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="px-4 py-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                              {ACCIONES.map(accion => (
+                                <label key={accion.id} className="flex items-start gap-2.5 cursor-pointer">
+                                  <Checkbox
+                                    checked={selectedPermisos[`${modulo.id}_${accion.id}`] || false}
+                                    onCheckedChange={() => togglePermiso(modulo.id, accion.id)}
+                                    className="mt-1"
+                                  />
+                                  <div>
+                                    <div className="font-medium text-sm">{accion.nombre}</div>
+                                    <div className="text-xs text-slate-500">{accion.desc}</div>
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setPermisosDialogOpen(false)}>Cancelar</Button>
+            <Button 
+              onClick={() => savePermisosMutation.mutate({ rolId: selectedRol.id, permisosSeleccionados: selectedPermisos })}
+              disabled={!selectedRol}
+              className="bg-slate-700 hover:bg-slate-800"
+            >
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              Guardar permisos
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Alert Dialog Eliminar Rol */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar rol "{rolToDelete?.nombre}"</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminarán todos los permisos asociados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteRolMutation.mutate(rolToDelete?.id)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog Invitar Usuario */}
+      <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invitar Nuevo Usuario</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Email *</Label>
+              <Input
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder="usuario@ejemplo.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Rol en el Sistema</Label>
               <Select value={inviteRole} onValueChange={setInviteRole}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user">Empleado</SelectItem>
-                  <SelectItem value="admin" disabled>Administrador (requiere plan premium)</SelectItem>
+                  <SelectItem value="admin">Administrador</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-slate-500">
-                Solo se pueden invitar empleados. Los administradores deben ser añadidos desde la configuración de la organización.
-              </p>
+              {inviteRole === 'admin' && (
+                <p className="text-xs text-amber-600">
+                  ⚠️ Los administradores tienen acceso total al sistema
+                </p>
+              )}
             </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={inviteUserMutation.isPending || !inviteEmail.trim()}>
-                {inviteUserMutation.isPending ? 'Enviando...' : 'Enviar Invitación'}
-              </Button>
-            </DialogFooter>
-          </form>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleInvite} disabled={!inviteEmail || inviteUserMutation.isPending}>
+              {inviteUserMutation.isPending ? 'Invitando...' : 'Enviar Invitación'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
