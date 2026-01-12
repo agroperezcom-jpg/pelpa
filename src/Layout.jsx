@@ -357,7 +357,7 @@ export default function Layout({ children, currentPageName }) {
       )}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="h-14 flex items-center justify-between px-5 border-b border-border/40">
+          <div className="h-14 flex items-center justify-between px-5 border-b border-slate-200/40 bg-white/50">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center">
                 <span className="text-white text-sm font-semibold">
