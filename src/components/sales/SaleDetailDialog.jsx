@@ -5,14 +5,16 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Receipt, Printer, FileCheck, Calendar, User, Package, X } from "lucide-react";
+import { Receipt, Printer, FileCheck, Calendar, User, Package, X, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { printTicket } from "../pos/TicketPrint";
 import { PAPER_WIDTHS } from "../thermal/thermalPrinterService";
+import WhatsAppSendDialog from "../whatsapp/WhatsAppSendDialog";
 
 export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) {
   const [paperWidth, setPaperWidth] = useState(PAPER_WIDTHS.LARGE);
+  const [showWhatsApp, setShowWhatsApp] = useState(false);
   
   if (!sale) return null;
 
@@ -244,6 +246,13 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
                   Cerrar
                 </Button>
                 <Button 
+                  onClick={() => setShowWhatsApp(true)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Enviar por WhatsApp
+                </Button>
+                <Button 
                   onClick={handlePrint}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
@@ -258,8 +267,27 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
               Cerrar
             </Button>
           )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+          </DialogFooter>
+
+          <WhatsAppSendDialog
+          isOpen={showWhatsApp}
+          onClose={() => setShowWhatsApp(false)}
+          ticketType="sale"
+          ticketId={sale.id}
+          ticketData={{
+           id: sale.id,
+           numero: sale.numero_comprobante,
+           clientName: sale.client_name,
+           items: sale.items,
+           subtotal: sale.subtotal,
+           discount: sale.discount,
+           iva_21: sale.iva_21,
+           total: sale.total,
+           notes: sale.notes
+          }}
+          clientName={sale.client_name}
+          />
+          </DialogContent>
+          </Dialog>
+          );
+          }
