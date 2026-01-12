@@ -6,44 +6,44 @@
 
 /* Premium Design System - Minimal & Elegant */
 :root, .light {
-  /* Base Colors - Soft & Warm */
-  --background: 40 20% 98%; /* Blanco roto cálido */
-  --foreground: 220 15% 20%; /* Gris oscuro suave */
-  
+  /* Base Colors - Elegancia Premium */
+  --background: 220 16% 97%; /* Fondo gris azulado muy claro */
+  --foreground: 220 13% 18%; /* Gris azulado oscuro */
+
   /* Card backgrounds */
   --card: 0 0% 100%;
-  --card-foreground: 220 15% 20%;
-  
+  --card-foreground: 220 13% 18%;
+
   /* Popover */
   --popover: 0 0% 100%;
-  --popover-foreground: 220 15% 20%;
-  
-  /* Primary - Slate Blue */
-  --primary: 220 14% 35%;
+  --popover-foreground: 220 13% 18%;
+
+  /* Primary - Slate elegante */
+  --primary: 220 14% 32%;
   --primary-foreground: 0 0% 100%;
-  --primary-hover: 220 14% 30%;
-  
-  /* Secondary - Light Warm Gray */
-  --secondary: 40 15% 96%;
-  --secondary-foreground: 220 15% 35%;
-  
-  /* Muted - Beige Suave */
-  --muted: 40 15% 94%;
-  --muted-foreground: 220 10% 50%;
-  
-  /* Accent - Sand */
-  --accent: 35 20% 93%;
-  --accent-foreground: 220 15% 25%;
-  
-  /* Destructive - Rose Suave */
-  --destructive: 0 55% 55%;
+  --primary-hover: 220 14% 27%;
+
+  /* Secondary - Gris suave */
+  --secondary: 220 12% 94%;
+  --secondary-foreground: 220 13% 35%;
+
+  /* Muted - Gris medio */
+  --muted: 220 10% 90%;
+  --muted-foreground: 220 8% 48%;
+
+  /* Accent - Azul sofisticado */
+  --accent: 217 32% 88%;
+  --accent-foreground: 220 14% 32%;
+
+  /* Destructive - Rose Premium */
+  --destructive: 0 65% 52%;
   --destructive-foreground: 0 0% 100%;
-  
-  /* Border - Ultra Soft */
-  --border: 40 15% 90%;
-  --input: 40 15% 90%;
+
+  /* Border - Sofisticado */
+  --border: 220 12% 88%;
+  --input: 220 12% 92%;
   --ring: 220 14% 60%;
-  
+
   /* Radius */
   --radius: 0.625rem;
 
