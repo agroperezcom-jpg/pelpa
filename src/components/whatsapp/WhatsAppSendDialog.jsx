@@ -28,9 +28,34 @@ export default function WhatsAppSendDialog({
   }, [isOpen, clientData]);
 
   const validatePhoneNumber = (phone) => {
-    // Aceptar números argentinos en varios formatos
     const cleanPhone = phone.replace(/\D/g, "");
     return cleanPhone.length >= 10;
+  };
+
+  const formatPhoneNumber = (phone) => {
+    const cleanPhone = phone.replace(/\D/g, "");
+    
+    // Si empieza con 9 y tiene 10 dígitos, es un celular argentino sin código de país
+    if (cleanPhone.startsWith("9") && cleanPhone.length === 10) {
+      return "54" + cleanPhone;
+    }
+    
+    // Si tiene 10 dígitos y NO empieza con 9, agregar código de país
+    if (cleanPhone.length === 10 && !cleanPhone.startsWith("9")) {
+      return "54" + cleanPhone;
+    }
+    
+    // Si ya tiene 12 dígitos y empieza con 54, perfecto
+    if (cleanPhone.length === 12 && cleanPhone.startsWith("54")) {
+      return cleanPhone;
+    }
+    
+    // Si tiene 11 dígitos y empieza con 54, completar a 12
+    if (cleanPhone.length === 11 && cleanPhone.startsWith("54")) {
+      return cleanPhone + "0";
+    }
+    
+    return cleanPhone;
   };
 
   const handleGenerateAndSend = async () => {
@@ -40,7 +65,7 @@ export default function WhatsAppSendDialog({
     }
 
     if (!validatePhoneNumber(phoneNumber)) {
-      toast.error("Número de WhatsApp inválido");
+      toast.error("Número de WhatsApp inválido (mínimo 10 dígitos)");
       return;
     }
 
@@ -61,16 +86,8 @@ export default function WhatsAppSendDialog({
       const fileUrl = response.data.file_url;
       setGeneratedUrl(fileUrl);
 
-      // Formatear número para WhatsApp (remover caracteres especiales)
-      const cleanPhone = phoneNumber.replace(/\D/g, "");
-      let formattedPhone = cleanPhone;
-
-      // Si empieza con 9, asumir que es Argentina sin 54
-      if (cleanPhone.startsWith("9") && cleanPhone.length === 10) {
-        formattedPhone = "54" + cleanPhone;
-      } else if (!cleanPhone.startsWith("54") && cleanPhone.length === 10) {
-        formattedPhone = "54" + cleanPhone;
-      }
+      // Formatear número
+      const formattedPhone = formatPhoneNumber(phoneNumber);
 
       // Mensaje
       const ticketNumber = ticketData.numero || ticketData.numero_presupuesto || "Documento";
@@ -78,12 +95,14 @@ export default function WhatsAppSendDialog({
       const message = `Hola ${clientName || ""}! Te envío el ${ticketTypeLabel} #${ticketNumber}. Descargalo desde aquí: ${fileUrl}`;
 
       // Abrir WhatsApp Web
-      const whatsappUrl = `https://wa.me/${formattedPhone}/?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, "_blank");
+      const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+      setTimeout(() => window.open(whatsappUrl, "_blank"), 500);
 
-      toast.success("Se abrió WhatsApp. Envía el mensaje!");
-      onSuccess?.();
-      onClose();
+      toast.success("Abriendo WhatsApp...");
+      setTimeout(() => {
+        onSuccess?.();
+        onClose();
+      }, 1000);
     } catch (error) {
       console.error("Error:", error);
       toast.error("Error al generar documento: " + error.message);
