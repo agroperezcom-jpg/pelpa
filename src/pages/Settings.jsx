@@ -124,14 +124,12 @@ export default function Settings() {
     mutationFn: async ({ rolId, permisosSeleccionados }) => {
       if (!rolId) throw new Error("Rol no seleccionado");
       
-      // Eliminar todos los permisos existentes de este rol usando el estado actual
-      const rolPermisosExistentes = rolPermisos.filter(rp => rp.rol_id === rolId);
-      for (const rp of rolPermisosExistentes) {
-        try {
-          await base44.entities.RolPermiso.delete(rp.id);
-        } catch (e) {
-          console.warn(`No se pudo eliminar RolPermiso ${rp.id}:`, e.message);
-        }
+      // Obtener lista actualizada de permisos del rol desde BD
+      const rolPermisosActuales = await base44.entities.RolPermiso.filter({ rol_id: rolId });
+      
+      // Eliminar todos los permisos existentes
+      for (const rp of rolPermisosActuales) {
+        await base44.entities.RolPermiso.delete(rp.id);
       }
 
       // Crear los nuevos permisos seleccionados
@@ -147,13 +145,11 @@ export default function Settings() {
 
       for (const { modulo, accion } of permisosACrear) {
         let permisoId = null;
-
-        // Buscar permiso existente en BD
         const permisoBD = permisos.find(p => p.modulo === modulo && p.accion === accion);
+        
         if (permisoBD) {
           permisoId = permisoBD.id;
         } else {
-          // Crear nuevo permiso si no existe
           const nuevoPermiso = await base44.entities.Permiso.create({
             modulo,
             accion,
@@ -162,7 +158,6 @@ export default function Settings() {
           permisoId = nuevoPermiso.id;
         }
 
-        // Crear relación rol-permiso
         await base44.entities.RolPermiso.create({
           rol_id: rolId,
           rol_nombre: selectedRol?.nombre || "",
@@ -181,7 +176,6 @@ export default function Settings() {
       alert('✓ Permisos guardados correctamente');
     },
     onError: (error) => {
-      console.error("Error al guardar permisos:", error);
       alert('Error al guardar permisos: ' + error.message);
     }
   });
