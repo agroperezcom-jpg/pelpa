@@ -124,12 +124,14 @@ export default function Settings() {
     mutationFn: async ({ rolId, permisosSeleccionados }) => {
       if (!rolId) throw new Error("Rol no seleccionado");
       
-      // Obtener la lista actual de rolPermisos para este rol
-      const rolPermisosActuales = await base44.entities.RolPermiso.filter({ rol_id: rolId });
-      
-      // Eliminar todos los permisos existentes de este rol
-      for (const rp of rolPermisosActuales) {
-        await base44.entities.RolPermiso.delete(rp.id);
+      // Eliminar todos los permisos existentes de este rol usando el estado actual
+      const rolPermisosExistentes = rolPermisos.filter(rp => rp.rol_id === rolId);
+      for (const rp of rolPermisosExistentes) {
+        try {
+          await base44.entities.RolPermiso.delete(rp.id);
+        } catch (e) {
+          console.warn(`No se pudo eliminar RolPermiso ${rp.id}:`, e.message);
+        }
       }
 
       // Crear los nuevos permisos seleccionados
