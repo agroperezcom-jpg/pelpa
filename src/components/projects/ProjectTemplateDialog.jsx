@@ -10,6 +10,7 @@ import { Plus, Trash2, GripVertical } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 export default function ProjectTemplateDialog({ isOpen, onClose, template, onSave }) {
   const { data: tiposProyecto = [] } = useQuery({
@@ -89,6 +90,32 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
       ...formData,
       tasks: formData.tasks.filter((_, i) => i !== index)
     });
+  };
+
+  const handleDragEndPhases = (result) => {
+    if (!result.destination) return;
+    
+    const items = Array.from(formData.phases);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    
+    // Actualizar el orden de cada fase
+    const reorderedPhases = items.map((phase, index) => ({
+      ...phase,
+      order: index + 1
+    }));
+    
+    setFormData({ ...formData, phases: reorderedPhases });
+  };
+
+  const handleDragEndTasks = (result) => {
+    if (!result.destination) return;
+    
+    const items = Array.from(formData.tasks);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    
+    setFormData({ ...formData, tasks: items });
   };
 
   const handleSubmit = (e) => {
@@ -196,75 +223,99 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {formData.phases.map((phase, index) => (
-                    <div key={index} className="border rounded-lg p-4 bg-slate-50">
-                      <div className="flex items-start gap-3">
-                        <GripVertical className="h-5 w-5 text-slate-400 mt-2" />
-                        <div className="flex-1 space-y-3">
-                          <div className="grid grid-cols-12 gap-2">
-                            <div className="col-span-5">
-                              <Label className="text-xs text-slate-600 mb-1 block">Nombre de la Fase</Label>
-                              <Input
-                                value={phase.name}
-                                onChange={(e) => handleUpdatePhase(index, 'name', e.target.value)}
-                                placeholder="Ej: Diseño Inicial"
-                                className="bg-white"
-                              />
-                            </div>
-                            <div className="col-span-2">
-                              <Label className="text-xs text-slate-600 mb-1 block">Días</Label>
-                              <Input
-                                type="number"
-                                min="0"
-                                value={phase.duration_days}
-                                onChange={(e) => handleUpdatePhase(index, 'duration_days', e.target.value === "" ? "" : parseInt(e.target.value) || "")}
-                                placeholder="0"
-                                className="bg-white"
-                              />
-                            </div>
-                            <div className="col-span-2">
-                              <Label className="text-xs text-slate-600 mb-1 block">Horas</Label>
-                              <Input
-                                type="number"
-                                min="0"
-                                max="23"
-                                value={phase.duration_hours}
-                                onChange={(e) => handleUpdatePhase(index, 'duration_hours', e.target.value === "" ? "" : parseInt(e.target.value) || "")}
-                                placeholder="0"
-                                className="bg-white"
-                              />
-                            </div>
-                            <div className="col-span-2 flex items-end">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleRemovePhase(index)}
-                                className="text-red-600 w-full"
+                <DragDropContext onDragEnd={handleDragEndPhases}>
+                  <Droppable droppableId="phases">
+                    {(provided) => (
+                      <div 
+                        {...provided.droppableProps} 
+                        ref={provided.innerRef}
+                        className="space-y-3"
+                      >
+                        {formData.phases.map((phase, index) => (
+                          <Draggable key={index} draggableId={`phase-${index}`} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={`border rounded-lg p-4 bg-slate-50 ${
+                                  snapshot.isDragging ? 'shadow-lg ring-2 ring-blue-400' : ''
+                                }`}
                               >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                            <div className="col-span-1 flex items-end justify-center">
-                              <GripVertical className="h-4 w-4 text-slate-400" />
-                            </div>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-slate-600 mb-1 block">Descripción</Label>
-                            <Textarea
-                              value={phase.description}
-                              onChange={(e) => handleUpdatePhase(index, 'description', e.target.value)}
-                              placeholder="Detalles de la fase..."
-                              rows={2}
-                              className="bg-white"
-                            />
-                          </div>
-                        </div>
+                                <div className="flex items-start gap-3">
+                                  <div 
+                                    {...provided.dragHandleProps}
+                                    className="cursor-grab active:cursor-grabbing"
+                                  >
+                                    <GripVertical className="h-5 w-5 text-slate-400 mt-2" />
+                                  </div>
+                                  <div className="flex-1 space-y-3">
+                                    <div className="grid grid-cols-12 gap-2">
+                                      <div className="col-span-5">
+                                        <Label className="text-xs text-slate-600 mb-1 block">Nombre de la Fase</Label>
+                                        <Input
+                                          value={phase.name}
+                                          onChange={(e) => handleUpdatePhase(index, 'name', e.target.value)}
+                                          placeholder="Ej: Diseño Inicial"
+                                          className="bg-white"
+                                        />
+                                      </div>
+                                      <div className="col-span-2">
+                                        <Label className="text-xs text-slate-600 mb-1 block">Días</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          value={phase.duration_days}
+                                          onChange={(e) => handleUpdatePhase(index, 'duration_days', e.target.value === "" ? "" : parseInt(e.target.value) || "")}
+                                          placeholder="0"
+                                          className="bg-white"
+                                        />
+                                      </div>
+                                      <div className="col-span-2">
+                                        <Label className="text-xs text-slate-600 mb-1 block">Horas</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          max="23"
+                                          value={phase.duration_hours}
+                                          onChange={(e) => handleUpdatePhase(index, 'duration_hours', e.target.value === "" ? "" : parseInt(e.target.value) || "")}
+                                          placeholder="0"
+                                          className="bg-white"
+                                        />
+                                      </div>
+                                      <div className="col-span-3 flex items-end gap-2">
+                                        <span className="text-xs text-slate-500">#{index + 1}</span>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => handleRemovePhase(index)}
+                                          className="text-red-600"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs text-slate-600 mb-1 block">Descripción</Label>
+                                      <Textarea
+                                        value={phase.description}
+                                        onChange={(e) => handleUpdatePhase(index, 'description', e.target.value)}
+                                        placeholder="Detalles de la fase..."
+                                        rows={2}
+                                        className="bg-white"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
               )}
             </TabsContent>
 
@@ -285,111 +336,135 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {formData.tasks.map((task, index) => (
-                    <div key={index} className="border rounded-lg p-4 bg-slate-50">
-                      <div className="flex items-start gap-3">
-                        <GripVertical className="h-5 w-5 text-slate-400 mt-2" />
-                        <div className="flex-1 space-y-3">
-                          <div className="grid grid-cols-12 gap-2">
-                            <div className="col-span-4">
-                              <Label className="text-xs text-slate-600 mb-1 block">Nombre de la Tarea</Label>
-                              <Input
-                                value={task.name}
-                                onChange={(e) => handleUpdateTask(index, 'name', e.target.value)}
-                                placeholder="Ej: Diseñar mockups"
-                                className="bg-white"
-                              />
-                            </div>
-                            <div className="col-span-3">
-                              <Label className="text-xs text-slate-600 mb-1 block">Fase</Label>
-                              <Select
-                                value={task.phase_name || "none"}
-                                onValueChange={(v) => handleUpdateTask(index, 'phase_name', v === "none" ? "" : v)}
+                <DragDropContext onDragEnd={handleDragEndTasks}>
+                  <Droppable droppableId="tasks">
+                    {(provided) => (
+                      <div 
+                        {...provided.droppableProps} 
+                        ref={provided.innerRef}
+                        className="space-y-3"
+                      >
+                        {formData.tasks.map((task, index) => (
+                          <Draggable key={index} draggableId={`task-${index}`} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={`border rounded-lg p-4 bg-slate-50 ${
+                                  snapshot.isDragging ? 'shadow-lg ring-2 ring-blue-400' : ''
+                                }`}
                               >
-                                <SelectTrigger className="bg-white">
-                                  <SelectValue placeholder="Seleccionar" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="none">Sin fase</SelectItem>
-                                  {formData.phases.map(p => (
-                                    <SelectItem key={p.name} value={p.name}>{p.name}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="col-span-1">
-                              <Label className="text-xs text-slate-600 mb-1 block">Días</Label>
-                              <Input
-                                type="number"
-                                min="0"
-                                value={task.duration_days}
-                                onChange={(e) => handleUpdateTask(index, 'duration_days', e.target.value === "" ? "" : parseInt(e.target.value) || "")}
-                                placeholder="0"
-                                className="bg-white"
-                              />
-                            </div>
-                            <div className="col-span-1">
-                              <Label className="text-xs text-slate-600 mb-1 block">Hrs</Label>
-                              <Input
-                                type="number"
-                                min="0"
-                                max="23"
-                                value={task.duration_hours}
-                                onChange={(e) => handleUpdateTask(index, 'duration_hours', e.target.value === "" ? "" : parseInt(e.target.value) || "")}
-                                placeholder="0"
-                                className="bg-white"
-                              />
-                            </div>
-                            <div className="col-span-2 flex items-end">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleRemoveTask(index)}
-                                className="text-red-600 w-full"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                            <div className="col-span-1 flex items-end justify-center">
-                              <GripVertical className="h-4 w-4 text-slate-400" />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <Label className="text-xs text-slate-600 mb-1 block">Descripción</Label>
-                              <Textarea
-                                value={task.description}
-                                onChange={(e) => handleUpdateTask(index, 'description', e.target.value)}
-                                placeholder="Detalles de la tarea..."
-                                rows={2}
-                                className="bg-white"
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-xs text-slate-600 mb-1 block">Prioridad</Label>
-                              <Select
-                                value={task.priority}
-                                onValueChange={(v) => handleUpdateTask(index, 'priority', v)}
-                              >
-                                <SelectTrigger className="bg-white">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="baja">Baja</SelectItem>
-                                  <SelectItem value="media">Media</SelectItem>
-                                  <SelectItem value="alta">Alta</SelectItem>
-                                  <SelectItem value="critica">Crítica</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                        </div>
+                                <div className="flex items-start gap-3">
+                                  <div 
+                                    {...provided.dragHandleProps}
+                                    className="cursor-grab active:cursor-grabbing"
+                                  >
+                                    <GripVertical className="h-5 w-5 text-slate-400 mt-2" />
+                                  </div>
+                                  <div className="flex-1 space-y-3">
+                                    <div className="grid grid-cols-12 gap-2">
+                                      <div className="col-span-4">
+                                        <Label className="text-xs text-slate-600 mb-1 block">Nombre de la Tarea</Label>
+                                        <Input
+                                          value={task.name}
+                                          onChange={(e) => handleUpdateTask(index, 'name', e.target.value)}
+                                          placeholder="Ej: Diseñar mockups"
+                                          className="bg-white"
+                                        />
+                                      </div>
+                                      <div className="col-span-3">
+                                        <Label className="text-xs text-slate-600 mb-1 block">Fase</Label>
+                                        <Select
+                                          value={task.phase_name || "none"}
+                                          onValueChange={(v) => handleUpdateTask(index, 'phase_name', v === "none" ? "" : v)}
+                                        >
+                                          <SelectTrigger className="bg-white">
+                                            <SelectValue placeholder="Seleccionar" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="none">Sin fase</SelectItem>
+                                            {formData.phases.map(p => (
+                                              <SelectItem key={p.name} value={p.name}>{p.name}</SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="col-span-1">
+                                        <Label className="text-xs text-slate-600 mb-1 block">Días</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          value={task.duration_days}
+                                          onChange={(e) => handleUpdateTask(index, 'duration_days', e.target.value === "" ? "" : parseInt(e.target.value) || "")}
+                                          placeholder="0"
+                                          className="bg-white"
+                                        />
+                                      </div>
+                                      <div className="col-span-1">
+                                        <Label className="text-xs text-slate-600 mb-1 block">Hrs</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          max="23"
+                                          value={task.duration_hours}
+                                          onChange={(e) => handleUpdateTask(index, 'duration_hours', e.target.value === "" ? "" : parseInt(e.target.value) || "")}
+                                          placeholder="0"
+                                          className="bg-white"
+                                        />
+                                      </div>
+                                      <div className="col-span-3 flex items-end gap-2">
+                                        <span className="text-xs text-slate-500">#{index + 1}</span>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => handleRemoveTask(index)}
+                                          className="text-red-600"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div>
+                                        <Label className="text-xs text-slate-600 mb-1 block">Descripción</Label>
+                                        <Textarea
+                                          value={task.description}
+                                          onChange={(e) => handleUpdateTask(index, 'description', e.target.value)}
+                                          placeholder="Detalles de la tarea..."
+                                          rows={2}
+                                          className="bg-white"
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs text-slate-600 mb-1 block">Prioridad</Label>
+                                        <Select
+                                          value={task.priority}
+                                          onValueChange={(v) => handleUpdateTask(index, 'priority', v)}
+                                        >
+                                          <SelectTrigger className="bg-white">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="baja">Baja</SelectItem>
+                                            <SelectItem value="media">Media</SelectItem>
+                                            <SelectItem value="alta">Alta</SelectItem>
+                                            <SelectItem value="critica">Crítica</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
               )}
             </TabsContent>
           </Tabs>
