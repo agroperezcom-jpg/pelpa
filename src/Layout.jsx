@@ -197,7 +197,6 @@ export default function Layout({ children, currentPageName }) {
       permiso: null, // Admin siempre lo ve
       items: [
         { name: "Configuración", page: "Settings", icon: Settings, permiso: "configuracion" },
-        { name: "Roles y Permisos", page: "RolesPermisos", icon: Shield, permiso: "usuarios" },
       ]
     }] : [])
   ];
