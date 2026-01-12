@@ -8,8 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, GripVertical } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
 
 export default function ProjectTemplateDialog({ isOpen, onClose, template, onSave }) {
+  const { data: tiposProyecto = [] } = useQuery({
+    queryKey: ['tiposProyecto'],
+    queryFn: () => base44.entities.TipoProyecto.list(),
+    enabled: isOpen
+  });
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -120,38 +128,36 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
 
               <div className="col-span-2 space-y-2">
                 <Label>Tipos de Proyecto *</Label>
-                <div className="grid grid-cols-3 gap-3 p-4 border rounded-lg bg-slate-50">
-                  {[
-                    { value: "desarrollo", label: "Desarrollo" },
-                    { value: "diseno", label: "Diseño" },
-                    { value: "impresion", label: "Impresión" },
-                    { value: "venta_especial", label: "Venta Especial" },
-                    { value: "encuadernacion", label: "Encuadernación" },
-                    { value: "evento", label: "Evento" },
-                    { value: "marketing", label: "Marketing" },
-                    { value: "interno", label: "Interno" },
-                    { value: "otro", label: "Otro" }
-                  ].map((tipo) => (
-                    <div key={tipo.value} className="flex items-center gap-2">
-                      <Checkbox
-                        id={tipo.value}
-                        checked={Array.isArray(formData.type) && formData.type.includes(tipo.value)}
-                        onCheckedChange={(checked) => {
-                          const types = Array.isArray(formData.type) ? formData.type : [];
-                          setFormData({
-                            ...formData,
-                            type: checked
-                              ? [...types, tipo.value]
-                              : types.filter(t => t !== tipo.value)
-                          });
-                        }}
-                      />
-                      <Label htmlFor={tipo.value} className="text-sm cursor-pointer">
-                        {tipo.label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
+                {tiposProyecto.length === 0 ? (
+                  <div className="p-4 border rounded-lg border-dashed bg-slate-50 text-center">
+                    <p className="text-sm text-slate-500">No hay tipos de proyecto configurados</p>
+                    <p className="text-xs text-slate-400 mt-1">Ve a Configuración → Proyectos para crear tipos</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-3 p-4 border rounded-lg bg-slate-50">
+                    {tiposProyecto.sort((a, b) => a.orden - b.orden).map((tipo) => (
+                      <div key={tipo.id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={tipo.id}
+                          checked={Array.isArray(formData.type) && formData.type.includes(tipo.valor)}
+                          onCheckedChange={(checked) => {
+                            const types = Array.isArray(formData.type) ? formData.type : [];
+                            setFormData({
+                              ...formData,
+                              type: checked
+                                ? [...types, tipo.valor]
+                                : types.filter(t => t !== tipo.valor)
+                            });
+                          }}
+                        />
+                        <Label htmlFor={tipo.id} className="text-sm cursor-pointer flex items-center gap-1.5">
+                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: tipo.color }} />
+                          {tipo.nombre}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <p className="text-xs text-slate-500">Selecciona uno o más tipos que apliquen a esta plantilla</p>
               </div>
 

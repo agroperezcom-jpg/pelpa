@@ -5,7 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Briefcase, CheckCircle2, Plus, Edit, Trash2, FileText } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Briefcase, CheckCircle2, Plus, Edit, Trash2, FileText, Tag } from "lucide-react";
 import ProjectTemplateDialog from "../projects/ProjectTemplateDialog";
 import {
   AlertDialog,
@@ -25,6 +28,11 @@ export default function ConfiguracionProyectos() {
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState(null);
+  const [tipoDialogOpen, setTipoDialogOpen] = useState(false);
+  const [editingTipo, setEditingTipo] = useState(null);
+  const [deleteTipoDialogOpen, setDeleteTipoDialogOpen] = useState(false);
+  const [tipoToDelete, setTipoToDelete] = useState(null);
+  const [formTipo, setFormTipo] = useState({ nombre: "", valor: "", descripcion: "", color: "#8b5cf6", orden: 0 });
 
   const queryClient = useQueryClient();
 
@@ -36,6 +44,11 @@ export default function ConfiguracionProyectos() {
   const { data: plantillas = [] } = useQuery({
     queryKey: ['projectTemplates'],
     queryFn: () => base44.entities.ProjectTemplate.list()
+  });
+
+  const { data: tiposProyecto = [] } = useQuery({
+    queryKey: ['tiposProyecto'],
+    queryFn: () => base44.entities.TipoProyecto.list()
   });
 
   useEffect(() => {
@@ -90,6 +103,38 @@ export default function ConfiguracionProyectos() {
     }
   });
 
+  const createTipoMutation = useMutation({
+    mutationFn: (data) => base44.entities.TipoProyecto.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tiposProyecto'] });
+      setTipoDialogOpen(false);
+      setEditingTipo(null);
+      setFormTipo({ nombre: "", valor: "", descripcion: "", color: "#8b5cf6", orden: 0 });
+      alert('✓ Tipo de proyecto creado correctamente');
+    }
+  });
+
+  const updateTipoMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.TipoProyecto.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tiposProyecto'] });
+      setTipoDialogOpen(false);
+      setEditingTipo(null);
+      setFormTipo({ nombre: "", valor: "", descripcion: "", color: "#8b5cf6", orden: 0 });
+      alert('✓ Tipo de proyecto actualizado correctamente');
+    }
+  });
+
+  const deleteTipoMutation = useMutation({
+    mutationFn: (id) => base44.entities.TipoProyecto.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tiposProyecto'] });
+      setDeleteTipoDialogOpen(false);
+      setTipoToDelete(null);
+      alert('✓ Tipo de proyecto eliminado correctamente');
+    }
+  });
+
   const handleSave = () => {
     const selectedTemplate = plantillas.find(t => t.id === plantillaId);
     
@@ -124,9 +169,127 @@ export default function ConfiguracionProyectos() {
     }
   };
 
+  const handleEditTipo = (tipo) => {
+    setEditingTipo(tipo);
+    setFormTipo({
+      nombre: tipo.nombre,
+      valor: tipo.valor,
+      descripcion: tipo.descripcion || "",
+      color: tipo.color || "#8b5cf6",
+      orden: tipo.orden || 0
+    });
+    setTipoDialogOpen(true);
+  };
+
+  const handleDeleteTipo = (tipo) => {
+    setTipoToDelete(tipo);
+    setDeleteTipoDialogOpen(true);
+  };
+
+  const handleSaveTipo = (e) => {
+    e.preventDefault();
+    if (editingTipo) {
+      updateTipoMutation.mutate({ id: editingTipo.id, data: formTipo });
+    } else {
+      createTipoMutation.mutate(formTipo);
+    }
+  };
+
+  const confirmDeleteTipo = () => {
+    if (tipoToDelete) {
+      deleteTipoMutation.mutate(tipoToDelete.id);
+    }
+  };
+
   return (
     <>
       <div className="space-y-6">
+        {/* Tipos de Proyecto */}
+        <Card className="border-0 shadow-sm">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Tag className="h-5 w-5 text-purple-600" />
+                <div>
+                  <CardTitle className="text-base">Tipos de Proyecto</CardTitle>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Configura los tipos de proyecto disponibles en el sistema
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => {
+                  setEditingTipo(null);
+                  setFormTipo({ nombre: "", valor: "", descripcion: "", color: "#8b5cf6", orden: 0 });
+                  setTipoDialogOpen(true);
+                }}
+                size="sm"
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Nuevo Tipo
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {tiposProyecto.length === 0 ? (
+              <div className="text-center py-8 border rounded-lg border-dashed">
+                <Tag className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+                <p className="text-sm text-slate-500 mb-3">No hay tipos de proyecto creados</p>
+                <Button
+                  onClick={() => {
+                    setEditingTipo(null);
+                    setFormTipo({ nombre: "", valor: "", descripcion: "", color: "#8b5cf6", orden: 0 });
+                    setTipoDialogOpen(true);
+                  }}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Crear primer tipo
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-3">
+                {tiposProyecto.sort((a, b) => a.orden - b.orden).map((tipo) => (
+                  <div
+                    key={tipo.id}
+                    className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div
+                        className="w-3 h-3 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: tipo.color }}
+                      />
+                      <span className="font-medium text-sm text-slate-900 truncate">
+                        {tipo.nombre}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleEditTipo(tipo)}
+                        className="h-7 w-7 p-0"
+                      >
+                        <Edit className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDeleteTipo(tipo)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Plantillas Existentes */}
         <Card className="border-0 shadow-sm">
           <CardHeader>
@@ -269,7 +432,82 @@ export default function ConfiguracionProyectos() {
         onSave={handleSaveTemplate}
       />
 
-      {/* Delete Confirmation Dialog */}
+      {/* Tipo Dialog */}
+      <Dialog open={tipoDialogOpen} onOpenChange={setTipoDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingTipo ? 'Editar Tipo de Proyecto' : 'Nuevo Tipo de Proyecto'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveTipo} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nombre *</Label>
+              <Input
+                value={formTipo.nombre}
+                onChange={(e) => setFormTipo({ ...formTipo, nombre: e.target.value })}
+                placeholder="Ej: Diseño Gráfico"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Valor (slug) *</Label>
+              <Input
+                value={formTipo.valor}
+                onChange={(e) => setFormTipo({ ...formTipo, valor: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
+                placeholder="Ej: diseno_grafico"
+                required
+              />
+              <p className="text-xs text-slate-500">Se usará internamente (minúsculas y guiones bajos)</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Descripción</Label>
+              <Textarea
+                value={formTipo.descripcion}
+                onChange={(e) => setFormTipo({ ...formTipo, descripcion: e.target.value })}
+                placeholder="Descripción opcional..."
+                rows={2}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Color</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    value={formTipo.color}
+                    onChange={(e) => setFormTipo({ ...formTipo, color: e.target.value })}
+                    className="w-16 h-10 p-1"
+                  />
+                  <Input
+                    value={formTipo.color}
+                    onChange={(e) => setFormTipo({ ...formTipo, color: e.target.value })}
+                    placeholder="#8b5cf6"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Orden</Label>
+                <Input
+                  type="number"
+                  value={formTipo.orden}
+                  onChange={(e) => setFormTipo({ ...formTipo, orden: parseInt(e.target.value) || 0 })}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setTipoDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
+                {editingTipo ? 'Guardar' : 'Crear'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Template Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -287,6 +525,30 @@ export default function ConfiguracionProyectos() {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Tipo Dialog */}
+      <AlertDialog open={deleteTipoDialogOpen} onOpenChange={setDeleteTipoDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar tipo de proyecto?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El tipo "{tipoToDelete?.nombre}" será eliminado permanentemente.
+              <p className="mt-2 text-amber-600 font-medium">
+                ⚠️ Las plantillas que usen este tipo deberán ser actualizadas.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteTipo}
               className="bg-red-600 hover:bg-red-700"
             >
               Eliminar
