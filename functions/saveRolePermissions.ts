@@ -59,7 +59,14 @@ Deno.serve(async (req) => {
     // Crear solo los permisos nuevos que no existen
     for (const key of permisosNuevos) {
       if (!permisosExistentes.has(key)) {
-        const [modulo, accion] = [key.substring(0, key.lastIndexOf('_')), key.substring(key.lastIndexOf('_') + 1)];
+        const lastUnderscoreIndex = key.lastIndexOf('_');
+        const modulo = key.substring(0, lastUnderscoreIndex);
+        const accion = key.substring(lastUnderscoreIndex + 1);
+        
+        if (!modulo || !accion) {
+          console.error('Invalid key format:', key);
+          continue;
+        }
         
         let permisoId = null;
         const permisoBD = todosPermisos.find(p => p.modulo === modulo && p.accion === accion);

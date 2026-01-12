@@ -125,32 +125,39 @@ export default function Settings() {
     mutationFn: async ({ rolId, permisosSeleccionados }) => {
       if (!rolId) throw new Error("Rol no seleccionado");
 
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+
       try {
         const response = await base44.functions.invoke('saveRolePermissions', {
           rolId,
           permisosSeleccionados,
           rolNombre: selectedRol?.nombre || ""
         });
+        clearTimeout(timeout);
+        if (response.data?.error) {
+          throw new Error(response.data.error);
+        }
         return response.data;
       } catch (error) {
+        clearTimeout(timeout);
         console.error('Error en saveRolePermissions:', error);
         throw error;
       }
     },
     onSuccess: (data) => {
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['rolPermisos'] });
-        queryClient.invalidateQueries({ queryKey: ['permisos'] });
-        setPermisosDialogOpen(false);
-        setSelectedRol(null);
-        setSelectedPermisos({});
-        setPermisosOriginales({});
-        alert(`✓ Permisos guardados correctamente`);
-      }, 300);
+      queryClient.invalidateQueries({ queryKey: ['rolPermisos'] });
+      queryClient.invalidateQueries({ queryKey: ['permisos'] });
+      setPermisosDialogOpen(false);
+      setSelectedRol(null);
+      setSelectedPermisos({});
+      setPermisosOriginales({});
+      alert(`✓ Permisos guardados correctamente`);
     },
     onError: (error) => {
       console.error('Mutation error:', error);
-      alert('Error: ' + (error.response?.data?.error || error.message || 'Error desconocido'));
+      const errorMsg = error?.message || 'Error al guardar permisos';
+      alert('Error: ' + errorMsg);
     }
   });
 
