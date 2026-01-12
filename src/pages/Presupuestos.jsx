@@ -365,7 +365,7 @@ export default function Presupuestos() {
           // Crear fases de la plantilla
           if (plantilla.phases && plantilla.phases.length > 0) {
             for (const phaseTemplate of plantilla.phases) {
-              await base44.entities.ProjectPhase.create({
+              await base44.asServiceRole.entities.ProjectPhase.create({
                 project_id: proyecto.id,
                 name: phaseTemplate.name,
                 description: phaseTemplate.description || "",
@@ -380,7 +380,7 @@ export default function Presupuestos() {
           // Crear tareas de la plantilla
           if (plantilla.tasks && plantilla.tasks.length > 0) {
             for (const taskTemplate of plantilla.tasks) {
-              await base44.entities.ProjectTask.create({
+              await base44.asServiceRole.entities.ProjectTask.create({
                 project_id: proyecto.id,
                 name: taskTemplate.name,
                 description: taskTemplate.description || "",
