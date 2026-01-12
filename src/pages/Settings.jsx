@@ -102,6 +102,21 @@ export default function SettingsPage() {
     queryFn: () => base44.entities.SessionLog.list('-login_time', 100)
   });
 
+  const { data: roles = [] } = useQuery({
+    queryKey: ['roles'],
+    queryFn: () => base44.entities.Rol.list()
+  });
+
+  const { data: permisos = [] } = useQuery({
+    queryKey: ['permisos'],
+    queryFn: () => base44.entities.Permiso.list()
+  });
+
+  const { data: rolPermisos = [] } = useQuery({
+    queryKey: ['rolPermisos'],
+    queryFn: () => base44.entities.RolPermiso.list()
+  });
+
   const inviteUserMutation = useMutation({
     mutationFn: async ({ email, role }) => {
       const result = await base44.users.inviteUser(email, role);
