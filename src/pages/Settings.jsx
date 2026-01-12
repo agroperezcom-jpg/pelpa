@@ -742,16 +742,33 @@ export default function Settings() {
             })}
           </div>
 
-          <div className="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setPermisosDialogOpen(false)}>Cancelar</Button>
-            <Button 
-              onClick={() => savePermisosMutation.mutate({ rolId: selectedRol.id, permisosSeleccionados: selectedPermisos })}
-              disabled={!selectedRol}
-              className="bg-slate-700 hover:bg-slate-800"
-            >
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              Guardar permisos
-            </Button>
+          <div className="sticky bottom-0 bg-white border-t px-6 py-4 space-y-3">
+            {hayChangesPendientes && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800 flex items-center gap-2">
+                <span>⚠️ Hay cambios sin guardar</span>
+              </div>
+            )}
+            <div className="flex justify-end gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  if (hayChangesPendientes && !window.confirm('¿Descartar cambios?')) {
+                    return;
+                  }
+                  setPermisosDialogOpen(false);
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={() => savePermisosMutation.mutate({ rolId: selectedRol.id, permisosSeleccionados: selectedPermisos })}
+                disabled={!selectedRol || !hayChangesPendientes}
+                className="bg-slate-700 hover:bg-slate-800"
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Guardar permisos
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
