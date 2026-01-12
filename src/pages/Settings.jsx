@@ -265,6 +265,7 @@ export default function Settings() {
         permisosActuales[`${rp.modulo}_${rp.accion}`] = true;
       });
     setSelectedPermisos(permisosActuales);
+    setPermisosOriginales(JSON.parse(JSON.stringify(permisosActuales)));
     setPermisosDialogOpen(true);
   };
 
