@@ -12,7 +12,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
-export default function ProjectTemplateDialog({ isOpen, onClose, template, onSave }) {
+export default function ProjectTemplateDialog({ isOpen, onClose, template, onSave, isSaving = false }) {
   const { data: tiposProyecto = [] } = useQuery({
     queryKey: ['tiposProyecto'],
     queryFn: () => base44.entities.TipoProyecto.list(),
@@ -470,11 +470,11 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
           </Tabs>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
               Cancelar
             </Button>
-            <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
-              {template ? 'Guardar Cambios' : 'Crear Plantilla'}
+            <Button type="submit" className="bg-purple-600 hover:bg-purple-700" disabled={isSaving}>
+              {isSaving ? 'Guardando...' : template ? 'Guardar Cambios' : 'Crear Plantilla'}
             </Button>
           </DialogFooter>
         </form>

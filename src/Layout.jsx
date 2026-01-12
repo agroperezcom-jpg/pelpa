@@ -5,6 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { usePermissions } from "@/components/permissions/usePermissions";
+import { Toaster } from 'react-hot-toast';
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -247,6 +248,23 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <ThemeProvider>
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: 'hsl(var(--card))',
+            color: 'hsl(var(--foreground))',
+            border: '1px solid hsl(var(--border))',
+          },
+          success: {
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
       <div className="min-h-screen bg-background transition-theme">
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card/90 backdrop-blur-sm border-b border-border/40 z-50 flex items-center justify-between px-4 transition-theme">

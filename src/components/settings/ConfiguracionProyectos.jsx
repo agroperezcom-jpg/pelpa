@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Briefcase, CheckCircle2, Plus, Edit, Trash2, FileText, Tag } from "lucide-react";
 import ProjectTemplateDialog from "../projects/ProjectTemplateDialog";
+import toast from 'react-hot-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,7 +69,7 @@ export default function ConfiguracionProyectos() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['configuracionProyectos'] });
-      alert('✓ Configuración guardada correctamente');
+      toast.success('Configuración guardada correctamente');
     }
   });
 
@@ -78,7 +79,7 @@ export default function ConfiguracionProyectos() {
       queryClient.invalidateQueries({ queryKey: ['projectTemplates'] });
       setTemplateDialogOpen(false);
       setEditingTemplate(null);
-      alert('✓ Plantilla creada correctamente');
+      toast.success('Plantilla creada correctamente');
     }
   });
 
@@ -88,7 +89,7 @@ export default function ConfiguracionProyectos() {
       queryClient.invalidateQueries({ queryKey: ['projectTemplates'] });
       setTemplateDialogOpen(false);
       setEditingTemplate(null);
-      alert('✓ Plantilla actualizada correctamente');
+      toast.success('Plantilla actualizada correctamente');
     }
   });
 
@@ -99,7 +100,7 @@ export default function ConfiguracionProyectos() {
       queryClient.invalidateQueries({ queryKey: ['configuracionProyectos'] });
       setDeleteDialogOpen(false);
       setTemplateToDelete(null);
-      alert('✓ Plantilla eliminada correctamente');
+      toast.success('Plantilla eliminada correctamente');
     }
   });
 
@@ -110,7 +111,7 @@ export default function ConfiguracionProyectos() {
       setTipoDialogOpen(false);
       setEditingTipo(null);
       setFormTipo({ nombre: "", valor: "", descripcion: "", color: "#8b5cf6", orden: 0 });
-      alert('✓ Tipo de proyecto creado correctamente');
+      toast.success('Tipo de proyecto creado correctamente');
     }
   });
 
@@ -121,7 +122,7 @@ export default function ConfiguracionProyectos() {
       setTipoDialogOpen(false);
       setEditingTipo(null);
       setFormTipo({ nombre: "", valor: "", descripcion: "", color: "#8b5cf6", orden: 0 });
-      alert('✓ Tipo de proyecto actualizado correctamente');
+      toast.success('Tipo de proyecto actualizado correctamente');
     }
   });
 
@@ -131,7 +132,7 @@ export default function ConfiguracionProyectos() {
       queryClient.invalidateQueries({ queryKey: ['tiposProyecto'] });
       setDeleteTipoDialogOpen(false);
       setTipoToDelete(null);
-      alert('✓ Tipo de proyecto eliminado correctamente');
+      toast.success('Tipo de proyecto eliminado correctamente');
     }
   });
 
@@ -430,6 +431,7 @@ export default function ConfiguracionProyectos() {
         }}
         template={editingTemplate}
         onSave={handleSaveTemplate}
+        isSaving={createTemplateMutation.isPending || updateTemplateMutation.isPending}
       />
 
       {/* Tipo Dialog */}
