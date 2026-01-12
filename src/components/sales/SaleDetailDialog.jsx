@@ -292,8 +292,13 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
           )}
           </DialogFooter>
 
-
-          </DialogContent>
-          </Dialog>
-          );
-          }
+        <TicketDownloadDialog
+          isOpen={showTicketDialog}
+          onClose={() => setShowTicketDialog(false)}
+          ticketData={ticketData}
+          ticketType="sale"
+        />
+        </DialogContent>
+        </Dialog>
+        );
+        }
