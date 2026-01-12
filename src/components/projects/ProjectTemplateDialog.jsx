@@ -7,12 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function ProjectTemplateDialog({ isOpen, onClose, template, onSave }) {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    type: "desarrollo",
+    type: [],
     phases: [],
     tasks: [],
     estimated_duration_days: 0
@@ -23,7 +24,7 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
       setFormData({
         name: template.name || "",
         description: template.description || "",
-        type: template.type || "desarrollo",
+        type: template.type || [],
         phases: template.phases || [],
         tasks: template.tasks || [],
         estimated_duration_days: template.estimated_duration_days || 0
@@ -32,7 +33,7 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
       setFormData({
         name: "",
         description: "",
-        type: "desarrollo",
+        type: [],
         phases: [],
         tasks: [],
         estimated_duration_days: 0
@@ -117,24 +118,41 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Tipo de Proyecto *</Label>
-                <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="desarrollo">Desarrollo</SelectItem>
-                    <SelectItem value="diseno">Diseño</SelectItem>
-                    <SelectItem value="impresion">Impresión</SelectItem>
-                    <SelectItem value="venta_especial">Venta Especial</SelectItem>
-                    <SelectItem value="encuadernacion">Encuadernación</SelectItem>
-                    <SelectItem value="evento">Evento</SelectItem>
-                    <SelectItem value="marketing">Marketing</SelectItem>
-                    <SelectItem value="interno">Interno</SelectItem>
-                    <SelectItem value="otro">Otro</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="col-span-2 space-y-2">
+                <Label>Tipos de Proyecto *</Label>
+                <div className="grid grid-cols-3 gap-3 p-4 border rounded-lg bg-slate-50">
+                  {[
+                    { value: "desarrollo", label: "Desarrollo" },
+                    { value: "diseno", label: "Diseño" },
+                    { value: "impresion", label: "Impresión" },
+                    { value: "venta_especial", label: "Venta Especial" },
+                    { value: "encuadernacion", label: "Encuadernación" },
+                    { value: "evento", label: "Evento" },
+                    { value: "marketing", label: "Marketing" },
+                    { value: "interno", label: "Interno" },
+                    { value: "otro", label: "Otro" }
+                  ].map((tipo) => (
+                    <div key={tipo.value} className="flex items-center gap-2">
+                      <Checkbox
+                        id={tipo.value}
+                        checked={Array.isArray(formData.type) && formData.type.includes(tipo.value)}
+                        onCheckedChange={(checked) => {
+                          const types = Array.isArray(formData.type) ? formData.type : [];
+                          setFormData({
+                            ...formData,
+                            type: checked
+                              ? [...types, tipo.value]
+                              : types.filter(t => t !== tipo.value)
+                          });
+                        }}
+                      />
+                      <Label htmlFor={tipo.value} className="text-sm cursor-pointer">
+                        {tipo.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-slate-500">Selecciona uno o más tipos que apliquen a esta plantilla</p>
               </div>
 
               <div className="space-y-2">
@@ -179,20 +197,22 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
                         <GripVertical className="h-5 w-5 text-slate-400 mt-2" />
                         <div className="flex-1 space-y-3">
                           <div className="grid grid-cols-12 gap-2">
-                            <div className="col-span-8">
+                            <div className="col-span-7">
+                              <Label className="text-xs text-slate-600 mb-1 block">Nombre de la Fase</Label>
                               <Input
                                 value={phase.name}
                                 onChange={(e) => handleUpdatePhase(index, 'name', e.target.value)}
-                                placeholder="Nombre de la fase"
+                                placeholder="Ej: Diseño Inicial"
                                 className="bg-white"
                               />
                             </div>
                             <div className="col-span-3">
+                              <Label className="text-xs text-slate-600 mb-1 block">Duración (días)</Label>
                               <Input
                                 type="number"
                                 value={phase.duration_days}
                                 onChange={(e) => handleUpdatePhase(index, 'duration_days', parseInt(e.target.value) || 0)}
-                                placeholder="Días"
+                                placeholder="0"
                                 className="bg-white"
                               />
                             </div>
@@ -208,13 +228,16 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
                               </Button>
                             </div>
                           </div>
-                          <Textarea
-                            value={phase.description}
-                            onChange={(e) => handleUpdatePhase(index, 'description', e.target.value)}
-                            placeholder="Descripción de la fase..."
-                            rows={2}
-                            className="bg-white"
-                          />
+                          <div>
+                            <Label className="text-xs text-slate-600 mb-1 block">Descripción</Label>
+                            <Textarea
+                              value={phase.description}
+                              onChange={(e) => handleUpdatePhase(index, 'description', e.target.value)}
+                              placeholder="Detalles de la fase..."
+                              rows={2}
+                              className="bg-white"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -247,21 +270,23 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
                         <GripVertical className="h-5 w-5 text-slate-400 mt-2" />
                         <div className="flex-1 space-y-3">
                           <div className="grid grid-cols-12 gap-2">
-                            <div className="col-span-6">
+                            <div className="col-span-5">
+                              <Label className="text-xs text-slate-600 mb-1 block">Nombre de la Tarea</Label>
                               <Input
                                 value={task.name}
                                 onChange={(e) => handleUpdateTask(index, 'name', e.target.value)}
-                                placeholder="Nombre de la tarea"
+                                placeholder="Ej: Diseñar mockups"
                                 className="bg-white"
                               />
                             </div>
                             <div className="col-span-3">
+                              <Label className="text-xs text-slate-600 mb-1 block">Fase</Label>
                               <Select
                                 value={task.phase_name}
                                 onValueChange={(v) => handleUpdateTask(index, 'phase_name', v)}
                               >
                                 <SelectTrigger className="bg-white">
-                                  <SelectValue placeholder="Fase" />
+                                  <SelectValue placeholder="Seleccionar" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value={null}>Sin fase</SelectItem>
@@ -272,48 +297,55 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
                               </Select>
                             </div>
                             <div className="col-span-2">
+                              <Label className="text-xs text-slate-600 mb-1 block">Días</Label>
                               <Input
                                 type="number"
                                 value={task.duration_days}
                                 onChange={(e) => handleUpdateTask(index, 'duration_days', parseInt(e.target.value) || 0)}
-                                placeholder="Días"
+                                placeholder="0"
                                 className="bg-white"
                               />
                             </div>
-                            <div className="col-span-1">
+                            <div className="col-span-2 flex items-end">
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => handleRemoveTask(index)}
-                                className="text-red-600"
+                                className="text-red-600 w-full"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-2">
-                            <Textarea
-                              value={task.description}
-                              onChange={(e) => handleUpdateTask(index, 'description', e.target.value)}
-                              placeholder="Descripción de la tarea..."
-                              rows={2}
-                              className="bg-white"
-                            />
-                            <Select
-                              value={task.priority}
-                              onValueChange={(v) => handleUpdateTask(index, 'priority', v)}
-                            >
-                              <SelectTrigger className="bg-white">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="baja">Baja</SelectItem>
-                                <SelectItem value="media">Media</SelectItem>
-                                <SelectItem value="alta">Alta</SelectItem>
-                                <SelectItem value="critica">Crítica</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <div>
+                              <Label className="text-xs text-slate-600 mb-1 block">Descripción</Label>
+                              <Textarea
+                                value={task.description}
+                                onChange={(e) => handleUpdateTask(index, 'description', e.target.value)}
+                                placeholder="Detalles de la tarea..."
+                                rows={2}
+                                className="bg-white"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-slate-600 mb-1 block">Prioridad</Label>
+                              <Select
+                                value={task.priority}
+                                onValueChange={(v) => handleUpdateTask(index, 'priority', v)}
+                              >
+                                <SelectTrigger className="bg-white">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="baja">Baja</SelectItem>
+                                  <SelectItem value="media">Media</SelectItem>
+                                  <SelectItem value="alta">Alta</SelectItem>
+                                  <SelectItem value="critica">Crítica</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
                         </div>
                       </div>
