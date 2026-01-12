@@ -119,15 +119,27 @@ Deno.serve(async (req) => {
       doc.text(noteLines, 20, yPosition);
     }
 
-    // Generar PDF como blob
-    const pdfBlob = doc.output('blob');
+    // Generar PDF como string base64
+    const pdfBase64 = doc.output('dataurlstring').split(',')[1];
     const filename = `${ticketType}-${ticketId}-${Date.now()}.pdf`;
 
-    // Convertir blob a ArrayBuffer para UploadFile (público)
-    const arrayBuffer = await pdfBlob.arrayBuffer();
+    // Guardar en archivo temporal y luego subir
+    const tmpPath = `/tmp/${filename}`;
+    const binaryString = atob(pdfBase64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    await Deno.writeFile(tmpPath, bytes);
+
+    // Leer el archivo y subir
+    const fileContent = await Deno.readFile(tmpPath);
     const uploadResult = await base44.asServiceRole.integrations.Core.UploadFile({
-      file: new Blob([arrayBuffer], { type: 'application/pdf' })
+      file: fileContent
     });
+
+    // Limpiar archivo temporal
+    await Deno.remove(tmpPath);
 
     return Response.json({
       success: true,
