@@ -525,9 +525,14 @@ export default function Calendar() {
       const instanceDate = event.date || event.start_date;
       
       if (deleteOption === "this") {
-        // Eliminar solo esta instancia - agregar a excluded_dates
+        // Verificar si la tarea tiene recurrencia
         const parentTask = freeTasks.find(t => t.id === parentTaskId);
-        if (parentTask) {
+        
+        if (parentTask && (!parentTask.recurrence || parentTask.recurrence === "none")) {
+          // Sin recurrencia: eliminar completamente
+          await base44.entities.FreeTask.delete(parentTaskId);
+        } else if (parentTask) {
+          // Con recurrencia: agregar a excluded_dates
           const excludedDates = parentTask.excluded_dates || [];
           if (!excludedDates.includes(instanceDate)) {
             excludedDates.push(instanceDate);
