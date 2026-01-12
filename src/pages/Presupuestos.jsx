@@ -1255,12 +1255,27 @@ export default function Presupuestos() {
 
               {selectedPresupuesto.estado === "ACEPTADO" && (
                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-sm font-semibold text-green-900 mb-2">✓ Presupuesto Aceptado</p>
+                  <p className="text-sm font-semibold text-green-900 mb-2 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Presupuesto Aceptado
+                  </p>
                   <div className="space-y-1 text-xs text-green-700">
                     <p>• Venta generada: ID {selectedPresupuesto.venta_id}</p>
                     <p>• Proyecto creado: ID {selectedPresupuesto.proyecto_id}</p>
                     <p>• Aceptado el: {format(new Date(selectedPresupuesto.fecha_aceptacion), "d/MM/yyyy HH:mm", { locale: es })}</p>
                   </div>
+                  {selectedPresupuesto.proyecto_id && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-3 bg-white hover:bg-green-50"
+                      onClick={() => navigate(createPageUrl('Projects') + `?proyecto=${selectedPresupuesto.proyecto_id}`)}
+                    >
+                      <Briefcase className="h-3 w-3 mr-2" />
+                      Ver Proyecto
+                      <ExternalLink className="h-3 w-3 ml-2" />
+                    </Button>
+                  )}
                 </div>
               )}
 
