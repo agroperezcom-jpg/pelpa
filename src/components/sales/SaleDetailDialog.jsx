@@ -5,15 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Receipt, Printer, FileCheck, Calendar, User, Package, X, MessageCircle } from "lucide-react";
+import { Receipt, Printer, FileCheck, Calendar, User, Package, X, MessageCircle, Download } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { printTicket } from "../pos/TicketPrint";
 import { PAPER_WIDTHS } from "../thermal/thermalPrinterService";
+import TicketDownloadDialog from "../tickets/TicketDownloadDialog";
 import toast from "react-hot-toast";
 
 export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) {
   const [paperWidth, setPaperWidth] = useState(PAPER_WIDTHS.LARGE);
+  const [showTicketDialog, setShowTicketDialog] = useState(false);
   
   if (!sale) return null;
 
@@ -21,15 +23,26 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
     printTicket(sale, pagos, true, paperWidth);
   };
 
-  const handleSendWhatsApp = () => {
-    if (!sale.client_name || sale.client_name === 'Consumidor Final') {
-      toast.error("No hay número de teléfono disponible para este cliente");
-      return;
-    }
-
-    const message = `Hola ${sale.client_name}, te envío el detalle de tu compra. Total: $${sale.total?.toFixed(2)}. Gracias.`;
-    const whatsappUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
+  const ticketData = {
+    comercio_nombre: "MI EMPRESA",
+    comercio_domicilio: "",
+    comercio_telefono: "",
+    comercio_email: "",
+    numero_comprobante: sale.numero_comprobante || "",
+    tipo_comprobante: sale.tipo_comprobante || "X",
+    fecha: new Date(sale.created_date).toLocaleDateString('es-AR'),
+    hora: new Date(sale.created_date).toLocaleTimeString('es-AR'),
+    cliente_nombre: sale.client_name || "CONSUMIDOR FINAL",
+    cliente_documento: "",
+    cliente_domicilio: "",
+    items: sale.items || [],
+    subtotal: sale.subtotal || 0,
+    descuento: sale.discount || 0,
+    neto_gravado: sale.neto_gravado || 0,
+    iva_21: sale.iva_21 || 0,
+    total: sale.total || 0,
+    forma_pago: sale.tipo_venta || "",
+    observaciones: sale.notes || ""
   };
 
   return (
@@ -256,11 +269,11 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
                   Cerrar
                 </Button>
                 <Button 
-                  onClick={handleSendWhatsApp}
-                  className="bg-green-600 hover:bg-green-700"
+                  onClick={() => setShowTicketDialog(true)}
+                  className="bg-emerald-600 hover:bg-emerald-700"
                 >
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Enviar por WhatsApp
+                  <Download className="h-4 w-4 mr-2" />
+                  Descargar Ticket
                 </Button>
                 <Button 
                   onClick={handlePrint}
