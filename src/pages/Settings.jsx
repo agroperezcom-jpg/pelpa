@@ -124,32 +124,34 @@ export default function Settings() {
     mutationFn: async ({ rolId, permisosSeleccionados }) => {
       if (!rolId) throw new Error("Rol no seleccionado");
       
-      console.log("Iniciando guardado de permisos para rolId:", rolId);
-      console.log("Permisos seleccionados:", permisosSeleccionados);
+      // Obtener la lista actual de rolPermisos para este rol
+      const rolPermisosActuales = await base44.entities.RolPermiso.filter({ rol_id: rolId });
       
-      const rolPermisosExistentes = rolPermisos.filter(rp => rp.rol_id === rolId);
-      console.log("Eliminando permisos existentes:", rolPermisosExistentes.length);
-      
-      for (const rp of rolPermisosExistentes) {
+      // Eliminar todos los permisos existentes de este rol
+      for (const rp of rolPermisosActuales) {
         await base44.entities.RolPermiso.delete(rp.id);
       }
 
-      let permisosCreados = 0;
-      for (const [key, isSelected] of Object.entries(permisosSeleccionados)) {
-        if (!isSelected) continue;
+      // Crear los nuevos permisos seleccionados
+      const permisosACrear = Object.entries(permisosSeleccionados)
+        .filter(([, isSelected]) => isSelected)
+        .map(([key]) => {
+          const parts = key.split('_');
+          return {
+            accion: parts[parts.length - 1],
+            modulo: parts.slice(0, -1).join('_')
+          };
+        });
 
-        const parts = key.split('_');
-        if (parts.length < 2) continue;
-        
-        const accion = parts[parts.length - 1];
-        const modulo = parts.slice(0, -1).join('_');
-
-        const permisoBD = permisos.find(p => p.modulo === modulo && p.accion === accion);
-        
+      for (const { modulo, accion } of permisosACrear) {
         let permisoId = null;
+
+        // Buscar permiso existente en BD
+        const permisoBD = permisos.find(p => p.modulo === modulo && p.accion === accion);
         if (permisoBD) {
           permisoId = permisoBD.id;
         } else {
+          // Crear nuevo permiso si no existe
           const nuevoPermiso = await base44.entities.Permiso.create({
             modulo,
             accion,
@@ -158,6 +160,7 @@ export default function Settings() {
           permisoId = nuevoPermiso.id;
         }
 
+        // Crear relación rol-permiso
         await base44.entities.RolPermiso.create({
           rol_id: rolId,
           rol_nombre: selectedRol?.nombre || "",
@@ -165,12 +168,9 @@ export default function Settings() {
           modulo,
           accion
         });
-        permisosCreados++;
       }
-      console.log("Permisos creados:", permisosCreados);
     },
     onSuccess: () => {
-      console.log("Guardado exitoso, invalidando queries");
       queryClient.invalidateQueries({ queryKey: ['rolPermisos'] });
       queryClient.invalidateQueries({ queryKey: ['permisos'] });
       setPermisosDialogOpen(false);
