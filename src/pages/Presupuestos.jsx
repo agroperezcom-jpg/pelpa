@@ -1268,7 +1268,7 @@ export default function Presupuestos() {
                       size="sm"
                       variant="outline"
                       className="mt-3 bg-white hover:bg-green-50"
-                      onClick={() => navigate(createPageUrl('Projects') + `?proyecto=${selectedPresupuesto.proyecto_id}`)}
+                      onClick={() => navigate(`/projects?proyecto=${selectedPresupuesto.proyecto_id}`)}
                     >
                       <Briefcase className="h-3 w-3 mr-2" />
                       Ver Proyecto
