@@ -354,10 +354,11 @@ export default function Calendar() {
               type: "freeTask",
               date: task.date,
               start_date: task.date,
+              start_time: task.start_time,
               estimated_end_date: task.date,
+              end_time: task.end_time,
               status: task.status,
               priority: task.priority,
-              time: task.time,
               duration: task.duration,
               tags: task.tags,
               data: task
@@ -582,7 +583,7 @@ export default function Calendar() {
     const oldEndDate = event.estimated_end_date || event.due_date || event.end_date;
 
     if (event.type === "freeTask") {
-      const updateData = { date: dateStr, time: timeStr };
+      const updateData = { date: dateStr, start_time: timeStr };
       updateFreeTaskMutation.mutate({
         id: event.id,
         data: updateData
