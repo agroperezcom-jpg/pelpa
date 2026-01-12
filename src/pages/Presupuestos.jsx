@@ -328,20 +328,56 @@ export default function Presupuestos() {
         }
 
         // 4) Crear PROYECTO PMS
-        const proyecto = await base44.entities.Project.create({
+        const proyectoData = {
           name: `Proyecto - ${presupuesto.numero_presupuesto}`,
           description: presupuesto.observaciones || `Proyecto generado automáticamente desde presupuesto ${presupuesto.numero_presupuesto}`,
           client_id: presupuesto.cliente_id,
           client_name: presupuesto.cliente_name,
           type: "venta_especial",
-          status: "activo",
+          status: "aprobado",
           priority: "media",
           start_date: format(new Date(), 'yyyy-MM-dd'),
           responsible_email: user.email,
           responsible_name: user.full_name,
           estimated_budget: presupuesto.total_presupuesto,
           actual_budget: 0
-        });
+        };
+
+        const proyecto = await base44.entities.Project.create(proyectoData);
+
+        // Aplicar plantilla si fue seleccionada
+        if (presupuesto.plantilla_proyecto_id) {
+          const plantilla = projectTemplates.find(t => t.id === presupuesto.plantilla_proyecto_id);
+          
+          if (plantilla) {
+            // Crear fases de la plantilla
+            if (plantilla.phases && plantilla.phases.length > 0) {
+              for (const phaseTemplate of plantilla.phases) {
+                await base44.entities.ProjectPhase.create({
+                  project_id: proyecto.id,
+                  name: phaseTemplate.name,
+                  description: phaseTemplate.description || "",
+                  order_index: phaseTemplate.order || 0,
+                  status: "pendiente"
+                });
+              }
+            }
+
+            // Crear tareas de la plantilla
+            if (plantilla.tasks && plantilla.tasks.length > 0) {
+              for (const taskTemplate of plantilla.tasks) {
+                await base44.entities.ProjectTask.create({
+                  project_id: proyecto.id,
+                  name: taskTemplate.name,
+                  description: taskTemplate.description || "",
+                  phase_name: taskTemplate.phase_name || "",
+                  priority: taskTemplate.priority || "media",
+                  status: "pendiente"
+                });
+              }
+            }
+          }
+        }
 
         // Actualizar venta con proyecto_id
         await base44.entities.Sale.update(venta.id, {
