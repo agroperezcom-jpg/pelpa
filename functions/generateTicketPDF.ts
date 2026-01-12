@@ -123,16 +123,17 @@ Deno.serve(async (req) => {
     const pdfBase64 = doc.output('dataurlstring').split(',')[1];
     const filename = `${ticketType}-${ticketId}-${Date.now()}.pdf`;
     
-    // Convertir base64 a Uint8Array
+    // Convertir base64 a Blob
     const binaryString = atob(pdfBase64);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
+    const blob = new Blob([bytes], { type: 'application/pdf' });
 
     // Subir el archivo
     const uploadResult = await base44.asServiceRole.integrations.Core.UploadFile({
-      file: bytes
+      file: blob
     });
 
     return Response.json({
