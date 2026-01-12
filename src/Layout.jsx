@@ -7,24 +7,27 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { usePermissions } from "@/components/permissions/usePermissions";
 import { Toaster } from 'react-hot-toast';
 import {
-  LayoutDashboard,
-  ShoppingCart,
-  ShoppingBag,
-  Package,
-  Landmark,
-  BarChart3,
-  Calendar as CalendarIcon,
-  Briefcase,
-  Settings,
-  Shield,
-  LogOut,
-  Search,
-  ChevronRight,
-  Menu,
-  X,
-  FileText,
-  Bell
-} from "lucide-react";
+        LayoutDashboard,
+        ShoppingCart,
+        ShoppingBag,
+        Package,
+        Landmark,
+        BarChart3,
+        Calendar as CalendarIcon,
+        Briefcase,
+        Settings,
+        Shield,
+        LogOut,
+        Search,
+        ChevronRight,
+        Menu,
+        X,
+        FileText,
+        Bell,
+        Zap,
+        TrendingUp,
+        Clock
+      } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -112,95 +115,107 @@ export default function Layout({ children, currentPageName }) {
 
   const allowedModules = permissionsLoading ? [] : getAllowedModules();
 
+  const moduleIcons = {
+    general: LayoutDashboard,
+    ventas: ShoppingCart,
+    compras: ShoppingBag,
+    inventario: Package,
+    tesoreria: Landmark,
+    analisis: BarChart3,
+    proyectos: Briefcase,
+    calendario: CalendarIcon,
+    config: Settings
+  };
+
   const allModules = [
-    {
-      id: "general",
-      name: "General",
-      permiso: null, // Siempre visible
-      items: [
-        { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard, permiso: null },
-      ]
-    },
-    {
-      id: "ventas",
-      name: "Ventas",
-      permiso: "ventas",
-      items: [
-        { name: "Ventas", page: "Sales", icon: ShoppingCart, permiso: "ventas" },
-        { name: "Presupuestos", page: "Presupuestos", icon: FileText, permiso: "presupuestos" },
-        { name: "Clientes", page: "Clients", icon: null, permiso: "clientes" },
-        { name: "Servicios", page: "Services", icon: null, permiso: "ventas" },
-        { name: "Talonarios", page: "Talonarios", icon: null, permiso: "talonarios" },
-      ]
-    },
-    {
-      id: "compras",
-      name: "Compras",
-      permiso: "compras",
-      items: [
-        { name: "Compras", page: "Purchases", icon: ShoppingBag, permiso: "compras" },
-        { name: "Proveedores", page: "Proveedores", icon: null, permiso: "proveedores" },
-        { name: "Pagos Proveedores", page: "PagosProveedores", icon: null, permiso: "compras" },
-      ]
-    },
-    {
-      id: "inventario",
-      name: "Inventario",
-      permiso: "inventario",
-      items: [
-        { name: "Productos", page: "Products", icon: Package, permiso: "productos" },
-        { name: "Inventario", page: "Inventory", icon: null, permiso: "inventario" },
-        { name: "Control de Stock", page: "HistorialControlesStock", icon: null, permiso: "control_stock" },
-      ]
-    },
-    {
-      id: "tesoreria",
-      name: "Tesorería",
-      permiso: "tesoreria",
-      items: [
-        { name: "Tesorería", page: "TesoreriaV2", icon: Landmark, permiso: "tesoreria" },
-        { name: "Cheques", page: "Cheques", icon: null, permiso: "cheques" },
-        { name: "Gastos", page: "Expenses", icon: null, permiso: "gastos" },
-      ]
-    },
-    {
-      id: "analisis",
-      name: "Análisis",
-      permiso: "analytics",
-      items: [
-        { name: "Dashboard Ejecutivo", page: "DashboardEjecutivo", icon: BarChart3, permiso: "analytics" },
-        { name: "Analytics", page: "Analytics", icon: null, permiso: "analytics" },
-        { name: "Tablero Fiscal", page: "TableroFiscal", icon: null, permiso: "tablero_fiscal" },
-        { name: "IVA Mensual", page: "IVAMensual", icon: null, permiso: "iva_mensual" },
-        { name: "Ingresos Brutos", page: "IngresosBrutos", icon: null, permiso: "ingresos_brutos" },
-        { name: "Finanzas", page: "Finance", icon: null, permiso: "analytics" },
-      ]
-    },
-    {
-      id: "proyectos",
-      name: "Proyectos",
-      permiso: "proyectos",
-      items: [
-        { name: "Proyectos", page: "Projects", icon: Briefcase, permiso: "proyectos" },
-      ]
-    },
-    {
-      id: "calendario",
-      name: "Agenda",
-      permiso: "calendario",
-      items: [
-        { name: "Calendario", page: "Calendar", icon: CalendarIcon, permiso: "calendario" },
-      ]
-    },
-    ...(isAdmin ? [{
-      id: "config",
-      name: "Sistema",
-      permiso: null, // Admin siempre lo ve
-      items: [
-        { name: "Configuración", page: "Settings", icon: Settings, permiso: "configuracion" },
-      ]
-    }] : [])
-  ];
+      {
+        id: "general",
+        name: "General",
+        permiso: null,
+        items: [
+          { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard, permiso: null },
+        ]
+      },
+      {
+        id: "ventas",
+        name: "Ventas",
+        permiso: "ventas",
+        items: [
+          { name: "Ventas", page: "Sales", icon: ShoppingCart, permiso: "ventas" },
+          { name: "Presupuestos", page: "Presupuestos", icon: FileText, permiso: "presupuestos" },
+          { name: "Clientes", page: "Clients", icon: null, permiso: "clientes" },
+          { name: "Servicios", page: "Services", icon: null, permiso: "ventas" },
+          { name: "Talonarios", page: "Talonarios", icon: null, permiso: "talonarios" },
+        ]
+      },
+      {
+        id: "compras",
+        name: "Compras",
+        permiso: "compras",
+        items: [
+          { name: "Compras", page: "Purchases", icon: ShoppingBag, permiso: "compras" },
+          { name: "Proveedores", page: "Proveedores", icon: null, permiso: "proveedores" },
+          { name: "Pagos Proveedores", page: "PagosProveedores", icon: null, permiso: "compras" },
+        ]
+      },
+      {
+        id: "inventario",
+        name: "Inventario",
+        permiso: "inventario",
+        items: [
+          { name: "Productos", page: "Products", icon: Package, permiso: "productos" },
+          { name: "Inventario", page: "Inventory", icon: null, permiso: "inventario" },
+          { name: "Control de Stock", page: "HistorialControlesStock", icon: null, permiso: "control_stock" },
+        ]
+      },
+      {
+        id: "tesoreria",
+        name: "Tesorería",
+        permiso: "tesoreria",
+        items: [
+          { name: "Tesorería", page: "TesoreriaV2", icon: Landmark, permiso: "tesoreria" },
+          { name: "Cheques", page: "Cheques", icon: null, permiso: "cheques" },
+          { name: "Gastos", page: "Expenses", icon: null, permiso: "gastos" },
+        ]
+      },
+      {
+        id: "analisis",
+        name: "Análisis",
+        permiso: "analytics",
+        items: [
+          { name: "Dashboard Ejecutivo", page: "DashboardEjecutivo", icon: BarChart3, permiso: "analytics" },
+          { name: "Analytics", page: "Analytics", icon: null, permiso: "analytics" },
+          { name: "Tablero Fiscal", page: "TableroFiscal", icon: null, permiso: "tablero_fiscal" },
+          { name: "IVA Mensual", page: "IVAMensual", icon: null, permiso: "iva_mensual" },
+          { name: "Ingresos Brutos", page: "IngresosBrutos", icon: null, permiso: "ingresos_brutos" },
+          { name: "Finanzas", page: "Finance", icon: null, permiso: "analytics" },
+        ]
+      },
+      {
+        id: "proyectos",
+        name: "Proyectos",
+        permiso: "proyectos",
+        items: [
+          { name: "Proyectos", page: "Projects", icon: Briefcase, permiso: "proyectos" },
+        ]
+      },
+      {
+        id: "calendario",
+        name: "Agenda",
+        permiso: "calendario",
+        items: [
+          { name: "Calendario", page: "Calendar", icon: CalendarIcon, permiso: "calendario" },
+        ]
+      },
+      ...(isAdmin ? [{
+        id: "config",
+        name: "Sistema",
+        permiso: null,
+        items: [
+          { name: "Configuración", page: "Settings", icon: Settings, permiso: "configuracion" },
+        ]
+      }] : [])
+    ];
 
   // Filtrar módulos según permisos
   const modules = allModules
@@ -367,36 +382,47 @@ export default function Layout({ children, currentPageName }) {
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto px-3 pb-4 scrollbar-thin">
-            {modules.map((module) => (
-              <div key={module.id} className="mb-4">
-                <p className="px-3 py-2 text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
-                  {module.name}
-                </p>
-                <div className="space-y-0.5">
-                  {module.items.map((item) => {
-                    const isActive = currentPageName === item.page;
-                    const Icon = item.icon;
-                    
-                    return (
-                      <Link
-                        key={item.page}
-                        to={createPageUrl(item.page)}
-                        className={cn(
-                          "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200",
-                          isActive 
-                            ? "bg-secondary text-foreground font-medium" 
-                            : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                        )}
-                      >
-                        {Icon && <Icon className="h-4 w-4" />}
-                        {!Icon && <span className="w-4" />}
-                        <span>{item.name}</span>
-                      </Link>
-                    );
-                  })}
+            {modules.map((module, moduleIndex) => {
+              const ModuleIcon = moduleIcons[module.id];
+
+              return (
+                <div key={module.id} className={cn(
+                  moduleIndex > 0 && "pt-1 border-t border-border/50"
+                )}>
+                  <div className="flex items-center gap-2 px-3 py-3 mb-1">
+                    {ModuleIcon && (
+                      <ModuleIcon className="h-4 w-4 text-muted-foreground/60" />
+                    )}
+                    <p className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider">
+                      {module.name}
+                    </p>
+                  </div>
+                  <div className="space-y-0.5 pl-1">
+                    {module.items.map((item) => {
+                      const isActive = currentPageName === item.page;
+                      const Icon = item.icon;
+
+                      return (
+                        <Link
+                          key={item.page}
+                          to={createPageUrl(item.page)}
+                          className={cn(
+                            "flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-all duration-150",
+                            isActive 
+                              ? "bg-primary/8 text-foreground font-medium border-l-2 border-primary pl-2.5" 
+                              : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
+                          )}
+                        >
+                          {Icon && <Icon className="h-4 w-4 flex-shrink-0" />}
+                          {!Icon && <span className="w-4 flex-shrink-0" />}
+                          <span className="truncate">{item.name}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </nav>
 
           {/* User Section */}
