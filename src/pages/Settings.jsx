@@ -124,48 +124,13 @@ export default function Settings() {
     mutationFn: async ({ rolId, permisosSeleccionados }) => {
       if (!rolId) throw new Error("Rol no seleccionado");
       
-      // Obtener lista actualizada de permisos del rol desde BD
-      const rolPermisosActuales = await base44.entities.RolPermiso.filter({ rol_id: rolId });
-      
-      // Eliminar todos los permisos existentes
-      for (const rp of rolPermisosActuales) {
-        await base44.entities.RolPermiso.delete(rp.id);
-      }
+      const response = await base44.functions.invoke('updateRolePermissions', {
+        rolId,
+        permisosSeleccionados,
+        rolNombre: selectedRol?.nombre || ""
+      });
 
-      // Crear los nuevos permisos seleccionados
-      const permisosACrear = Object.entries(permisosSeleccionados)
-        .filter(([, isSelected]) => isSelected)
-        .map(([key]) => {
-          const parts = key.split('_');
-          return {
-            accion: parts[parts.length - 1],
-            modulo: parts.slice(0, -1).join('_')
-          };
-        });
-
-      for (const { modulo, accion } of permisosACrear) {
-        let permisoId = null;
-        const permisoBD = permisos.find(p => p.modulo === modulo && p.accion === accion);
-        
-        if (permisoBD) {
-          permisoId = permisoBD.id;
-        } else {
-          const nuevoPermiso = await base44.entities.Permiso.create({
-            modulo,
-            accion,
-            descripcion: `${accion} en ${modulo}`
-          });
-          permisoId = nuevoPermiso.id;
-        }
-
-        await base44.entities.RolPermiso.create({
-          rol_id: rolId,
-          rol_nombre: selectedRol?.nombre || "",
-          permiso_id: permisoId,
-          modulo,
-          accion
-        });
-      }
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rolPermisos'] });
