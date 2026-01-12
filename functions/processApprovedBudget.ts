@@ -194,15 +194,28 @@ Deno.serve(async (req) => {
     let plantilla = null;
 
     // Obtener plantilla si fue asignada
+    console.log('=== DEBUG: Iniciando creación de proyecto ===');
+    console.log('Presupuesto.plantilla_proyecto_id:', presupuesto.plantilla_proyecto_id);
+    
     if (presupuesto.plantilla_proyecto_id) {
+      console.log('Buscando plantilla con ID:', presupuesto.plantilla_proyecto_id);
       const plantillas = await base44.asServiceRole.entities.ProjectTemplate.filter({ 
         id: presupuesto.plantilla_proyecto_id 
       });
       plantilla = plantillas[0];
+      console.log('Plantilla encontrada:', plantilla ? `SI (${plantilla.name})` : 'NO');
       
-      if (plantilla && plantilla.type && plantilla.type.length > 0) {
-        tipoProyecto = plantilla.type[0];
+      if (plantilla) {
+        console.log('Fases en plantilla:', plantilla.phases?.length || 0);
+        console.log('Tareas en plantilla:', plantilla.tasks?.length || 0);
+        
+        if (plantilla.type && plantilla.type.length > 0) {
+          tipoProyecto = plantilla.type[0];
+          console.log('Tipo de proyecto de plantilla:', tipoProyecto);
+        }
       }
+    } else {
+      console.log('⚠️ El presupuesto NO tiene plantilla_proyecto_id asignado');
     }
 
     const now = new Date();
@@ -229,14 +242,18 @@ Deno.serve(async (req) => {
     };
 
     const proyecto = await base44.asServiceRole.entities.Project.create(proyectoData);
+    console.log('✅ Proyecto creado con ID:', proyecto.id);
 
     // 6) Aplicar plantilla: crear fases y tareas
     if (plantilla) {
+      console.log('=== Aplicando plantilla al proyecto ===');
       const phaseMap = {};
 
       // Crear fases de la plantilla
       if (plantilla.phases && plantilla.phases.length > 0) {
+        console.log(`Creando ${plantilla.phases.length} fases...`);
         for (const phaseTemplate of plantilla.phases) {
+          console.log(`  - Creando fase: ${phaseTemplate.name} (orden: ${phaseTemplate.order})`);
           const newPhase = await base44.asServiceRole.entities.ProjectPhase.create({
             project_id: proyecto.id,
             name: phaseTemplate.name,
@@ -246,15 +263,20 @@ Deno.serve(async (req) => {
             duration_days: phaseTemplate.duration_days || 0,
             duration_hours: phaseTemplate.duration_hours || 0
           });
-
+          console.log(`    ✅ Fase creada con ID: ${newPhase.id}`);
           phaseMap[phaseTemplate.name] = newPhase.id;
         }
+        console.log('Mapeo de fases:', phaseMap);
+      } else {
+        console.log('⚠️ La plantilla no tiene fases definidas');
       }
 
       // Crear tareas de la plantilla
       if (plantilla.tasks && plantilla.tasks.length > 0) {
+        console.log(`Creando ${plantilla.tasks.length} tareas...`);
         for (const taskTemplate of plantilla.tasks) {
           const phaseId = taskTemplate.phase_name ? phaseMap[taskTemplate.phase_name] : null;
+          console.log(`  - Creando tarea: ${taskTemplate.name} (fase: ${taskTemplate.phase_name || 'SIN FASE'}, phaseId: ${phaseId || 'null'})`);
 
           await base44.asServiceRole.entities.ProjectTask.create({
             project_id: proyecto.id,
@@ -266,8 +288,14 @@ Deno.serve(async (req) => {
             duration_days: taskTemplate.duration_days || 0,
             duration_hours: taskTemplate.duration_hours || 0
           });
+          console.log(`    ✅ Tarea creada`);
         }
+      } else {
+        console.log('⚠️ La plantilla no tiene tareas definidas');
       }
+      console.log('=== Plantilla aplicada completamente ===');
+    } else {
+      console.log('⚠️ NO se aplicó plantilla porque no hay plantilla asignada');
     }
 
     // 7) Actualizar venta con proyecto_id
