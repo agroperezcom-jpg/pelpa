@@ -433,6 +433,20 @@ export default function Calendar() {
     window.location.href = `/Projects?id=${projectId}`;
   };
 
+  const handleDeleteEvent = async (event) => {
+    if (event.type !== "freeTask") return;
+    
+    try {
+      await base44.entities.FreeTask.delete(event.id);
+      queryClient.invalidateQueries({ queryKey: ['freeTasks'] });
+      setDetailDialogOpen(false);
+      setSelectedEvent(null);
+      toast.success('Tarea eliminada');
+    } catch (error) {
+      toast.error('Error al eliminar: ' + error.message);
+    }
+  };
+
   const handleDateClick = (date) => {
     if (!canCreateEvents) return;
     setClickedDate(date);
@@ -1099,6 +1113,7 @@ export default function Calendar() {
         }}
         event={selectedEvent}
         onEdit={handleEditEvent}
+        onDelete={handleDeleteEvent}
         onNavigate={handleNavigateToProject}
         getEventColor={getEventColor}
       />

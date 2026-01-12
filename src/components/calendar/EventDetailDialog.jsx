@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
   Calendar, Clock, User, Tag, FileText, Briefcase, 
-  CheckCircle2, AlertCircle, X, ExternalLink, MapPin
+  CheckCircle2, AlertCircle, X, ExternalLink, MapPin, Trash2
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -14,6 +14,7 @@ export default function EventDetailDialog({
   onClose, 
   event,
   onEdit,
+  onDelete,
   onNavigate,
   getEventColor 
 }) {
@@ -297,15 +298,33 @@ export default function EventDetailDialog({
           )}
         </div>
 
-        <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
-            Cerrar
-          </Button>
-          {onEdit && (
-            <Button onClick={() => onEdit(event)}>
-              Editar
+        <div className="flex justify-between mt-6 pt-4 border-t">
+          <div>
+            {event.type === "freeTask" && onDelete && (
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                  if (confirm('¿Eliminar esta tarea?')) {
+                    onDelete(event);
+                  }
+                }}
+                className="gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Eliminar
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Cerrar
             </Button>
-          )}
+            {onEdit && (
+              <Button onClick={() => onEdit(event)}>
+                Editar
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
