@@ -408,7 +408,7 @@ export default function Presupuestos() {
         });
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['presupuestos'] });
       queryClient.invalidateQueries({ queryKey: ['sales'] });
       queryClient.invalidateQueries({ queryKey: ['projects'] });
@@ -419,6 +419,13 @@ export default function Presupuestos() {
       setIsCobroDialogOpen(false);
       setSelectedPresupuesto(null);
       setIsDetailDialogOpen(false);
+
+      // Redirigir al proyecto creado
+      if (data?.proyecto?.id) {
+        setTimeout(() => {
+          navigate(createPageUrl('Projects') + `?proyecto=${data.proyecto.id}`);
+        }, 500);
+      }
     },
     onError: (error) => {
       alert(error.message);
