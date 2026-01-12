@@ -348,6 +348,7 @@ export default function Calendar() {
           const matchesUser = selectedUser === "all" || task.assigned_to === selectedUser;
 
           if (matchesUser) {
+            // Agregar instancia inicial
             events.push({
               id: task.id,
               name: task.name,
@@ -361,8 +362,63 @@ export default function Calendar() {
               priority: task.priority,
               duration: task.duration,
               tags: task.tags,
-              data: task
+              data: task,
+              is_recurrence_instance: false
             });
+
+            // Si tiene recurrencia, generar instancias futuras
+            if (task.recurrence && task.recurrence !== "none") {
+              const baseDate = new Date(task.date);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              
+              // Generar instancias hasta 3 meses en el futuro
+              const maxDate = new Date();
+              maxDate.setMonth(maxDate.getMonth() + 3);
+
+              let currentDate = new Date(baseDate);
+              currentDate.setHours(0, 0, 0, 0);
+
+              while (currentDate <= maxDate) {
+                if (currentDate > baseDate) {
+                  let shouldInclude = false;
+
+                  if (task.recurrence === "daily") {
+                    shouldInclude = true;
+                  } else if (task.recurrence === "weekly" && task.recurrence_days?.length > 0) {
+                    const dayOfWeek = currentDate.getDay();
+                    shouldInclude = task.recurrence_days.includes(dayOfWeek);
+                  } else if (task.recurrence === "monthly") {
+                    const baseDayOfMonth = baseDate.getDate();
+                    shouldInclude = currentDate.getDate() === baseDayOfMonth;
+                  }
+
+                  if (shouldInclude) {
+                    const dateStr = currentDate.toISOString().split('T')[0];
+                    events.push({
+                      id: `${task.id}-${dateStr}`,
+                      name: task.name,
+                      type: "freeTask",
+                      date: dateStr,
+                      start_date: dateStr,
+                      start_time: task.start_time,
+                      estimated_end_date: dateStr,
+                      end_time: task.end_time,
+                      status: task.status,
+                      priority: task.priority,
+                      duration: task.duration,
+                      tags: task.tags,
+                      data: task,
+                      is_recurrence_instance: true,
+                      parent_task_id: task.id
+                    });
+                  }
+                }
+
+                // Avanzar al siguiente día para revisar
+                currentDate.setDate(currentDate.getDate() + 1);
+              }
+            }
           }
         }
       });
