@@ -275,6 +275,21 @@ export default function EventDetailDialog({
             </div>
           )}
 
+          {/* Recurrencia */}
+          {event.type === "freeTask" && event.data?.recurrence && event.data.recurrence !== "none" && (
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span className="font-medium">Recurrencia</span>
+              </div>
+              <p className="text-sm pl-6 capitalize">
+                {event.data.recurrence === "daily" && "Diaria"}
+                {event.data.recurrence === "weekly" && "Semanal"}
+                {event.data.recurrence === "monthly" && "Mensual"}
+              </p>
+            </div>
+          )}
+
           {/* Etiquetas */}
           {event.tags && event.tags.length > 0 && (
             <div className="space-y-1">
@@ -288,6 +303,26 @@ export default function EventDetailDialog({
                     {tag}
                   </Badge>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Completada por */}
+          {event.type === "freeTask" && event.data?.completed_at && (
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4" />
+                <span className="font-medium">Completada</span>
+              </div>
+              <div className="pl-6 space-y-1">
+                <p className="text-sm">
+                  {format(new Date(event.data.completed_at), "d 'de' MMMM yyyy 'a las' HH:mm", { locale: es })}
+                </p>
+                {event.data.completed_by && (
+                  <p className="text-xs text-muted-foreground">
+                    Por: {event.data.completed_by}
+                  </p>
+                )}
               </div>
             </div>
           )}
