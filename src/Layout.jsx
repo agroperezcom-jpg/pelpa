@@ -405,27 +405,26 @@ export default function Layout({ children, currentPageName }) {
                   </div>
                   <div className="space-y-0.5 pl-1">
                     {module.items.map((item, itemIndex) => {
-                      const isActive = currentPageName === item.page;
-                      const Icon = item.icon;
-                      const isMainItem = itemIndex === 0 && Icon && moduleIcons[module.id] === Icon;
+                       const isActive = currentPageName === item.page;
+                       const Icon = item.icon;
 
-                      return (
-                        <Link
-                          key={item.page}
-                          to={createPageUrl(item.page)}
-                          className={cn(
-                            "flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-all duration-150",
-                            isActive 
-                              ? "bg-primary/8 text-foreground font-medium border-l-2 border-primary pl-2.5" 
-                              : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
-                          )}
-                        >
-                          {Icon && !isMainItem && <Icon className="h-4 w-4 flex-shrink-0" />}
-                          {(!Icon || isMainItem) && <span className="w-4 flex-shrink-0" />}
-                          <span className="truncate">{item.name}</span>
-                        </Link>
-                      );
-                    })}
+                       return (
+                         <Link
+                           key={item.page}
+                           to={createPageUrl(item.page)}
+                           className={cn(
+                             "flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-all duration-150",
+                             isActive 
+                               ? "bg-primary/8 text-foreground font-medium border-l-2 border-primary pl-2.5" 
+                               : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
+                           )}
+                         >
+                           {Icon && <Icon className="h-4 w-4 flex-shrink-0" />}
+                           {!Icon && <span className="w-4 flex-shrink-0" />}
+                           <span className="truncate">{item.name}</span>
+                         </Link>
+                       );
+                     })}
                   </div>
                 </div>
               );
