@@ -139,6 +139,7 @@ export default function Settings() {
       setPermisosDialogOpen(false);
       setSelectedRol(null);
       setSelectedPermisos({});
+      setPermisosOriginales({});
       alert(`✓ ${data.message}`);
     },
     onError: (error) => {
