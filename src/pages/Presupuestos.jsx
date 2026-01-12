@@ -1065,6 +1065,32 @@ export default function Presupuestos() {
                     />
                   </div>
                 </div>
+
+                <div className="space-y-1">
+                  <Label>Plantilla de Proyecto (opcional)</Label>
+                  <Select 
+                    value={currentPresupuesto.plantilla_proyecto_id} 
+                    onValueChange={(v) => setCurrentPresupuesto({ 
+                      ...currentPresupuesto, 
+                      plantilla_proyecto_id: v === "none" ? "" : v
+                    })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sin plantilla" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sin plantilla</SelectItem>
+                      {projectTemplates.filter(t => t.is_active !== false).map(template => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-slate-500">
+                    La plantilla se aplicará al proyecto cuando se acepte el presupuesto
+                  </p>
+                </div>
               </div>
 
               <div className="h-48 overflow-y-auto border rounded-lg">
