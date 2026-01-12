@@ -52,7 +52,7 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
   const handleAddPhase = () => {
     setFormData({
       ...formData,
-      phases: [...formData.phases, { name: "", description: "", order: formData.phases.length + 1, duration_days: "" }]
+      phases: [...formData.phases, { name: "", description: "", order: formData.phases.length + 1, duration_value: "", duration_unit: "dias" }]
     });
   };
 
@@ -74,7 +74,7 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
   const handleAddTask = () => {
     setFormData({
       ...formData,
-      tasks: [...formData.tasks, { name: "", description: "", phase_name: "", duration_days: "", priority: "media" }]
+      tasks: [...formData.tasks, { name: "", description: "", phase_name: "", duration_value: "", duration_unit: "horas", priority: "media" }]
     });
   };
 
@@ -203,7 +203,7 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
                         <GripVertical className="h-5 w-5 text-slate-400 mt-2" />
                         <div className="flex-1 space-y-3">
                           <div className="grid grid-cols-12 gap-2">
-                            <div className="col-span-7">
+                            <div className="col-span-6">
                               <Label className="text-xs text-slate-600 mb-1 block">Nombre de la Fase</Label>
                               <Input
                                 value={phase.name}
@@ -212,23 +212,38 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
                                 className="bg-white"
                               />
                             </div>
-                            <div className="col-span-3">
-                              <Label className="text-xs text-slate-600 mb-1 block">Duración (días)</Label>
+                            <div className="col-span-2">
+                              <Label className="text-xs text-slate-600 mb-1 block">Duración</Label>
                               <Input
                                 type="number"
-                                value={phase.duration_days}
-                                onChange={(e) => handleUpdatePhase(index, 'duration_days', e.target.value === "" ? "" : parseInt(e.target.value) || "")}
+                                value={phase.duration_value}
+                                onChange={(e) => handleUpdatePhase(index, 'duration_value', e.target.value === "" ? "" : parseInt(e.target.value) || "")}
                                 placeholder="0"
                                 className="bg-white"
                               />
                             </div>
-                            <div className="col-span-1">
+                            <div className="col-span-2">
+                              <Label className="text-xs text-slate-600 mb-1 block">Unidad</Label>
+                              <Select
+                                value={phase.duration_unit || "dias"}
+                                onValueChange={(v) => handleUpdatePhase(index, 'duration_unit', v)}
+                              >
+                                <SelectTrigger className="bg-white">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="horas">Horas</SelectItem>
+                                  <SelectItem value="dias">Días</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="col-span-2 flex items-end">
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => handleRemovePhase(index)}
-                                className="text-red-600"
+                                className="text-red-600 w-full"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -276,7 +291,7 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
                         <GripVertical className="h-5 w-5 text-slate-400 mt-2" />
                         <div className="flex-1 space-y-3">
                           <div className="grid grid-cols-12 gap-2">
-                            <div className="col-span-5">
+                            <div className="col-span-4">
                               <Label className="text-xs text-slate-600 mb-1 block">Nombre de la Tarea</Label>
                               <Input
                                 value={task.name}
@@ -302,15 +317,30 @@ export default function ProjectTemplateDialog({ isOpen, onClose, template, onSav
                                 </SelectContent>
                               </Select>
                             </div>
-                            <div className="col-span-2">
-                              <Label className="text-xs text-slate-600 mb-1 block">Días</Label>
+                            <div className="col-span-1">
+                              <Label className="text-xs text-slate-600 mb-1 block">Dur.</Label>
                               <Input
                                 type="number"
-                                value={task.duration_days}
-                                onChange={(e) => handleUpdateTask(index, 'duration_days', e.target.value === "" ? "" : parseInt(e.target.value) || "")}
+                                value={task.duration_value}
+                                onChange={(e) => handleUpdateTask(index, 'duration_value', e.target.value === "" ? "" : parseInt(e.target.value) || "")}
                                 placeholder="0"
                                 className="bg-white"
                               />
+                            </div>
+                            <div className="col-span-2">
+                              <Label className="text-xs text-slate-600 mb-1 block">Unidad</Label>
+                              <Select
+                                value={task.duration_unit || "horas"}
+                                onValueChange={(v) => handleUpdateTask(index, 'duration_unit', v)}
+                              >
+                                <SelectTrigger className="bg-white">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="horas">Horas</SelectItem>
+                                  <SelectItem value="dias">Días</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
                             <div className="col-span-2 flex items-end">
                               <Button
