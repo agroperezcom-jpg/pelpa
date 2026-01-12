@@ -404,9 +404,10 @@ export default function Layout({ children, currentPageName }) {
                     </p>
                   </div>
                   <div className="space-y-0.5 pl-1">
-                    {module.items.map((item) => {
+                    {module.items.map((item, itemIndex) => {
                       const isActive = currentPageName === item.page;
                       const Icon = item.icon;
+                      const isMainItem = itemIndex === 0 && Icon && moduleIcons[module.id] === Icon;
 
                       return (
                         <Link
@@ -419,8 +420,8 @@ export default function Layout({ children, currentPageName }) {
                               : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
                           )}
                         >
-                          {Icon && <Icon className="h-4 w-4 flex-shrink-0" />}
-                          {!Icon && <span className="w-4 flex-shrink-0" />}
+                          {Icon && !isMainItem && <Icon className="h-4 w-4 flex-shrink-0" />}
+                          {(!Icon || isMainItem) && <span className="w-4 flex-shrink-0" />}
                           <span className="truncate">{item.name}</span>
                         </Link>
                       );
