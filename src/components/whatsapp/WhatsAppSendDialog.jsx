@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { MessageCircle, Phone, User, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "react-hot-toast";
+import { jsPDF } from "jspdf";
 
 export default function WhatsAppSendDialog({
   isOpen,
@@ -60,6 +61,111 @@ export default function WhatsAppSendDialog({
     return cleanPhone;
   };
 
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    let yPosition = 20;
+
+    // Encabezado
+    doc.setFontSize(20);
+    doc.text(ticketType === 'budget' ? 'PRESUPUESTO' : 'TICKET DE VENTA', 20, yPosition);
+    yPosition += 15;
+
+    // Información general
+    doc.setFontSize(10);
+    doc.text(`Número: ${ticketData.numero || ticketData.numero_presupuesto || ticketData.id}`, 20, yPosition);
+    yPosition += 7;
+    doc.text(`Fecha: ${new Date().toLocaleDateString('es-AR')}`, 20, yPosition);
+    yPosition += 7;
+
+    // Cliente
+    if (clientName) {
+      doc.text(`Cliente: ${clientName}`, 20, yPosition);
+      yPosition += 7;
+    }
+
+    yPosition += 5;
+
+    // Tabla de items
+    doc.setFontSize(9);
+    
+    // Headers de tabla
+    doc.text('Descripción', 20, yPosition);
+    doc.text('Cantidad', 100, yPosition);
+    doc.text('Unitario', 130, yPosition);
+    doc.text('Total', 160, yPosition);
+    
+    yPosition += 7;
+    doc.setDrawColor(200);
+    doc.line(20, yPosition - 1, pageWidth - 20, yPosition - 1);
+    yPosition += 3;
+
+    // Items
+    if (ticketData.items && Array.isArray(ticketData.items)) {
+      ticketData.items.forEach((item) => {
+        const description = item.name || item.descripcion || '';
+        const quantity = item.quantity || item.cantidad || 0;
+        const price = item.price_venta || item.precio_unitario || 0;
+        const total = (quantity * price).toFixed(2);
+
+        doc.text(description.substring(0, 50), 20, yPosition);
+        doc.text(quantity.toString(), 100, yPosition);
+        doc.text(`$${price.toFixed(2)}`, 130, yPosition);
+        doc.text(`$${total}`, 160, yPosition);
+
+        yPosition += 7;
+
+        if (yPosition > pageHeight - 30) {
+          doc.addPage();
+          yPosition = 20;
+        }
+      });
+    }
+
+    yPosition += 3;
+    doc.setDrawColor(200);
+    doc.line(20, yPosition, pageWidth - 20, yPosition);
+    yPosition += 7;
+
+    // Totales
+    doc.setFontSize(10);
+    if (ticketData.subtotal !== undefined) {
+      doc.text('Subtotal:', 130, yPosition);
+      doc.text(`$${ticketData.subtotal.toFixed(2)}`, 160, yPosition);
+      yPosition += 7;
+    }
+
+    if (ticketData.discount && ticketData.discount > 0) {
+      doc.text('Descuento:', 130, yPosition);
+      doc.text(`-$${ticketData.discount.toFixed(2)}`, 160, yPosition);
+      yPosition += 7;
+    }
+
+    if (ticketData.iva_21 && ticketData.iva_21 > 0) {
+      doc.text('IVA (21%):', 130, yPosition);
+      doc.text(`$${ticketData.iva_21.toFixed(2)}`, 160, yPosition);
+      yPosition += 7;
+    }
+
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text('TOTAL:', 130, yPosition);
+    doc.text(`$${(ticketData.total || 0).toFixed(2)}`, 160, yPosition);
+
+    if (ticketData.notes) {
+      yPosition += 15;
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      doc.text('Notas:', 20, yPosition);
+      yPosition += 5;
+      const noteLines = doc.splitTextToSize(ticketData.notes, 170);
+      doc.text(noteLines, 20, yPosition);
+    }
+
+    return doc;
+  };
+
   const handleGenerateAndSend = async () => {
     if (!phoneNumber.trim()) {
       toast.error("Ingresa el número de WhatsApp");
@@ -74,18 +180,16 @@ export default function WhatsAppSendDialog({
     setIsGenerating(true);
 
     try {
-      // Generar PDF
-      const response = await base44.functions.invoke("generateTicketPDF", {
-        ticketType,
-        ticketId: ticketData.id,
-        ticketData
+      // Generar PDF en el frontend
+      const doc = generatePDF();
+      const pdfBlob = doc.output('blob');
+
+      // Subir el PDF
+      const uploadResponse = await base44.integrations.Core.UploadFile({
+        file: pdfBlob
       });
 
-      if (!response.data.success) {
-        throw new Error("Error al generar PDF");
-      }
-
-      const fileUrl = response.data.file_url;
+      const fileUrl = uploadResponse.file_url;
       setGeneratedUrl(fileUrl);
 
       // Formatear número
@@ -114,22 +218,9 @@ export default function WhatsAppSendDialog({
   };
 
   const handleDownload = async () => {
-    if (!generatedUrl) {
-      toast.error("Genera el documento primero");
-      return;
-    }
-
     try {
-      const response = await fetch(generatedUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${ticketType}-${ticketData.id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      const doc = generatePDF();
+      doc.save(`${ticketType}-${ticketData.id}.pdf`);
       toast.success("Documento descargado");
     } catch (error) {
       toast.error("Error al descargar: " + error.message);
