@@ -12,72 +12,86 @@ Deno.serve(async (req) => {
     const { rolId, permisosSeleccionados, rolNombre } = await req.json();
 
     if (!rolId || !permisosSeleccionados) {
-      return Response.json({ error: 'Missing required fields' }, { status: 400 });
+      return Response.json({ error: 'Falta información requerida' }, { status: 400 });
     }
 
-    // 1. Obtener todos los permisos existentes del rol
+    // Obtener permisos existentes del rol
     const rolPermisosExistentes = await base44.asServiceRole.entities.RolPermiso.filter({
       rol_id: rolId
     });
 
-    // 2. Eliminar todos los permisos existentes
-    for (const rp of rolPermisosExistentes) {
-      try {
-        await base44.asServiceRole.entities.RolPermiso.delete(rp.id);
-      } catch (e) {
-        console.log(`Warning: Could not delete RolPermiso ${rp.id}:`, e.message);
-      }
-    }
-
-    // 3. Obtener todos los permisos disponibles
-    const todosPermisos = await base44.asServiceRole.entities.Permiso.list();
-
-    // 4. Crear los nuevos permisos seleccionados
-    const permisosACrear = Object.entries(permisosSeleccionados)
+    // Crear mapa de permisos nuevos
+    const permisosNuevos = Object.entries(permisosSeleccionados)
       .filter(([, isSelected]) => isSelected === true)
       .map(([key]) => {
         const parts = key.split('_');
         const accion = parts[parts.length - 1];
         const modulo = parts.slice(0, -1).join('_');
-        return { modulo, accion };
+        return `${modulo}_${accion}`;
       });
+
+    const permisosExistentes = new Map();
+    rolPermisosExistentes.forEach(rp => {
+      permisosExistentes.set(`${rp.modulo}_${rp.accion}`, rp.id);
+    });
+
+    // Eliminar permisos que fueron desmarcados
+    const permisosAEliminar = [];
+    permisosExistentes.forEach((rpId, key) => {
+      if (!permisosNuevos.includes(key)) {
+        permisosAEliminar.push(rpId);
+      }
+    });
+
+    for (const rpId of permisosAEliminar) {
+      try {
+        await base44.asServiceRole.entities.RolPermiso.delete(rpId);
+      } catch (e) {
+        console.log(`Warning: No se pudo eliminar RolPermiso ${rpId}`);
+      }
+    }
+
+    // Obtener todos los permisos disponibles
+    const todosPermisos = await base44.asServiceRole.entities.Permiso.list();
 
     let permisosCreados = 0;
 
-    for (const { modulo, accion } of permisosACrear) {
-      let permisoId = null;
+    // Crear solo los permisos nuevos que no existen
+    for (const key of permisosNuevos) {
+      if (!permisosExistentes.has(key)) {
+        const [modulo, accion] = [key.substring(0, key.lastIndexOf('_')), key.substring(key.lastIndexOf('_') + 1)];
+        
+        let permisoId = null;
+        const permisoBD = todosPermisos.find(p => p.modulo === modulo && p.accion === accion);
+        
+        if (permisoBD) {
+          permisoId = permisoBD.id;
+        } else {
+          const nuevoPermiso = await base44.asServiceRole.entities.Permiso.create({
+            modulo,
+            accion,
+            descripcion: `${accion} en ${modulo}`
+          });
+          permisoId = nuevoPermiso.id;
+        }
 
-      // Buscar permiso existente
-      const permisoBD = todosPermisos.find(p => p.modulo === modulo && p.accion === accion);
-      
-      if (permisoBD) {
-        permisoId = permisoBD.id;
-      } else {
-        // Crear nuevo permiso si no existe
-        const nuevoPermiso = await base44.asServiceRole.entities.Permiso.create({
+        await base44.asServiceRole.entities.RolPermiso.create({
+          rol_id: rolId,
+          rol_nombre: rolNombre || "",
+          permiso_id: permisoId,
           modulo,
-          accion,
-          descripcion: `${accion} en ${modulo}`
+          accion
         });
-        permisoId = nuevoPermiso.id;
+
+        permisosCreados++;
       }
-
-      // Crear relación rol-permiso
-      await base44.asServiceRole.entities.RolPermiso.create({
-        rol_id: rolId,
-        rol_nombre: rolNombre || "",
-        permiso_id: permisoId,
-        modulo,
-        accion
-      });
-
-      permisosCreados++;
     }
 
     return Response.json({ 
       success: true, 
-      message: `Permisos guardados correctamente (${permisosCreados} permisos)`,
-      permisosCreados
+      message: 'Permisos guardados correctamente',
+      permisosCreados,
+      permisosEliminados: permisosAEliminar.length
     });
   } catch (error) {
     console.error('Error al guardar permisos:', error);
