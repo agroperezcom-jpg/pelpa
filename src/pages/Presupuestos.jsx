@@ -77,6 +77,7 @@ export default function Presupuestos() {
   const [isCancelacionDialogOpen, setIsCancelacionDialogOpen] = useState(false);
 
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
