@@ -124,11 +124,17 @@ export default function Settings() {
     mutationFn: async ({ rolId, permisosSeleccionados }) => {
       if (!rolId) throw new Error("Rol no seleccionado");
       
+      console.log("Iniciando guardado de permisos para rolId:", rolId);
+      console.log("Permisos seleccionados:", permisosSeleccionados);
+      
       const rolPermisosExistentes = rolPermisos.filter(rp => rp.rol_id === rolId);
+      console.log("Eliminando permisos existentes:", rolPermisosExistentes.length);
+      
       for (const rp of rolPermisosExistentes) {
         await base44.entities.RolPermiso.delete(rp.id);
       }
 
+      let permisosCreados = 0;
       for (const [key, isSelected] of Object.entries(permisosSeleccionados)) {
         if (!isSelected) continue;
 
@@ -159,15 +165,22 @@ export default function Settings() {
           modulo,
           accion
         });
+        permisosCreados++;
       }
+      console.log("Permisos creados:", permisosCreados);
     },
     onSuccess: () => {
+      console.log("Guardado exitoso, invalidando queries");
       queryClient.invalidateQueries({ queryKey: ['rolPermisos'] });
       queryClient.invalidateQueries({ queryKey: ['permisos'] });
       setPermisosDialogOpen(false);
       setSelectedRol(null);
       setSelectedPermisos({});
       alert('✓ Permisos guardados correctamente');
+    },
+    onError: (error) => {
+      console.error("Error al guardar permisos:", error);
+      alert('Error al guardar permisos: ' + error.message);
     }
   });
 
