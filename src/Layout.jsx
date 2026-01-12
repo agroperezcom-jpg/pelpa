@@ -24,9 +24,15 @@ import {
         X,
         FileText,
         Bell,
-        Zap,
+        Users,
+        Wrench,
+        FileCheck,
+        Building2,
+        CreditCard,
+        Percent,
         TrendingUp,
-        Clock
+        DollarSign,
+        Check
       } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,9 +149,9 @@ export default function Layout({ children, currentPageName }) {
         items: [
           { name: "Ventas", page: "Sales", icon: ShoppingCart, permiso: "ventas" },
           { name: "Presupuestos", page: "Presupuestos", icon: FileText, permiso: "presupuestos" },
-          { name: "Clientes", page: "Clients", icon: null, permiso: "clientes" },
-          { name: "Servicios", page: "Services", icon: null, permiso: "ventas" },
-          { name: "Talonarios", page: "Talonarios", icon: null, permiso: "talonarios" },
+          { name: "Clientes", page: "Clients", icon: Users, permiso: "clientes" },
+          { name: "Servicios", page: "Services", icon: Wrench, permiso: "ventas" },
+          { name: "Talonarios", page: "Talonarios", icon: FileCheck, permiso: "talonarios" },
         ]
       },
       {
@@ -154,8 +160,8 @@ export default function Layout({ children, currentPageName }) {
         permiso: "compras",
         items: [
           { name: "Compras", page: "Purchases", icon: ShoppingBag, permiso: "compras" },
-          { name: "Proveedores", page: "Proveedores", icon: null, permiso: "proveedores" },
-          { name: "Pagos Proveedores", page: "PagosProveedores", icon: null, permiso: "compras" },
+          { name: "Proveedores", page: "Proveedores", icon: Building2, permiso: "proveedores" },
+          { name: "Pagos Proveedores", page: "PagosProveedores", icon: CreditCard, permiso: "compras" },
         ]
       },
       {
@@ -164,8 +170,8 @@ export default function Layout({ children, currentPageName }) {
         permiso: "inventario",
         items: [
           { name: "Productos", page: "Products", icon: Package, permiso: "productos" },
-          { name: "Inventario", page: "Inventory", icon: null, permiso: "inventario" },
-          { name: "Control de Stock", page: "HistorialControlesStock", icon: null, permiso: "control_stock" },
+          { name: "Inventario", page: "Inventory", icon: Check, permiso: "inventario" },
+          { name: "Control de Stock", page: "HistorialControlesStock", icon: BarChart3, permiso: "control_stock" },
         ]
       },
       {
@@ -174,8 +180,8 @@ export default function Layout({ children, currentPageName }) {
         permiso: "tesoreria",
         items: [
           { name: "Tesorería", page: "TesoreriaV2", icon: Landmark, permiso: "tesoreria" },
-          { name: "Cheques", page: "Cheques", icon: null, permiso: "cheques" },
-          { name: "Gastos", page: "Expenses", icon: null, permiso: "gastos" },
+          { name: "Cheques", page: "Cheques", icon: CreditCard, permiso: "cheques" },
+          { name: "Gastos", page: "Expenses", icon: DollarSign, permiso: "gastos" },
         ]
       },
       {
@@ -184,11 +190,11 @@ export default function Layout({ children, currentPageName }) {
         permiso: "analytics",
         items: [
           { name: "Dashboard Ejecutivo", page: "DashboardEjecutivo", icon: BarChart3, permiso: "analytics" },
-          { name: "Analytics", page: "Analytics", icon: null, permiso: "analytics" },
-          { name: "Tablero Fiscal", page: "TableroFiscal", icon: null, permiso: "tablero_fiscal" },
-          { name: "IVA Mensual", page: "IVAMensual", icon: null, permiso: "iva_mensual" },
-          { name: "Ingresos Brutos", page: "IngresosBrutos", icon: null, permiso: "ingresos_brutos" },
-          { name: "Finanzas", page: "Finance", icon: null, permiso: "analytics" },
+          { name: "Analytics", page: "Analytics", icon: TrendingUp, permiso: "analytics" },
+          { name: "Tablero Fiscal", page: "TableroFiscal", icon: FileText, permiso: "tablero_fiscal" },
+          { name: "IVA Mensual", page: "IVAMensual", icon: Percent, permiso: "iva_mensual" },
+          { name: "Ingresos Brutos", page: "IngresosBrutos", icon: Percent, permiso: "ingresos_brutos" },
+          { name: "Finanzas", page: "Finance", icon: DollarSign, permiso: "analytics" },
         ]
       },
       {
