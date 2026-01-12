@@ -15,8 +15,18 @@ import {
 } from "@/components/ui/select";
 import {
   ArrowLeft, Calendar, Users, DollarSign, Activity, MessageSquare,
-  FileText, CheckSquare, Flag, Clock, Edit, Trash2
+  FileText, CheckSquare, Flag, Clock, Edit, Trash2, AlertTriangle
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -26,10 +36,10 @@ import ProjectMilestonesTab from "./ProjectMilestonesTab";
 import ProjectDocumentsTab from "./ProjectDocumentsTab";
 import ProjectActivityTab from "./ProjectActivityTab";
 import ProjectBudgetingTab from "./ProjectBudgetingTab";
-import { AlertTriangle } from "lucide-react";
 
 export default function ProjectDetailView({ project, onBack, onEdit }) {
   const [activeView, setActiveView] = useState("budgeting");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: phases = [] } = useQuery({
@@ -69,6 +79,21 @@ export default function ProjectDetailView({ project, onBack, onEdit }) {
   const tasksTotal = tasks.length;
   const progressFromTasks = tasksTotal > 0 ? (tasksCompleted / tasksTotal) * 100 : 0;
 
+  const deleteProjectMutation = useMutation({
+    mutationFn: async () => {
+      const response = await base44.functions.invoke('deleteProject', { project_id: project.id });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      onBack();
+    }
+  });
+
+  const handleDeleteProject = () => {
+    deleteProjectMutation.mutate();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -85,7 +110,42 @@ export default function ProjectDetailView({ project, onBack, onEdit }) {
           <Edit className="h-4 w-4 mr-2" />
           Editar
         </Button>
+        <Button 
+          variant="destructive" 
+          onClick={() => setShowDeleteDialog(true)}
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          Eliminar
+        </Button>
       </div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar proyecto?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará permanentemente el proyecto "{project.name}" y todos sus datos relacionados:
+              <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                <li>Todas las fases</li>
+                <li>Todas las tareas</li>
+                <li>Todos los mensajes y actividades</li>
+                <li>Documentos y hitos</li>
+              </ul>
+              <p className="mt-2 font-medium">Las ventas y presupuestos asociados se desvincularan pero no se eliminarán.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteProject}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteProjectMutation.isPending}
+            >
+              {deleteProjectMutation.isPending ? 'Eliminando...' : 'Eliminar proyecto'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Alertas de Estado No Operativo */}
       {!['aprobado', 'en_ejecucion', 'finalizado'].includes(project.status) && (
