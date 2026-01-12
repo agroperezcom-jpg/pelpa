@@ -422,7 +422,7 @@ export default function Presupuestos() {
       // Redirigir al proyecto creado
       if (data?.proyecto?.id) {
         setTimeout(() => {
-          navigate(createPageUrl('Projects') + `?proyecto=${data.proyecto.id}`);
+          navigate(`/projects?proyecto=${data.proyecto.id}`);
         }, 500);
       }
     },
