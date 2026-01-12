@@ -350,7 +350,7 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed top-0 left-0 bottom-0 w-64 bg-card border-r border-border/40 z-50 transition-theme",
+        "fixed top-0 left-0 bottom-0 w-64 bg-gradient-to-b from-slate-50 to-slate-100/50 border-r border-slate-200/60 z-50 transition-theme",
         "transition-transform duration-300 ease-out",
         "lg:translate-x-0",
         sidebarOpen || sidebarPinned ? "translate-x-0" : "-translate-x-full"
