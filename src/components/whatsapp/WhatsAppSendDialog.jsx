@@ -184,12 +184,12 @@ export default function WhatsAppSendDialog({
       const doc = generatePDF();
       const pdfBase64 = doc.output('dataurlstring').split(',')[1];
 
-      // Subir el PDF
-      const uploadResponse = await base44.integrations.Core.UploadFile({
-        file: pdfBase64
+      // Subir el PDF usando función backend
+      const uploadResponse = await base44.functions.invoke('uploadPDF', {
+        base64PDF: pdfBase64
       });
 
-      const fileUrl = uploadResponse.file_url;
+      const fileUrl = uploadResponse.data.file_url;
       setGeneratedUrl(fileUrl);
 
       // Formatear número
