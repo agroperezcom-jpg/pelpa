@@ -10,7 +10,7 @@ import PagosDialog from "../components/pos/PagosDialog";
 import ReportesDialog from "../components/pos/ReportesDialog";
 import TicketPrint from "../components/pos/TicketPrint";
 import SaleDetailDialog from "../components/sales/SaleDetailDialog";
-import WhatsAppTicketDialog from "../components/whatsapp/WhatsAppTicketDialog";
+
 import {
   Dialog,
   DialogContent,
@@ -84,7 +84,7 @@ export default function Sales() {
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
   const [clientSearch, setClientSearch] = useState("");
   const [dialogKey, setDialogKey] = useState(0);
-  const [isWhatsAppDialogOpen, setIsWhatsAppDialogOpen] = useState(false);
+
   const [newClient, setNewClient] = useState({
     name: "",
     email: "",
@@ -1532,13 +1532,7 @@ export default function Sales() {
         pagos={selectedSalePagos}
       />
 
-      {/* WhatsApp Dialog */}
-      <WhatsAppTicketDialog
-        isOpen={isWhatsAppDialogOpen}
-        onClose={() => setIsWhatsAppDialogOpen(false)}
-        ticketType="sale"
-        ticketId={ventaConfirmada?.id}
-      />
+
     </div>
   );
 }
