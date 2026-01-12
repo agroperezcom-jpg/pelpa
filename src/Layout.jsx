@@ -407,21 +407,29 @@ export default function Layout({ children, currentPageName }) {
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto px-3 pb-4 scrollbar-thin">
             {modules.map((module, moduleIndex) => {
-              const ModuleIcon = moduleIcons[module.id];
+              const SectionIcon = sectionIcons[module.section];
 
               return (
                 <div key={module.id} className={cn(
-                  moduleIndex > 0 && "pt-1 border-t border-border/50"
+                  "mb-6 last:mb-0"
                 )}>
-                  <div className="flex items-center gap-2 px-3 py-3 mb-1">
-                    {ModuleIcon && (
-                      <ModuleIcon className="h-4 w-4 text-muted-foreground/60" />
-                    )}
-                    <p className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider">
+                  {/* Encabezado de Sección */}
+                  <div className="flex items-center gap-2 px-3 py-2.5 mb-3">
+                    <div className={cn(
+                      "flex items-center justify-center h-6 w-6 rounded-md",
+                      "bg-gradient-to-br from-slate-600 to-slate-700"
+                    )}>
+                      {SectionIcon && (
+                        <SectionIcon className="h-3.5 w-3.5 text-white" />
+                      )}
+                    </div>
+                    <p className="text-xs font-bold text-foreground uppercase tracking-widest">
                       {module.name}
                     </p>
                   </div>
-                  <div className="space-y-0.5 pl-1">
+
+                  {/* Items de la Sección */}
+                  <div className="space-y-1">
                     {module.items.map((item, itemIndex) => {
                        const isActive = currentPageName === item.page;
                        const Icon = item.icon;
@@ -431,10 +439,10 @@ export default function Layout({ children, currentPageName }) {
                            key={item.page}
                            to={createPageUrl(item.page)}
                            className={cn(
-                             "flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-all duration-150",
+                             "flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 mx-1",
                              isActive 
-                               ? "bg-primary/8 text-foreground font-medium border-l-2 border-primary pl-2.5" 
-                               : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
+                               ? "bg-primary/10 text-primary font-medium" 
+                               : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                            )}
                          >
                            {Icon && <Icon className="h-4 w-4 flex-shrink-0" />}
