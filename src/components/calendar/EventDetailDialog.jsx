@@ -80,6 +80,29 @@ export default function EventDetailDialog({
     }
   };
 
+  const calculateDuration = (startTime, endTime) => {
+    if (!startTime || !endTime) return null;
+    try {
+      const [startHours, startMinutes] = startTime.split(':').map(Number);
+      const [endHours, endMinutes] = endTime.split(':').map(Number);
+
+      const startTotalMinutes = startHours * 60 + startMinutes;
+      const endTotalMinutes = endHours * 60 + endMinutes;
+
+      let diffMinutes = endTotalMinutes - startTotalMinutes;
+      if (diffMinutes < 0) diffMinutes += 24 * 60; // Si cruza medianoche
+
+      const hours = Math.floor(diffMinutes / 60);
+      const minutes = diffMinutes % 60;
+
+      if (hours === 0) return `${minutes} min`;
+      if (minutes === 0) return `${hours}h`;
+      return `${hours}h ${minutes}min`;
+    } catch {
+      return null;
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
@@ -117,44 +140,80 @@ export default function EventDetailDialog({
             )}
           </div>
 
-          {/* Fechas */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                <span className="font-medium">Fecha de inicio</span>
-              </div>
-              <p className="text-sm pl-6">
-                {event.type === "freeTask" 
-                  ? formatDateTime(event.date, event.time)
-                  : formatDate(event.start_date || event.date)
-                }
-              </p>
-            </div>
+          {/* Fechas y Horarios */}
+          <div className="space-y-4">
+            {event.type === "freeTask" ? (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      <span className="font-medium">Hora de inicio</span>
+                    </div>
+                    <p className="text-sm pl-6">
+                      {formatDateTime(event.date, event.start_time)}
+                    </p>
+                  </div>
 
-            {(event.estimated_end_date || event.due_date || event.end_date) && (
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span className="font-medium">Fecha de fin</span>
+                  {event.end_time && (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        <span className="font-medium">Hora de fin</span>
+                      </div>
+                      <p className="text-sm pl-6">
+                        {event.end_time}
+                      </p>
+                    </div>
+                  )}
                 </div>
-                <p className="text-sm pl-6">
-                  {formatDate(event.estimated_end_date || event.due_date || event.end_date)}
-                </p>
-              </div>
+
+                {event.start_time && event.end_time && (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      <span className="font-medium">Duración</span>
+                    </div>
+                    <p className="text-sm pl-6">
+                      {calculateDuration(event.start_time, event.end_time)}
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                      <span className="font-medium">Fecha de inicio</span>
+                    </div>
+                    <p className="text-sm pl-6">
+                      {event.start_time 
+                        ? formatDateTime(event.start_date || event.date, event.start_time)
+                        : formatDate(event.start_date || event.date)
+                      }
+                    </p>
+                  </div>
+
+                  {(event.estimated_end_date || event.due_date || event.end_date) && (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        <span className="font-medium">Fecha de fin</span>
+                      </div>
+                      <p className="text-sm pl-6">
+                        {event.due_time
+                          ? formatDateTime(event.estimated_end_date || event.due_date || event.end_date, event.due_time)
+                          : formatDate(event.estimated_end_date || event.due_date || event.end_date)
+                        }
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </div>
-
-          {/* Duración (para freeTask) */}
-          {event.type === "freeTask" && event.duration && (
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span className="font-medium">Duración</span>
-              </div>
-              <p className="text-sm pl-6">{event.duration} minutos</p>
-            </div>
-          )}
 
           {/* Asignado a */}
           {(event.data?.assigned_to || event.data?.responsible_email || event.data?.responsible_name) && (
