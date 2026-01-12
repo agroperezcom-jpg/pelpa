@@ -17,6 +17,7 @@ import CalendarSettingsDialog from "@/components/calendar/CalendarSettingsDialog
 import CalendarAuditDialog from "@/components/calendar/CalendarAuditDialog";
 import CalendarSearchDialog from "@/components/calendar/CalendarSearchDialog";
 import CalendarExportDialog from "@/components/calendar/CalendarExportDialog";
+import EventDetailDialog from "@/components/calendar/EventDetailDialog";
 import { usePermissions } from "@/components/permissions/usePermissions";
 import { Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -47,6 +48,8 @@ export default function Calendar() {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [dragGhost, setDragGhost] = useState(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   const queryClient = useQueryClient();
   const { hasPermission, isAdmin, loading: permissionsLoading } = usePermissions();
@@ -393,20 +396,41 @@ export default function Calendar() {
   });
 
   const handleEventClick = (event) => {
+    // Abrir diálogo de detalles para todos los eventos
+    setSelectedEvent(event);
+    setDetailDialogOpen(true);
+  };
+
+  const handleEditEvent = (event) => {
     // Validar permisos antes de abrir edición
+    setDetailDialogOpen(false);
+    
     if (event.type === "freeTask") {
-      if (!canEditEvents) return;
+      if (!canEditEvents) {
+        toast.error("No tienes permisos para editar eventos");
+        return;
+      }
       setEditingTask(event.data);
       setFreeTaskDialogOpen(true);
     } else if (event.type === "project") {
-      if (!canEditProjects) return;
+      if (!canEditProjects) {
+        toast.error("No tienes permisos para editar proyectos");
+        return;
+      }
       window.location.href = `/Projects?id=${event.id}`;
     } else if (event.type === "task" || event.type === "phase") {
-      if (!canEditTasks) return;
+      if (!canEditTasks) {
+        toast.error("No tienes permisos para editar tareas");
+        return;
+      }
       window.location.href = `/Projects?id=${event.project_id}`;
     } else if (event.type === "campaign") {
       window.location.href = `/Marketing`;
     }
+  };
+
+  const handleNavigateToProject = (projectId) => {
+    window.location.href = `/Projects?id=${projectId}`;
   };
 
   const handleDateClick = (date) => {
@@ -1064,6 +1088,18 @@ export default function Calendar() {
         onClose={() => setExportDialogOpen(false)}
         events={events}
         currentDate={currentDate}
+        getEventColor={getEventColor}
+      />
+
+      <EventDetailDialog
+        isOpen={detailDialogOpen}
+        onClose={() => {
+          setDetailDialogOpen(false);
+          setSelectedEvent(null);
+        }}
+        event={selectedEvent}
+        onEdit={handleEditEvent}
+        onNavigate={handleNavigateToProject}
         getEventColor={getEventColor}
       />
 
