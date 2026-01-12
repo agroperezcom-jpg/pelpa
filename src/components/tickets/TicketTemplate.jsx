@@ -39,19 +39,19 @@ export default function TicketTemplate({ ticketData, ticketType = "sale" }) {
         padding: "5mm",
         backgroundColor: "#fff",
         color: "#000",
-        fontWeight: "600",
+        fontWeight: "700",
       }}
     >
       {/* Header */}
       <div style={{ textAlign: "center", marginBottom: "8px" }}>
-        <div style={{ fontWeight: "700", fontSize: "13px" }}>{comercio_nombre}</div>
+        <div style={{ fontWeight: "800", fontSize: "13px" }}>{comercio_nombre}</div>
         {comercio_domicilio && <div style={{ fontSize: "9px" }}>{comercio_domicilio}</div>}
         {comercio_telefono && <div style={{ fontSize: "9px" }}>{comercio_telefono}</div>}
         {comercio_email && <div style={{ fontSize: "9px" }}>{comercio_email}</div>}
       </div>
 
-      <div style={{ borderTop: "1px dashed #000", borderBottom: "1px dashed #000", padding: "4px 0", marginBottom: "8px", textAlign: "center" }}>
-        <div style={{ fontWeight: "700", fontSize: "12px" }}>{titleText}</div>
+      <div style={{ borderTop: "1px dashed #000", borderBottom: "1px dashed #000", padding: "6px 0", marginBottom: "8px", textAlign: "center" }}>
+        <div style={{ fontWeight: "800", fontSize: "12px" }}>{titleText}</div>
         {subtitleText && <div style={{ fontSize: "9px", fontStyle: "italic" }}>{subtitleText}</div>}
       </div>
 
@@ -72,16 +72,16 @@ export default function TicketTemplate({ ticketData, ticketType = "sale" }) {
       <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }} />
 
       {/* Items Header */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 0.8fr 1fr 1fr", gap: "2px", fontSize: "9px", fontWeight: "700", marginBottom: "4px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 0.8fr 1fr 1fr", gap: "2px", fontSize: "9px", fontWeight: "800", marginBottom: "4px", paddingBottom: "4px", borderBottom: "1px dashed #000" }}>
         <div>ARTÍCULO</div>
         <div style={{ textAlign: "center" }}>CANT</div>
         <div style={{ textAlign: "right" }}>P.UNIT</div>
         <div style={{ textAlign: "right" }}>TOTAL</div>
       </div>
 
-      <div style={{ borderTop: "1px dashed #000", borderBottom: "1px dashed #000", paddingTop: "4px", paddingBottom: "4px", marginBottom: "4px" }}>
+      <div style={{ paddingTop: "4px", paddingBottom: "6px", marginBottom: "4px" }}>
         {items.map((item, idx) => (
-          <div key={idx} style={{ display: "grid", gridTemplateColumns: "2fr 0.8fr 1fr 1fr", gap: "2px", fontSize: "9px", marginBottom: "3px" }}>
+          <div key={idx} style={{ display: "grid", gridTemplateColumns: "2fr 0.8fr 1fr 1fr", gap: "2px", fontSize: "9px", marginBottom: "3px", paddingBottom: "3px", borderBottom: "1px solid #f0f0f0" }}>
             <div style={{ wordWrap: "break-word" }}>{item.name}</div>
             <div style={{ textAlign: "center" }}>{item.quantity}</div>
             <div style={{ textAlign: "right" }}>${item.precio_venta?.toFixed(2) || item.precio_unitario?.toFixed(2) || "0.00"}</div>
@@ -114,7 +114,7 @@ export default function TicketTemplate({ ticketData, ticketType = "sale" }) {
             </div>
           </>
         )}
-        <div style={{ borderTop: "1px dashed #000", paddingTop: "4px", display: "flex", justifyContent: "space-between", fontWeight: "700", fontSize: "12px" }}>
+        <div style={{ borderTop: "2px dashed #000", paddingTop: "6px", display: "flex", justifyContent: "space-between", fontWeight: "800", fontSize: "12px" }}>
           <span>TOTAL:</span>
           <span>${total?.toFixed(2) || "0.00"}</span>
         </div>
@@ -122,7 +122,7 @@ export default function TicketTemplate({ ticketData, ticketType = "sale" }) {
 
       {/* Forma de pago */}
       {forma_pago && (
-        <div style={{ marginBottom: "8px", fontSize: "10px", borderTop: "1px dashed #000", paddingTop: "4px" }}>
+        <div style={{ marginBottom: "8px", fontSize: "10px", borderTop: "1px dashed #000", paddingTop: "6px" }}>
           <div>Forma de Pago: {forma_pago}</div>
         </div>
       )}
