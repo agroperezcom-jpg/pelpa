@@ -119,13 +119,20 @@ Deno.serve(async (req) => {
       doc.text(noteLines, 20, yPosition);
     }
 
-    // Generar PDF como buffer
-    const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+    // Generar PDF como base64
+    const pdfBase64 = doc.output('dataurlstring').split(',')[1];
     const filename = `${ticketType}-${ticketId}-${Date.now()}.pdf`;
+    
+    // Convertir base64 a Uint8Array
+    const binaryString = atob(pdfBase64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
 
-    // Subir el archivo directamente
+    // Subir el archivo
     const uploadResult = await base44.asServiceRole.integrations.Core.UploadFile({
-      file: pdfBuffer
+      file: bytes
     });
 
     return Response.json({
