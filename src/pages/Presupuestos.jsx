@@ -42,7 +42,7 @@ import {
 import {
   FileText, Plus, Search, Trash2, Eye, Send, CheckCircle2,
   XCircle, Clock, AlertTriangle, Package, Briefcase, Download,
-  Edit, Ban, Printer, X, ExternalLink
+  Edit, Ban, Printer, X, ExternalLink, MessageCircle
 } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { es } from "date-fns/locale";
@@ -50,6 +50,7 @@ import { useNavigate } from "react-router-dom";
 import PresupuestoPDF from "../components/presupuestos/PresupuestoPDF";
 import CobroPresupuestoDialog from "../components/presupuestos/CobroPresupuestoDialog";
 import CancelacionPresupuestoDialog from "../components/presupuestos/CancelacionPresupuestoDialog";
+import WhatsAppSendDialog from "../components/whatsapp/WhatsAppSendDialog";
 
 export default function Presupuestos() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -74,6 +75,7 @@ export default function Presupuestos() {
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const [isCobroDialogOpen, setIsCobroDialogOpen] = useState(false);
   const [isCancelacionDialogOpen, setIsCancelacionDialogOpen] = useState(false);
+  const [isWhatsAppDialogOpen, setIsWhatsAppDialogOpen] = useState(false);
 
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -1140,6 +1142,16 @@ export default function Presupuestos() {
                 <Printer className="h-4 w-4 mr-2" />
                 Imprimir/PDF
               </Button>
+              {selectedPresupuesto.estado === "ENVIADO" && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsWhatsAppDialogOpen(true)}
+                  className="gap-2"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Enviar por WhatsApp
+                </Button>
+              )}
               <Button variant="outline" onClick={() => setIsDetailDialogOpen(false)}>
                 Cerrar
               </Button>
@@ -1210,6 +1222,16 @@ export default function Presupuestos() {
         presupuesto={selectedPresupuesto}
         user={user}
         onConfirm={handleCancelarPresupuesto}
+      />
+
+      {/* Dialog WhatsApp */}
+      <WhatsAppSendDialog
+        isOpen={isWhatsAppDialogOpen}
+        onClose={() => setIsWhatsAppDialogOpen(false)}
+        clientData={selectedPresupuesto ? clients.find(c => c.id === selectedPresupuesto.cliente_id) : null}
+        ticketData={selectedPresupuesto}
+        ticketType="budget"
+        onSuccess={() => setIsDetailDialogOpen(false)}
       />
     </div>
   );
