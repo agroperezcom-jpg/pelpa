@@ -45,15 +45,13 @@ export default function PlanDeCuentas() {
   const [csvFile, setCsvFile] = useState(null);
   const [formData, setFormData] = useState({
     codigo: "",
-    codigo_contable: "",
     nombre: "",
-    descripcion: "",
     rubro_contable: "Gastos",
-    tipo_resultado: null,
-    nivel: 1,
-    imputable: true,
+    tipo_resultado: "Gasto",
+    imputable: false,
     usa_en_gastos: false,
-    usa_en_ingresos: false
+    usa_en_ingresos: false,
+    activa: true
   });
   const [importErrors, setImportErrors] = useState([]);
 
@@ -70,11 +68,11 @@ export default function PlanDeCuentas() {
       const lines = text.split('\n').filter(l => l.trim());
       
       const separator = lines[0].includes(';') ? ';' : ',';
-      const headers = lines[0].split(separator).map(h => h.trim().toLowerCase().replace(/_/g, ''));
+      const headers = lines[0].split(separator).map(h => h.trim().toLowerCase().replace(/_/g, '').replace(/\s/g, ''));
       
       const cuentasData = [];
       const errors = [];
-      const codigosExistentes = cuentas.map(c => c.codigo_contable || c.codigo);
+      const codigosExistentes = cuentas.map(c => c.codigo);
       
       const rubrosValidos = [
         "Activo Corriente", "Activo No Corriente", "Pasivo Corriente", 
@@ -92,53 +90,55 @@ export default function PlanDeCuentas() {
           row[header] = values[idx] || "";
         });
 
-        const codigo = row.codigo || row.codigocontable || row.code || "";
+        const codigo = row.codigo || row.code || "";
         const nombre = row.nombre || row.name || "";
-        const rubro = row.rubrocontable || row.rubro || "Gastos";
-        const tipoRes = row.tiporesultado || row.tipo || null;
-        const imputable = row.imputable !== "false" && row.imputable !== "0" && row.imputable !== "no";
+        const rubro = row.rubrocontable || row.rubro || "";
+        const tipoRes = row.tiporesultado || row.tipo || "";
+        const imputable = row.imputable === "true" || row.imputable === "1" || row.imputable === "si";
         const usaGastos = row.usaengastos === "true" || row.usaengastos === "1" || row.usaengastos === "si";
         const usaIngresos = row.usaeningresos === "true" || row.usaeningresos === "1" || row.usaeningresos === "si";
 
-        // Validaciones
+        // Validaciones obligatorias
         if (!codigo) {
-          errors.push(`Fila ${i + 1}: Falta código`);
+          errors.push(`Fila ${i + 1}: Código obligatorio`);
           continue;
         }
         if (!nombre) {
-          errors.push(`Fila ${i + 1}: Falta nombre`);
+          errors.push(`Fila ${i + 1}: Nombre obligatorio`);
           continue;
         }
         if (codigosExistentes.includes(codigo)) {
           errors.push(`Fila ${i + 1}: Código "${codigo}" duplicado`);
           continue;
         }
-        if (!rubrosValidos.includes(rubro)) {
-          errors.push(`Fila ${i + 1}: Rubro "${rubro}" inválido`);
+        if (!rubro || !rubrosValidos.includes(rubro)) {
+          errors.push(`Fila ${i + 1}: Rubro "${rubro}" inválido. Use: ${rubrosValidos.join(', ')}`);
           continue;
         }
-        if (rubrosConTipoResultado.includes(rubro) && (!tipoRes || !tiposResultado.includes(tipoRes))) {
-          errors.push(`Fila ${i + 1}: Tipo resultado requerido y válido para rubro "${rubro}"`);
-          continue;
-        }
-        if (!rubrosConTipoResultado.includes(rubro) && tipoRes) {
-          errors.push(`Fila ${i + 1}: Tipo resultado no debe tener valor para rubro "${rubro}"`);
-          continue;
+
+        // Validación tipo_resultado según rubro
+        if (rubrosConTipoResultado.includes(rubro)) {
+          if (!tipoRes || !tiposResultado.includes(tipoRes)) {
+            errors.push(`Fila ${i + 1}: Tipo resultado obligatorio para rubro "${rubro}". Use: Ingreso, Costo o Gasto`);
+            continue;
+          }
+        } else {
+          if (tipoRes && tipoRes !== "") {
+            errors.push(`Fila ${i + 1}: Tipo resultado debe estar vacío para rubro "${rubro}"`);
+            continue;
+          }
         }
 
         codigosExistentes.push(codigo);
         cuentasData.push({
           codigo,
-          codigo_contable: codigo,
           nombre,
-          descripcion: row.descripcion || row.description || "",
           rubro_contable: rubro,
           tipo_resultado: rubrosConTipoResultado.includes(rubro) ? tipoRes : null,
-          nivel: parseInt(row.nivel || row.level || "1"),
           imputable,
           usa_en_gastos: usaGastos,
           usa_en_ingresos: usaIngresos,
-          is_active: true
+          activa: true
         });
       }
 
@@ -242,30 +242,26 @@ export default function PlanDeCuentas() {
     if (cuenta) {
       setEditingCuenta(cuenta);
       setFormData({
-        codigo: cuenta.codigo_contable || cuenta.codigo,
-        codigo_contable: cuenta.codigo_contable || cuenta.codigo,
+        codigo: cuenta.codigo,
         nombre: cuenta.nombre,
-        descripcion: cuenta.descripcion || "",
         rubro_contable: cuenta.rubro_contable || "Gastos",
-        tipo_resultado: cuenta.tipo_resultado || null,
-        nivel: cuenta.nivel || 1,
-        imputable: cuenta.imputable !== false,
+        tipo_resultado: cuenta.tipo_resultado || (["Ingresos", "Costos", "Gastos"].includes(cuenta.rubro_contable) ? "Gasto" : null),
+        imputable: cuenta.imputable || false,
         usa_en_gastos: cuenta.usa_en_gastos || false,
-        usa_en_ingresos: cuenta.usa_en_ingresos || false
+        usa_en_ingresos: cuenta.usa_en_ingresos || false,
+        activa: cuenta.activa !== false
       });
     } else {
       setEditingCuenta(null);
       setFormData({
         codigo: "",
-        codigo_contable: "",
         nombre: "",
-        descripcion: "",
         rubro_contable: "Gastos",
-        tipo_resultado: null,
-        nivel: 1,
-        imputable: true,
+        tipo_resultado: "Gasto",
+        imputable: false,
         usa_en_gastos: false,
-        usa_en_ingresos: false
+        usa_en_ingresos: false,
+        activa: true
       });
     }
     setAddDialogOpen(true);
@@ -325,11 +321,13 @@ export default function PlanDeCuentas() {
 
   const exportTemplate = () => {
     const csv = "codigo,nombre,rubro_contable,tipo_resultado,imputable,usa_en_gastos,usa_en_ingresos\n" +
-                "1.1.01,Caja,Activo Corriente,,true,false,false\n" +
+                "1.1.01,Caja,Activo Corriente,,false,false,false\n" +
                 "4.1.01,Ventas,Ingresos,Ingreso,true,false,true\n" +
-                "5.1.01,Costo Mercaderías,Costos,Costo,true,false,false\n" +
+                "5.1.01,Costo de Mercaderías Vendidas,Costos,Costo,true,true,false\n" +
+                "5.1.02,Sueldos Producción,Costos,Costo,true,true,false\n" +
                 "5.2.01,Alquileres,Gastos,Gasto,true,true,false\n" +
-                "5.2.02,Sueldos y Jornales,Gastos,Gasto,true,true,false";
+                "5.2.02,Sueldos Administración,Gastos,Gasto,true,true,false\n" +
+                "5.2.03,Servicios Públicos,Gastos,Gasto,true,true,false";
     
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -441,7 +439,8 @@ export default function PlanDeCuentas() {
                         <TableHead>Rubro</TableHead>
                         <TableHead>Tipo Resultado</TableHead>
                         <TableHead className="text-center">Imputable</TableHead>
-                        <TableHead className="text-center">Usa en Gastos</TableHead>
+                        <TableHead className="text-center">En Gastos</TableHead>
+                        <TableHead className="text-center">En Ingresos</TableHead>
                         <TableHead className="text-center">Estado</TableHead>
                         <TableHead className="text-right">Acciones</TableHead>
                       </TableRow>
@@ -457,16 +456,11 @@ export default function PlanDeCuentas() {
                               className="rounded"
                             />
                           </TableCell>
-                          <TableCell className="font-mono text-sm">
-                            {cuenta.codigo_contable || cuenta.codigo}
+                          <TableCell className="font-mono text-sm font-medium">
+                            {cuenta.codigo}
                           </TableCell>
                           <TableCell>
-                            <div>
-                              <p className="font-medium">{cuenta.nombre}</p>
-                              {cuenta.descripcion && (
-                                <p className="text-xs text-slate-500">{cuenta.descripcion}</p>
-                              )}
-                            </div>
+                            <p className="font-medium">{cuenta.nombre}</p>
                           </TableCell>
                           <TableCell>
                             {cuenta.rubro_contable ? (
@@ -501,7 +495,14 @@ export default function PlanDeCuentas() {
                             )}
                           </TableCell>
                           <TableCell className="text-center">
-                            {cuenta.is_active !== false ? (
+                            {cuenta.usa_en_ingresos ? (
+                              <Badge className="bg-green-100 text-green-700 text-xs">Sí</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">No</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {cuenta.activa !== false ? (
                               <Badge className="bg-green-100 text-green-700 text-xs">Activa</Badge>
                             ) : (
                               <Badge className="bg-slate-100 text-slate-600 text-xs">Inactiva</Badge>
@@ -550,10 +551,18 @@ export default function PlanDeCuentas() {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-start gap-2">
                 <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-blue-800">
-                  <p className="font-medium mb-1">Formato del CSV:</p>
-                  <p className="text-xs mb-2">Columnas requeridas: <code className="bg-white px-1 rounded">codigo, nombre, rubro_contable</code></p>
-                  <p className="text-xs">Columnas opcionales: <code className="bg-white px-1 rounded">tipo_resultado, imputable, usa_en_gastos, usa_en_ingresos</code></p>
+                <div className="text-sm text-blue-800 space-y-2">
+                  <p className="font-medium">Formato del CSV:</p>
+                  <p className="text-xs">Columnas: <code className="bg-white px-1 rounded">codigo,nombre,rubro_contable,tipo_resultado,imputable,usa_en_gastos,usa_en_ingresos</code></p>
+                  <div className="text-xs space-y-1">
+                    <p><strong>Reglas:</strong></p>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      <li>codigo y nombre son obligatorios</li>
+                      <li>rubro_contable debe ser: Activo Corriente, Activo No Corriente, Pasivo Corriente, Pasivo No Corriente, Patrimonio Neto, Ingresos, Costos, Gastos</li>
+                      <li>tipo_resultado solo para Ingresos/Costos/Gastos (Ingreso, Costo, Gasto)</li>
+                      <li>imputable, usa_en_gastos, usa_en_ingresos: true/false</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
@@ -602,44 +611,14 @@ export default function PlanDeCuentas() {
             <DialogTitle>{editingCuenta ? "Editar Cuenta" : "Agregar Cuenta Manual"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Código *</Label>
-                <Input
-                  value={formData.codigo}
-                  onChange={(e) => setFormData({ ...formData, codigo: e.target.value, codigo_contable: e.target.value })}
-                  placeholder="1.1.01"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Rubro Contable *</Label>
-                <Select 
-                  value={formData.rubro_contable} 
-                  onValueChange={(v) => {
-                    const needsTipoRes = ["Ingresos", "Costos", "Gastos"].includes(v);
-                    setFormData({ 
-                      ...formData, 
-                      rubro_contable: v,
-                      tipo_resultado: needsTipoRes ? (formData.tipo_resultado || "Gasto") : null
-                    });
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Activo Corriente">Activo Corriente</SelectItem>
-                    <SelectItem value="Activo No Corriente">Activo No Corriente</SelectItem>
-                    <SelectItem value="Pasivo Corriente">Pasivo Corriente</SelectItem>
-                    <SelectItem value="Pasivo No Corriente">Pasivo No Corriente</SelectItem>
-                    <SelectItem value="Patrimonio Neto">Patrimonio Neto</SelectItem>
-                    <SelectItem value="Ingresos">Ingresos</SelectItem>
-                    <SelectItem value="Costos">Costos</SelectItem>
-                    <SelectItem value="Gastos">Gastos</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label>Código *</Label>
+              <Input
+                value={formData.codigo}
+                onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
+                placeholder="5.2.01"
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label>Nombre *</Label>
@@ -651,12 +630,32 @@ export default function PlanDeCuentas() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Descripción</Label>
-              <Input
-                value={formData.descripcion}
-                onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                placeholder="Descripción opcional"
-              />
+              <Label>Rubro Contable *</Label>
+              <Select 
+                value={formData.rubro_contable} 
+                onValueChange={(v) => {
+                  const needsTipoRes = ["Ingresos", "Costos", "Gastos"].includes(v);
+                  setFormData({ 
+                    ...formData, 
+                    rubro_contable: v,
+                    tipo_resultado: needsTipoRes ? (formData.tipo_resultado || "Gasto") : null
+                  });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Activo Corriente">Activo Corriente</SelectItem>
+                  <SelectItem value="Activo No Corriente">Activo No Corriente</SelectItem>
+                  <SelectItem value="Pasivo Corriente">Pasivo Corriente</SelectItem>
+                  <SelectItem value="Pasivo No Corriente">Pasivo No Corriente</SelectItem>
+                  <SelectItem value="Patrimonio Neto">Patrimonio Neto</SelectItem>
+                  <SelectItem value="Ingresos">Ingresos</SelectItem>
+                  <SelectItem value="Costos">Costos</SelectItem>
+                  <SelectItem value="Gastos">Gastos</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             {["Ingresos", "Costos", "Gastos"].includes(formData.rubro_contable) && (
               <div className="space-y-2">
@@ -669,11 +668,18 @@ export default function PlanDeCuentas() {
                     <SelectValue placeholder="Seleccionar..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Ingreso">Ingreso</SelectItem>
-                    <SelectItem value="Costo">Costo</SelectItem>
-                    <SelectItem value="Gasto">Gasto</SelectItem>
+                    <SelectItem value="Ingreso">Ingreso (afecta Utilidad Bruta)</SelectItem>
+                    <SelectItem value="Costo">Costo (afecta Utilidad Bruta)</SelectItem>
+                    <SelectItem value="Gasto">Gasto (afecta Utilidad Operativa)</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            )}
+            {["Ingresos", "Costos", "Gastos"].includes(formData.rubro_contable) && (
+              <div className="bg-amber-50 border border-amber-200 rounded p-3 text-xs text-amber-800">
+                <p><strong>Importante:</strong></p>
+                <p>• <strong>Costos</strong>: Relacionados con producción/mercadería (afectan Utilidad Bruta)</p>
+                <p>• <strong>Gastos</strong>: Operativos y administrativos (afectan Utilidad Operativa)</p>
               </div>
             )}
             <div className="flex items-center gap-4">
