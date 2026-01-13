@@ -165,7 +165,7 @@ export default function WorkOrders() {
 
         {/* Calendar View */}
         <TabsContent value="calendar" className="mt-6">
-          <WorkOrderOperationalCalendar workOrders={workOrders} />
+          <WorkOrderOperationalCalendar workOrders={filteredWorkOrders} />
         </TabsContent>
       </Tabs>
     </div>
