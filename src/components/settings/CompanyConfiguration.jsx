@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Upload, Loader2 } from "lucide-react";
+import { Building2, Upload, Loader2, Lock, Trash2 } from "lucide-react";
+import CompanyResetDialog from "./CompanyResetDialog";
 
 /**
  * Company Configuration Component
@@ -33,6 +34,8 @@ export default function CompanyConfiguration({ isAdmin = false }) {
   
   const [logoPreview, setLogoPreview] = useState("");
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState("general");
 
   // Fetch current company data
   const { data: companies = [], isLoading } = useQuery({
@@ -129,18 +132,47 @@ export default function CompanyConfiguration({ isAdmin = false }) {
   }
 
   return (
-    <Card className="border-0 shadow-sm">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Building2 className="h-5 w-5 text-slate-700" />
-          <div>
-            <CardTitle className="text-base">Datos de la Empresa</CardTitle>
-            <CardDescription>Gestiona la información de tu empresa</CardDescription>
+    <>
+      <Card className="border-0 shadow-sm">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Building2 className="h-5 w-5 text-slate-700" />
+            <div>
+              <CardTitle className="text-base">Datos de la Empresa</CardTitle>
+              <CardDescription>Gestiona la información de tu empresa</CardDescription>
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
+        </CardHeader>
+        <CardContent>
+          {/* Tabs */}
+          <div className="flex gap-2 border-b mb-6">
+            <button
+              onClick={() => setActiveTab("general")}
+              className={`pb-2 px-2 text-sm font-medium transition-colors ${
+                activeTab === "general"
+                  ? "text-slate-900 border-b-2 border-slate-900"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              General
+            </button>
+            {isAdmin && (
+              <button
+                onClick={() => setActiveTab("advanced")}
+                className={`pb-2 px-2 text-sm font-medium transition-colors ${
+                  activeTab === "advanced"
+                    ? "text-slate-900 border-b-2 border-slate-900"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Avanzado
+              </button>
+            )}
+          </div>
+
+          {/* General Tab */}
+          {activeTab === "general" && (
+            <div className="space-y-6">
           {/* Logo Section */}
           <div className="p-6 bg-slate-50 rounded-lg border border-slate-200">
             <Label className="block text-sm font-medium mb-3">Logo de la Empresa</Label>
