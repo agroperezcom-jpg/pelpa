@@ -209,17 +209,10 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
                     ⚠️ ACCIÓN IRREVERSIBLE
                   </p>
                   <p className="text-xs text-red-700">
-                    Esto eliminará permanentemente TODOS los datos de esta empresa:
+                    Esta acción eliminará permanentemente TODOS los datos de la empresa (incluyendo ventas, stock, calendario, tareas y proyectos).
                   </p>
-                  <ul className="text-xs text-red-700 list-disc list-inside space-y-1 ml-2">
-                    <li>Todas las ventas e invoices</li>
-                    <li>Todos los clientes y contactos</li>
-                    <li>Todos los productos e inventario</li>
-                    <li>Todas las cuentas y movimientos</li>
-                    <li>Todos los gastos y pagos</li>
-                  </ul>
                   <p className="text-xs font-medium text-red-800 mt-2">
-                    ¡NO se puede deshacer!
+                    Esta acción no se puede deshacer.
                   </p>
                 </div>
 
