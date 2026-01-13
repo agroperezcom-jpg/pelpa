@@ -5,8 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Receipt, Printer, FileCheck, Calendar, User, Package, X, MessageCircle, Download, Smartphone, FileText } from "lucide-react";
+import { Receipt, Printer, FileCheck, Calendar, User, Package, X, MessageCircle, Download, Smartphone, FileText, Eye, Mail } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import PDFPreviewDialog from "./PDFPreviewDialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { printTicket } from "../pos/TicketPrint";
@@ -18,6 +21,11 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
   const [paperWidth, setPaperWidth] = useState(PAPER_WIDTHS.LARGE);
   const [showTicketDialog, setShowTicketDialog] = useState(false);
   const [downloadingType, setDownloadingType] = useState(null);
+  const [previewType, setPreviewType] = useState(null);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [emailRecipient, setEmailRecipient] = useState("");
+  const [emailType, setEmailType] = useState("a4");
+  const [sendingEmail, setSendingEmail] = useState(false);
   
   if (!sale) return null;
 
@@ -47,6 +55,29 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
       toast.error("Error al generar PDF: " + error.message);
     } finally {
       setDownloadingType(null);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailRecipient) {
+      toast.error("Ingrese un email");
+      return;
+    }
+
+    setSendingEmail(true);
+    try {
+      await base44.functions.invoke('sendSaleTicketEmail', {
+        sale_id: sale.id,
+        recipient_email: emailRecipient,
+        ticket_type: emailType
+      });
+      toast.success(`Comprobante enviado a ${emailRecipient}`);
+      setShowEmailDialog(false);
+      setEmailRecipient("");
+    } catch (error) {
+      toast.error("Error al enviar email: " + error.message);
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -292,6 +323,36 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
               </div>
               
               <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-3 gap-2">
+                  <Button 
+                    onClick={() => setPreviewType('mobile')}
+                    variant="outline"
+                    size="sm"
+                    disabled={downloadingType !== null}
+                  >
+                    <Eye className="h-3 w-3 mr-1" />
+                    Mobile
+                  </Button>
+                  <Button 
+                    onClick={() => setPreviewType('80mm')}
+                    variant="outline"
+                    size="sm"
+                    disabled={downloadingType !== null}
+                  >
+                    <Eye className="h-3 w-3 mr-1" />
+                    80mm
+                  </Button>
+                  <Button 
+                    onClick={() => setPreviewType('a4')}
+                    variant="outline"
+                    size="sm"
+                    disabled={downloadingType !== null}
+                  >
+                    <Eye className="h-3 w-3 mr-1" />
+                    A4
+                  </Button>
+                </div>
+                
                 <div className="flex gap-2">
                   <Button 
                     onClick={() => handleDownloadPDF('mobile')}
@@ -300,7 +361,7 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
                     disabled={downloadingType !== null}
                   >
                     <Smartphone className="h-4 w-4 mr-2" />
-                    {downloadingType === 'mobile' ? 'Generando...' : 'Ticket Mobile'}
+                    {downloadingType === 'mobile' ? 'Gen...' : 'Mobile'}
                   </Button>
                   <Button 
                     onClick={() => handleDownloadPDF('80mm')}
@@ -309,7 +370,7 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
                     disabled={downloadingType !== null}
                   >
                     <Printer className="h-4 w-4 mr-2" />
-                    {downloadingType === '80mm' ? 'Generando...' : 'Ticket 80mm'}
+                    {downloadingType === '80mm' ? 'Gen...' : '80mm'}
                   </Button>
                   <Button 
                     onClick={() => handleDownloadPDF('a4')}
@@ -318,20 +379,33 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
                     disabled={downloadingType !== null}
                   >
                     <FileText className="h-4 w-4 mr-2" />
-                    {downloadingType === 'a4' ? 'Generando...' : 'Comprobante A4'}
+                    {downloadingType === 'a4' ? 'Gen...' : 'A4'}
                   </Button>
                 </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={onClose}>
-                    Cerrar
-                  </Button>
+                
+                <div className="flex justify-between gap-2">
                   <Button 
-                    onClick={handlePrint}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    variant="outline"
+                    onClick={() => {
+                      setShowEmailDialog(true);
+                      setEmailRecipient(sale.client_email || "");
+                    }}
                   >
-                    <Printer className="h-4 w-4 mr-2" />
-                    Impresión Térmica Directa
+                    <Mail className="h-4 w-4 mr-2" />
+                    Enviar por Email
                   </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={onClose}>
+                      Cerrar
+                    </Button>
+                    <Button 
+                      onClick={handlePrint}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Printer className="h-4 w-4 mr-2" />
+                      Impresión Térmica
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -349,6 +423,58 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
           ticketData={ticketData}
           ticketType="sale"
         />
+
+        <PDFPreviewDialog
+          isOpen={previewType !== null}
+          onClose={() => setPreviewType(null)}
+          saleId={sale?.id}
+          type={previewType}
+          typeName={
+            previewType === 'mobile' ? 'Ticket Mobile' :
+            previewType === '80mm' ? 'Ticket 80mm' :
+            previewType === 'a4' ? 'Comprobante A4' : ''
+          }
+        />
+
+        <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Enviar Comprobante por Email</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <Label>Email destinatario</Label>
+                <Input
+                  type="email"
+                  placeholder="cliente@ejemplo.com"
+                  value={emailRecipient}
+                  onChange={(e) => setEmailRecipient(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Formato de comprobante</Label>
+                <Select value={emailType} onValueChange={setEmailType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mobile">Ticket Mobile</SelectItem>
+                    <SelectItem value="80mm">Ticket 80mm</SelectItem>
+                    <SelectItem value="a4">Comprobante A4</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowEmailDialog(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSendEmail} disabled={sendingEmail}>
+                {sendingEmail ? 'Enviando...' : 'Enviar'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         </DialogContent>
         </Dialog>
         );

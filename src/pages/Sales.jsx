@@ -72,6 +72,11 @@ export default function Sales() {
   const [isAsignarCuentaDialogOpen, setIsAsignarCuentaDialogOpen] = useState(false);
   const [ventaParaCuenta, setVentaParaCuenta] = useState(null);
   const [downloadingTicket, setDownloadingTicket] = useState(null);
+  const [previewTicketType, setPreviewTicketType] = useState(null);
+  const [showEmailTicketDialog, setShowEmailTicketDialog] = useState(false);
+  const [emailTicketRecipient, setEmailTicketRecipient] = useState("");
+  const [emailTicketType, setEmailTicketType] = useState("a4");
+  const [sendingTicketEmail, setSendingTicketEmail] = useState(false);
   const [user, setUser] = useState(null);
   const [cart, setCart] = useState([]);
   const [currentSale, setCurrentSale] = useState({
@@ -747,6 +752,29 @@ export default function Sales() {
       toast.error("Error al generar PDF");
     } finally {
       setDownloadingTicket(null);
+    }
+  };
+
+  const handleSendTicketEmail = async () => {
+    if (!emailTicketRecipient) {
+      toast.error("Ingrese un email");
+      return;
+    }
+
+    setSendingTicketEmail(true);
+    try {
+      await base44.functions.invoke('sendSaleTicketEmail', {
+        sale_id: ventaConfirmada.id,
+        recipient_email: emailTicketRecipient,
+        ticket_type: emailTicketType
+      });
+      toast.success(`Comprobante enviado a ${emailTicketRecipient}`);
+      setShowEmailTicketDialog(false);
+      setEmailTicketRecipient("");
+    } catch (error) {
+      toast.error("Error al enviar email");
+    } finally {
+      setSendingTicketEmail(false);
     }
   };
 
@@ -1570,11 +1598,44 @@ export default function Sales() {
                 <Button 
                   variant="outline"
                   size="sm"
+                  onClick={() => setPreviewTicketType('mobile')}
+                  disabled={downloadingTicket !== null}
+                  className="text-xs"
+                >
+                  <Eye className="h-3 w-3 mr-1" />
+                  Mobile
+                </Button>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPreviewTicketType('80mm')}
+                  disabled={downloadingTicket !== null}
+                  className="text-xs"
+                >
+                  <Eye className="h-3 w-3 mr-1" />
+                  80mm
+                </Button>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPreviewTicketType('a4')}
+                  disabled={downloadingTicket !== null}
+                  className="text-xs"
+                >
+                  <Eye className="h-3 w-3 mr-1" />
+                  A4
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-2">
+                <Button 
+                  variant="outline"
+                  size="sm"
                   onClick={() => handleDownloadTicket('mobile')}
                   disabled={downloadingTicket !== null}
                   className="text-xs"
                 >
-                  <Smartphone className="h-3 w-3 mr-1" />
+                  <Download className="h-3 w-3 mr-1" />
                   {downloadingTicket === 'mobile' ? 'Gen...' : 'Mobile'}
                 </Button>
                 <Button 
@@ -1584,7 +1645,7 @@ export default function Sales() {
                   disabled={downloadingTicket !== null}
                   className="text-xs"
                 >
-                  <Printer className="h-3 w-3 mr-1" />
+                  <Download className="h-3 w-3 mr-1" />
                   {downloadingTicket === '80mm' ? 'Gen...' : '80mm'}
                 </Button>
                 <Button 
@@ -1594,15 +1655,29 @@ export default function Sales() {
                   disabled={downloadingTicket !== null}
                   className="text-xs"
                 >
-                  <FileText className="h-3 w-3 mr-1" />
+                  <Download className="h-3 w-3 mr-1" />
                   {downloadingTicket === 'a4' ? 'Gen...' : 'A4'}
                 </Button>
               </div>
+              
               <div className="flex gap-2">
                 <Button 
                   variant="outline"
+                  onClick={() => {
+                    setShowEmailTicketDialog(true);
+                    setEmailTicketRecipient("");
+                  }}
+                  className="gap-2"
+                  size="sm"
+                >
+                  <Mail className="h-4 w-4" />
+                  Email
+                </Button>
+                <Button 
+                  variant="outline"
                   onClick={() => setIsWhatsAppDialogOpen(true)}
-                  className="gap-2 flex-1"
+                  className="gap-2"
+                  size="sm"
                 >
                   <MessageCircle className="h-4 w-4" />
                   WhatsApp
