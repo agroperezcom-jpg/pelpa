@@ -126,6 +126,13 @@ export default function Expenses() {
     queryFn: () => base44.entities.CuentaContable.list('codigo', 500)
   });
 
+  const cuentasGastos = cuentasContables.filter(c => 
+    c.imputable && 
+    c.usa_en_gastos && 
+    c.is_active !== false &&
+    (c.rubro_contable === "Gastos" || c.tipo_resultado === "Gasto")
+  );
+
   const createMutation = useMutation({
     mutationFn: async (data) => {
       const medio = mediosPago.find(m => m.id === data.medio_pago_id);
@@ -607,7 +614,7 @@ export default function Expenses() {
             <TableRow className="bg-slate-50">
               <TableHead>Fecha</TableHead>
               <TableHead>Descripción</TableHead>
-              <TableHead>Categoría</TableHead>
+              <TableHead>Cuenta Contable</TableHead>
               <TableHead>Proveedor</TableHead>
               <TableHead className="text-right">Monto</TableHead>
               <TableHead className="text-center">Recurrente</TableHead>
