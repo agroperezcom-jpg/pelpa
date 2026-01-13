@@ -163,8 +163,21 @@ export default function Expenses() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Expense.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] })
+    mutationFn: async (id) => {
+      // Buscar y eliminar el movimiento de tesorería asociado
+      const movimientos = await base44.entities.MovimientoTesoreria.list();
+      const relacionado = movimientos.find(m => m.comprobante === `GASTO-${id}`);
+      
+      if (relacionado) {
+        await base44.entities.MovimientoTesoreria.delete(relacionado.id);
+      }
+      
+      await base44.entities.Expense.delete(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
+    }
   });
 
   const handleOpenDialog = (expense = null) => {
