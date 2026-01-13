@@ -174,15 +174,13 @@ export default function PlanDeCuentas() {
       setEditingCuenta(null);
       setFormData({
         codigo: "",
-        codigo_contable: "",
         nombre: "",
-        descripcion: "",
         rubro_contable: "Gastos",
-        tipo_resultado: null,
-        nivel: 1,
-        imputable: true,
+        tipo_resultado: "Gasto",
+        imputable: false,
         usa_en_gastos: false,
-        usa_en_ingresos: false
+        usa_en_ingresos: false,
+        activa: true
       });
       toast.success("Cuenta agregada correctamente");
     }
@@ -196,15 +194,13 @@ export default function PlanDeCuentas() {
       setEditingCuenta(null);
       setFormData({
         codigo: "",
-        codigo_contable: "",
         nombre: "",
-        descripcion: "",
         rubro_contable: "Gastos",
-        tipo_resultado: null,
-        nivel: 1,
-        imputable: true,
+        tipo_resultado: "Gasto",
+        imputable: false,
         usa_en_gastos: false,
-        usa_en_ingresos: false
+        usa_en_ingresos: false,
+        activa: true
       });
       toast.success("Cuenta actualizada correctamente");
     }
