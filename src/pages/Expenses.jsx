@@ -128,9 +128,28 @@ export default function Expenses() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Expense.create(data),
+    mutationFn: async (data) => {
+      const expense = await base44.entities.Expense.create(data);
+      
+      // Crear movimiento de tesorería como egreso
+      await base44.entities.MovimientoTesoreria.create({
+        tipo: "egreso",
+        fecha: data.date,
+        monto: data.amount,
+        cuenta_origen_id: null,
+        cuenta_origen_nombre: "Gastos",
+        cuenta_destino_id: null,
+        cuenta_destino_nombre: null,
+        concepto: data.description,
+        comprobante: data.invoice_number || `GASTO-${expense.id}`,
+        notas: data.notes || `Gasto: ${data.category}`
+      });
+      
+      return expense;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
       handleCloseDialog();
     }
   });
