@@ -140,16 +140,50 @@ export default function Expenses() {
       const medioEfectivo = mediosPago.find(m => m.nombre?.toLowerCase().includes('efectivo')) || mediosPago[0];
       
       if (medioEfectivo) {
+        // Obtener caja si el medio requiere caja
+        let cajaId = null;
+        let cajaNombre = "";
+        if (medioEfectivo.requiere_caja) {
+          const cajas = await base44.entities.Caja.list();
+          const cajaDefault = cajas.find(c => c.is_active) || cajas[0];
+          if (cajaDefault) {
+            cajaId = cajaDefault.id;
+            cajaNombre = cajaDefault.nombre;
+            
+            // Actualizar saldo de la caja
+            await base44.entities.Caja.update(cajaId, {
+              saldo_actual: cajaDefault.saldo_actual - data.amount
+            });
+          }
+        }
+        
+        // Obtener banco si el medio requiere banco
+        let bancoId = null;
+        let bancoNombre = "";
+        if (medioEfectivo.requiere_banco) {
+          const bancos = await base44.entities.Banco.list();
+          const bancoDefault = bancos.find(b => b.is_active) || bancos[0];
+          if (bancoDefault) {
+            bancoId = bancoDefault.id;
+            bancoNombre = bancoDefault.nombre;
+            
+            // Actualizar saldo del banco
+            await base44.entities.Banco.update(bancoId, {
+              saldo_actual: bancoDefault.saldo_actual - data.amount
+            });
+          }
+        }
+        
         // Crear movimiento de tesorería como egreso
         await base44.entities.MovimientoTesoreria.create({
           fecha: data.date,
           tipo: "EGRESO",
           medio_pago_id: medioEfectivo.id,
           medio_pago_nombre: medioEfectivo.nombre,
-          banco_id: null,
-          banco_nombre: "",
-          caja_id: null,
-          caja_nombre: "",
+          banco_id: bancoId,
+          banco_nombre: bancoNombre,
+          caja_id: cajaId,
+          caja_nombre: cajaNombre,
           importe: data.amount,
           referencia_tipo: "gasto",
           observaciones: `Gasto: ${data.description} (${CATEGORIES.find(c => c.value === data.category)?.label || data.category})`
@@ -161,6 +195,8 @@ export default function Expenses() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
+      queryClient.invalidateQueries({ queryKey: ['bancos'] });
+      queryClient.invalidateQueries({ queryKey: ['cajas'] });
       handleCloseDialog();
     }
   });
