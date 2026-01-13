@@ -28,12 +28,13 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { Upload, FileSpreadsheet, Trash2, Plus, Download, AlertCircle } from "lucide-react";
+import { Upload, FileSpreadsheet, Trash2, Plus, Download, AlertCircle, Edit } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function PlanDeCuentas() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editingCuenta, setEditingCuenta] = useState(null);
   const [csvFile, setCsvFile] = useState(null);
   const [formData, setFormData] = useState({
     codigo: "",
@@ -163,6 +164,7 @@ export default function PlanDeCuentas() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cuentasContables'] });
       setAddDialogOpen(false);
+      setEditingCuenta(null);
       setFormData({
         codigo: "",
         codigo_contable: "",
@@ -176,6 +178,28 @@ export default function PlanDeCuentas() {
         usa_en_ingresos: false
       });
       toast.success("Cuenta agregada correctamente");
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.CuentaContable.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cuentasContables'] });
+      setAddDialogOpen(false);
+      setEditingCuenta(null);
+      setFormData({
+        codigo: "",
+        codigo_contable: "",
+        nombre: "",
+        descripcion: "",
+        rubro_contable: "Gastos",
+        tipo_resultado: null,
+        nivel: 1,
+        imputable: true,
+        usa_en_gastos: false,
+        usa_en_ingresos: false
+      });
+      toast.success("Cuenta actualizada correctamente");
     }
   });
 
@@ -207,9 +231,46 @@ export default function PlanDeCuentas() {
     importMutation.mutate(csvFile);
   };
 
-  const handleAdd = (e) => {
+  const handleOpenDialog = (cuenta = null) => {
+    if (cuenta) {
+      setEditingCuenta(cuenta);
+      setFormData({
+        codigo: cuenta.codigo_contable || cuenta.codigo,
+        codigo_contable: cuenta.codigo_contable || cuenta.codigo,
+        nombre: cuenta.nombre,
+        descripcion: cuenta.descripcion || "",
+        rubro_contable: cuenta.rubro_contable || "Gastos",
+        tipo_resultado: cuenta.tipo_resultado || null,
+        nivel: cuenta.nivel || 1,
+        imputable: cuenta.imputable !== false,
+        usa_en_gastos: cuenta.usa_en_gastos || false,
+        usa_en_ingresos: cuenta.usa_en_ingresos || false
+      });
+    } else {
+      setEditingCuenta(null);
+      setFormData({
+        codigo: "",
+        codigo_contable: "",
+        nombre: "",
+        descripcion: "",
+        rubro_contable: "Gastos",
+        tipo_resultado: null,
+        nivel: 1,
+        imputable: true,
+        usa_en_gastos: false,
+        usa_en_ingresos: false
+      });
+    }
+    setAddDialogOpen(true);
+  };
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    createMutation.mutate(formData);
+    if (editingCuenta) {
+      updateMutation.mutate({ id: editingCuenta.id, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
   };
 
   const exportTemplate = () => {
@@ -253,7 +314,7 @@ export default function PlanDeCuentas() {
                 <Download className="h-4 w-4 mr-2" />
                 Descargar Plantilla
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setAddDialogOpen(true)}>
+              <Button variant="outline" size="sm" onClick={() => handleOpenDialog()}>
                 <Plus className="h-4 w-4 mr-2" />
                 Agregar Cuenta
               </Button>
@@ -364,17 +425,26 @@ export default function PlanDeCuentas() {
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                if (confirm('¿Eliminar esta cuenta?')) {
-                                  deleteMutation.mutate(cuenta.id);
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleOpenDialog(cuenta)}
+                              >
+                                <Edit className="h-4 w-4 text-blue-600" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  if (confirm('¿Eliminar esta cuenta?')) {
+                                    deleteMutation.mutate(cuenta.id);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -442,13 +512,13 @@ export default function PlanDeCuentas() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog Agregar Cuenta */}
+      {/* Dialog Agregar/Editar Cuenta */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Agregar Cuenta Manual</DialogTitle>
+            <DialogTitle>{editingCuenta ? "Editar Cuenta" : "Agregar Cuenta Manual"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleAdd} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Código *</Label>
@@ -556,7 +626,9 @@ export default function PlanDeCuentas() {
               <Button type="button" variant="outline" onClick={() => setAddDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit">Agregar</Button>
+              <Button type="submit">
+                {editingCuenta ? "Guardar" : "Agregar"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
