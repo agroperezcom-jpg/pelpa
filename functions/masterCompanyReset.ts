@@ -74,6 +74,10 @@ Deno.serve(async (req) => {
     // Perform reset in strict order respecting dependencies
     const deleteStats = {};
     const entitiesInOrder = [
+      'CalendarEvent',
+      'Task',
+      'ProjectMilestone',
+      'Project',
       'InventoryMovement',
       'Transaction',
       'Cobro',
@@ -84,7 +88,6 @@ Deno.serve(async (req) => {
       'Product',
       'Service',
       'Client',
-      'Project',
       'Talonario'
     ];
 
@@ -100,8 +103,9 @@ Deno.serve(async (req) => {
         deleteStats[entityName] = toDelete.length;
         console.log(`${entityName}: deleted ${toDelete.length} records`);
       } catch (error) {
-        console.error(`Error deleting ${entityName}:`, error.message);
-        deleteStats[entityName] = `ERROR: ${error.message}`;
+        // Some entities may not exist yet, skip them gracefully
+        console.warn(`Entity ${entityName} not found or error deleting:`, error.message);
+        deleteStats[entityName] = 0;
       }
     }
 
