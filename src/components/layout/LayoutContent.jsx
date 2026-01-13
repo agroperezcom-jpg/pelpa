@@ -103,11 +103,10 @@ export default function LayoutContent({ children, currentPageName }) {
     ventas: ShoppingCart,
     compras: ShoppingBag,
     inventario: Package,
-    tesoreria: Landmark,
-    analisis: BarChart3,
+    tesoreria: DollarSign,
     proyectos: Briefcase,
     calendario: CalendarIcon,
-    sistema: Settings
+    configuracion: Settings
   };
 
   const allModules = [
@@ -149,42 +148,14 @@ export default function LayoutContent({ children, currentPageName }) {
     },
     {
       id: "inventario",
-      name: "Inventario",
+      name: "Productos",
       section: "inventario",
       icon: Package,
       permiso: "inventario",
       items: [
         { name: "Productos", page: "Products", icon: Package, permiso: "productos" },
-        { name: "Inventario", page: "Inventory", icon: Check, permiso: "inventario" },
+        { name: "Stock", page: "Inventory", icon: Check, permiso: "inventario" },
         { name: "Control de Stock", page: "HistorialControlesStock", icon: BarChart3, permiso: "control_stock" },
-      ]
-    },
-    {
-      id: "tesoreria",
-      name: "Tesorería",
-      section: "tesoreria",
-      icon: Landmark,
-      permiso: "tesoreria",
-      items: [
-        { name: "Tesorería", page: "TesoreriaV2", icon: Landmark, permiso: "tesoreria" },
-        { name: "Cheques", page: "Cheques", icon: CreditCard, permiso: "cheques" },
-        { name: "Gastos", page: "Expenses", icon: DollarSign, permiso: "gastos" },
-      ]
-    },
-    {
-      id: "analisis",
-      name: "Análisis",
-      section: "analisis",
-      icon: TrendingUp,
-      permiso: "analytics",
-      items: [
-        { name: "Dashboard Ejecutivo", page: "DashboardEjecutivo", icon: BarChart3, permiso: "analytics" },
-        { name: "Estado de Resultados", page: "EstadoResultados", icon: FileText, permiso: "analytics" },
-        { name: "Analytics", page: "Analytics", icon: TrendingUp, permiso: "analytics" },
-        { name: "Tablero Fiscal", page: "TableroFiscal", icon: FileText, permiso: "tablero_fiscal" },
-        { name: "IVA Mensual", page: "IVAMensual", icon: Percent, permiso: "iva_mensual" },
-        { name: "Ingresos Brutos", page: "IngresosBrutos", icon: Percent, permiso: "ingresos_brutos" },
-        { name: "Finanzas", page: "Finance", icon: DollarSign, permiso: "analytics" },
       ]
     },
     {
@@ -209,21 +180,42 @@ export default function LayoutContent({ children, currentPageName }) {
       ]
     },
     {
-      id: "sistema",
-      name: "Sistema",
-      section: "sistema",
+      id: "tesoreria",
+      name: "Finanzas",
+      section: "tesoreria",
+      icon: DollarSign,
+      permiso: "tesoreria",
+      items: [
+        { name: "Tesorería", page: "TesoreriaV2", icon: Landmark, permiso: "tesoreria" },
+        { name: "Cheques", page: "Cheques", icon: CreditCard, permiso: "cheques" },
+        { name: "Gastos", page: "Expenses", icon: DollarSign, permiso: "gastos" },
+        { name: "Dashboard Ejecutivo", page: "DashboardEjecutivo", icon: BarChart3, permiso: "analytics" },
+        { name: "Estado de Resultados", page: "EstadoResultados", icon: FileText, permiso: "analytics" },
+        { name: "Analytics", page: "Analytics", icon: TrendingUp, permiso: "analytics" },
+        { name: "Tablero Fiscal", page: "TableroFiscal", icon: FileText, permiso: "tablero_fiscal" },
+        { name: "IVA Mensual", page: "IVAMensual", icon: Percent, permiso: "iva_mensual" },
+        { name: "Ingresos Brutos", page: "IngresosBrutos", icon: Percent, permiso: "ingresos_brutos" },
+        { name: "Finanzas", page: "Finance", icon: DollarSign, permiso: "analytics" },
+      ]
+    },
+    {
+      id: "configuracion",
+      name: "Configuración",
+      section: "configuracion",
       icon: Settings,
       permiso: null,
       items: [
-        { name: "Configuración", page: "Settings", icon: Settings, permiso: "configuracion" },
+        { name: "Empresa", page: "Settings", icon: Building2, permiso: null },
+        { name: "Usuarios", page: "SettingsUsers", icon: Users, permiso: null },
+        { name: "Roles y Permisos", page: "SettingsRoles", icon: Shield, permiso: null },
       ]
     }
   ];
 
   const modules = allModules
     .map(module => {
-      // Hide sistema module for non-admins
-      if (module.id === "sistema" && !externalIsAdmin) {
+      // Hide configuracion module for non-admins
+      if (module.id === "configuracion" && !externalIsAdmin) {
         return null;
       }
 
