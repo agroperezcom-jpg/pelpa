@@ -41,7 +41,7 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
   const [resetConfirmPin, setResetConfirmPin] = useState("");
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
 
-  // Fetch current reset config
+  // Fetch current reset config and company mode
   const { data: resetConfig } = useQuery({
     queryKey: ['resetConfig', currentCompanyId],
     queryFn: async () => {
@@ -55,6 +55,15 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
     },
     enabled: isOpen && !!currentCompanyId
   });
+
+  const { data: companies = [] } = useQuery({
+    queryKey: ['companies'],
+    queryFn: () => base44.entities.Company.list(),
+    enabled: isOpen && !!currentCompanyId
+  });
+
+  const company = companies.find(c => c.id === currentCompanyId);
+  const isProductionMode = company?.environment_mode === 'PRODUCCION';
 
   // Set PIN mutation
   const setResetPinMutation = useMutation({
@@ -203,26 +212,41 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
             {/* Reset Data Tab */}
             {tab === "reset" && (
               <div className="space-y-4">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 space-y-2">
-                  <p className="text-sm font-semibold text-red-800 flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />
-                    ⚠️ ACCIÓN IRREVERSIBLE
-                  </p>
-                  <p className="text-xs text-red-700">
-                    Esta acción eliminará permanentemente TODOS los datos de la empresa (incluyendo ventas, stock, calendario, tareas y proyectos).
-                  </p>
-                  <p className="text-xs font-medium text-red-800 mt-2">
-                    Esta acción no se puede deshacer.
-                  </p>
-                </div>
+                {isProductionMode && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    <p className="text-sm font-semibold text-amber-900 flex items-center gap-2">
+                      🔒 Modo PRODUCCIÓN
+                    </p>
+                    <p className="text-xs text-amber-800 mt-2">
+                      El reseteo de datos está deshabilitado en modo PRODUCCIÓN para proteger tus datos reales. No se pueden eliminar datos de una empresa en producción.
+                    </p>
+                  </div>
+                )}
 
-                <Button
-                  onClick={() => setShowResetConfirmDialog(true)}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white gap-2"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Eliminar Todos los Datos
-                </Button>
+                {!isProductionMode && (
+                  <>
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 space-y-2">
+                      <p className="text-sm font-semibold text-red-800 flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        ⚠️ ACCIÓN IRREVERSIBLE
+                      </p>
+                      <p className="text-xs text-red-700">
+                        Esta acción eliminará permanentemente TODOS los datos de la empresa (incluyendo ventas, stock, calendario, tareas y proyectos).
+                      </p>
+                      <p className="text-xs font-medium text-red-800 mt-2">
+                        Esta acción no se puede deshacer.
+                      </p>
+                    </div>
+
+                    <Button
+                      onClick={() => setShowResetConfirmDialog(true)}
+                      className="w-full bg-red-600 hover:bg-red-700 text-white gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Eliminar Todos los Datos
+                    </Button>
+                  </>
+                )}
               </div>
             )}
           </div>
