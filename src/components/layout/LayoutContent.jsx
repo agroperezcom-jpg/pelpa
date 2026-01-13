@@ -208,7 +208,7 @@ export default function LayoutContent({ children, currentPageName }) {
         { name: "Calendario", page: "Calendar", icon: CalendarIcon, permiso: "calendario" },
       ]
     },
-    ...(externalIsAdmin ? [{
+    {
       id: "sistema",
       name: "Sistema",
       section: "sistema",
@@ -217,11 +217,16 @@ export default function LayoutContent({ children, currentPageName }) {
       items: [
         { name: "Configuración", page: "Settings", icon: Settings, permiso: "configuracion" },
       ]
-    }] : [])
+    }
   ];
 
   const modules = allModules
     .map(module => {
+      // Hide sistema module for non-admins
+      if (module.id === "sistema" && !externalIsAdmin) {
+        return null;
+      }
+
       if (!module.permiso) {
         return module;
       }
