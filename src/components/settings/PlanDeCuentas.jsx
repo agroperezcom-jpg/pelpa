@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { Upload, FileSpreadsheet, Trash2, Plus, Download, AlertCircle, Edit, CheckSquare } from "lucide-react";
+import { Upload, FileSpreadsheet, Trash2, Plus, Download, AlertCircle, Edit, CheckSquare, ChevronLeft, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function PlanDeCuentas() {
@@ -54,13 +54,24 @@ export default function PlanDeCuentas() {
     activa: true
   });
   const [importErrors, setImportErrors] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const queryClient = useQueryClient();
 
   const { data: cuentas = [] } = useQuery({
-    queryKey: ['cuentasContables'],
-    queryFn: () => base44.entities.CuentaContable.list('codigo', 500)
+    queryKey: ['cuentasContables', currentPage, pageSize],
+    queryFn: () => base44.entities.CuentaContable.list('codigo', pageSize, (currentPage - 1) * pageSize)
   });
+
+  const { data: totalCuentas = [] } = useQuery({
+    queryKey: ['cuentasContablesTotal'],
+    queryFn: () => base44.entities.CuentaContable.list('codigo', 10000)
+  });
+
+  const totalPages = Math.ceil(totalCuentas.length / pageSize);
+  const startRecord = (currentPage - 1) * pageSize + 1;
+  const endRecord = Math.min(currentPage * pageSize, totalCuentas.length);
 
   const importMutation = useMutation({
     mutationFn: async (file) => {
@@ -315,6 +326,17 @@ export default function PlanDeCuentas() {
     }
   };
 
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+    setSelectedCuentas([]);
+  };
+
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(Number(newSize));
+    setCurrentPage(1);
+    setSelectedCuentas([]);
+  };
+
   const exportTemplate = () => {
     const csv = "codigo,nombre,rubro_contable,tipo_resultado,imputable,usa_en_gastos,usa_en_ingresos\n" +
                 "1.1.01,Caja,Activo Corriente,,false,false,false\n" +
@@ -383,14 +405,27 @@ export default function PlanDeCuentas() {
           ) : (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <p className="text-sm text-slate-600">
-                  Total de cuentas: <span className="font-bold">{cuentas.length}</span>
-                  {selectedCuentas.length > 0 && (
-                    <span className="ml-3 text-blue-600">
-                      ({selectedCuentas.length} seleccionadas)
-                    </span>
-                  )}
-                </p>
+                <div className="flex items-center gap-4">
+                  <p className="text-sm text-slate-600">
+                    Total de cuentas: <span className="font-bold">{totalCuentas.length}</span>
+                    {selectedCuentas.length > 0 && (
+                      <span className="ml-3 text-blue-600">
+                        ({selectedCuentas.length} seleccionadas)
+                      </span>
+                    )}
+                  </p>
+                  <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                    <SelectTrigger className="w-32 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10 por página</SelectItem>
+                      <SelectItem value="20">20 por página</SelectItem>
+                      <SelectItem value="50">50 por página</SelectItem>
+                      <SelectItem value="100">100 por página</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="flex gap-2">
                   {selectedCuentas.length > 0 && (
                     <Button 
@@ -532,6 +567,36 @@ export default function PlanDeCuentas() {
                   </Table>
                 </div>
               </div>
+
+              {/* Paginación */}
+              {totalCuentas.length > 0 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                  <p className="text-sm text-slate-600">
+                    Mostrando {startRecord} - {endRecord} de {totalCuentas.length} cuentas
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm px-3">
+                      Página {currentPage} de {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
