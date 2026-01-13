@@ -32,7 +32,6 @@ export const printTicket = (venta, pagos = [], empresaConfig = null, isCopia = f
 };
 
 export default function TicketPrint({ venta, pagos, isCopia = false }) {
-  const [paperWidth, setPaperWidth] = useState(PAPER_WIDTHS.LARGE);
   const [qzStatus, setQzStatus] = useState(null);
   const [qzPrinters, setQzPrinters] = useState([]);
   const [selectedPrinter, setSelectedPrinter] = useState("");
@@ -92,7 +91,7 @@ export default function TicketPrint({ venta, pagos, isCopia = false }) {
   if (!venta) return null;
 
   const handlePrint = () => {
-    printTicket(venta, pagos, empresaConfig, isCopia, paperWidth);
+    printTicket(venta, pagos, empresaConfig, isCopia, PAPER_WIDTHS.LARGE);
   };
 
   const handlePrintQZ = async () => {
@@ -236,7 +235,7 @@ export default function TicketPrint({ venta, pagos, isCopia = false }) {
       <div className="border rounded-lg bg-slate-50 p-4 mx-auto" style={{ maxWidth: '400px' }}>
         <div className="bg-white p-4 rounded border">
           <pre className="text-xs" style={{ fontFamily: 'Courier New, monospace', lineHeight: '1.2', whiteSpace: 'pre', overflow: 'auto' }}>
-            {TicketService.generateDocument(venta, pagos, empresaConfig, isCopia, paperWidth)}
+            {TicketService.generateDocument(venta, pagos, empresaConfig, isCopia, PAPER_WIDTHS.LARGE)}
           </pre>
         </div>
       </div>
