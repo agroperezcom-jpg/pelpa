@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { Building2, Type, Eye, RotateCcw, Save, Upload } from "lucide-react";
+import { Building2, Type, RotateCcw, Save, Upload } from "lucide-react";
 
 const tipografias = {
   corporativa: [
@@ -261,8 +261,7 @@ export default function IdentidadEmpresa() {
           {/* Preview */}
           <div className="border-2 border-slate-200 rounded-xl p-8 bg-white">
             <div className="flex items-center justify-between mb-4">
-              <Label className="text-xs font-semibold text-slate-500 uppercase flex items-center gap-2">
-                <Eye className="h-4 w-4" />
+              <Label className="text-xs font-semibold text-slate-500 uppercase">
                 Vista Previa
               </Label>
               <Badge variant="outline" className="text-xs">
