@@ -103,15 +103,17 @@ export default function DashboardEjecutivo() {
   const monthEnd = format(endOfMonth(new Date(selectedMonth)), 'yyyy-MM-dd');
 
   // 1️⃣ RESUMEN GENERAL
-  const ventasHoy = sales.filter(s => s.created_date?.startsWith(today) && s.estado === "CONFIRMADA");
-  const totalVentasHoy = ventasHoy.reduce((acc, s) => acc + s.total, 0);
+  const ventasHoy = sales.filter(s => {
+    const fecha = s.created_date?.split('T')[0];
+    return fecha === today && s.estado === "CONFIRMADA";
+  });
+  const totalVentasHoy = ventasHoy.reduce((acc, s) => acc + (s.total || 0), 0);
 
-  const ventasMes = sales.filter(s => 
-    s.created_date >= monthStart && 
-    s.created_date <= monthEnd + 'T23:59:59' && 
-    s.estado === "CONFIRMADA"
-  );
-  const totalVentasMes = ventasMes.reduce((acc, s) => acc + s.total, 0);
+  const ventasMes = sales.filter(s => {
+    const fecha = s.created_date?.split('T')[0];
+    return fecha >= monthStart && fecha <= monthEnd && s.estado === "CONFIRMADA";
+  });
+  const totalVentasMes = ventasMes.reduce((acc, s) => acc + (s.total || 0), 0);
 
   const comprasMes = compras.filter(c => 
     c.fecha >= monthStart && 
