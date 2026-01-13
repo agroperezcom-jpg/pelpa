@@ -127,23 +127,34 @@ export default function Expenses() {
     queryFn: () => base44.entities.Expense.list('-date', 500)
   });
 
+  const { data: mediosPago = [] } = useQuery({
+    queryKey: ['mediosPago'],
+    queryFn: () => base44.entities.MedioPago.list()
+  });
+
   const createMutation = useMutation({
     mutationFn: async (data) => {
       const expense = await base44.entities.Expense.create(data);
       
-      // Crear movimiento de tesorería como egreso
-      await base44.entities.MovimientoTesoreria.create({
-        tipo: "egreso",
-        fecha: data.date,
-        monto: data.amount,
-        cuenta_origen_id: null,
-        cuenta_origen_nombre: "Gastos",
-        cuenta_destino_id: null,
-        cuenta_destino_nombre: null,
-        concepto: data.description,
-        comprobante: data.invoice_number || `GASTO-${expense.id}`,
-        notas: data.notes || `Gasto: ${data.category}`
-      });
+      // Buscar medio de pago "Efectivo" o el primero disponible
+      const medioEfectivo = mediosPago.find(m => m.nombre?.toLowerCase().includes('efectivo')) || mediosPago[0];
+      
+      if (medioEfectivo) {
+        // Crear movimiento de tesorería como egreso
+        await base44.entities.MovimientoTesoreria.create({
+          fecha: data.date,
+          tipo: "EGRESO",
+          medio_pago_id: medioEfectivo.id,
+          medio_pago_nombre: medioEfectivo.nombre,
+          banco_id: null,
+          banco_nombre: "",
+          caja_id: null,
+          caja_nombre: "",
+          importe: data.amount,
+          referencia_tipo: "gasto",
+          observaciones: `Gasto: ${data.description} (${CATEGORIES.find(c => c.value === data.category)?.label || data.category})`
+        });
+      }
       
       return expense;
     },
