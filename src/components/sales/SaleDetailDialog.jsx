@@ -307,20 +307,6 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
         <DialogFooter className="px-6 py-4 border-t bg-slate-50">
           {sale.estado === "CONFIRMADA" && (
             <div className="w-full space-y-3">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Ancho de papel</Label>
-                <Select value={String(paperWidth)} onValueChange={(v) => setPaperWidth(Number(v))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={String(PAPER_WIDTHS.SMALL)}>58mm (32 caracteres)</SelectItem>
-                    <SelectItem value={String(PAPER_WIDTHS.MEDIUM)}>72mm (42 caracteres)</SelectItem>
-                    <SelectItem value={String(PAPER_WIDTHS.LARGE)}>80mm (48 caracteres)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
               <div className="flex flex-col gap-3">
                 <div className="grid grid-cols-3 gap-2">
                   <Button 
