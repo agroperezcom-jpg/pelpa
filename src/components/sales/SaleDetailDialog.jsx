@@ -322,6 +322,36 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
               </div>
               
               <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-3 gap-2">
+                  <Button 
+                    onClick={() => setPreviewType('mobile')}
+                    variant="outline"
+                    size="sm"
+                    disabled={downloadingType !== null}
+                  >
+                    <Eye className="h-3 w-3 mr-1" />
+                    Mobile
+                  </Button>
+                  <Button 
+                    onClick={() => setPreviewType('80mm')}
+                    variant="outline"
+                    size="sm"
+                    disabled={downloadingType !== null}
+                  >
+                    <Eye className="h-3 w-3 mr-1" />
+                    80mm
+                  </Button>
+                  <Button 
+                    onClick={() => setPreviewType('a4')}
+                    variant="outline"
+                    size="sm"
+                    disabled={downloadingType !== null}
+                  >
+                    <Eye className="h-3 w-3 mr-1" />
+                    A4
+                  </Button>
+                </div>
+                
                 <div className="flex gap-2">
                   <Button 
                     onClick={() => handleDownloadPDF('mobile')}

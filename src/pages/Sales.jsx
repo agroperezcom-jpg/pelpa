@@ -1600,6 +1600,39 @@ export default function Sales() {
                 <Button 
                   variant="outline"
                   size="sm"
+                  onClick={() => setPreviewTicketType('mobile')}
+                  disabled={downloadingTicket !== null}
+                  className="text-xs"
+                >
+                  <Eye className="h-3 w-3 mr-1" />
+                  Mobile
+                </Button>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPreviewTicketType('80mm')}
+                  disabled={downloadingTicket !== null}
+                  className="text-xs"
+                >
+                  <Eye className="h-3 w-3 mr-1" />
+                  80mm
+                </Button>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPreviewTicketType('a4')}
+                  disabled={downloadingTicket !== null}
+                  className="text-xs"
+                >
+                  <Eye className="h-3 w-3 mr-1" />
+                  A4
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-2">
+                <Button 
+                  variant="outline"
+                  size="sm"
                   onClick={() => handleDownloadTicket('mobile')}
                   disabled={downloadingTicket !== null}
                   className="text-xs"
