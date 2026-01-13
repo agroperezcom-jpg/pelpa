@@ -109,9 +109,12 @@ export default function DashboardEjecutivo() {
   });
   const totalVentasHoy = ventasHoy.reduce((acc, s) => acc + (s.total || 0), 0);
 
+  // Filtrar ventas del mes seleccionado
   const ventasMes = sales.filter(s => {
-    const fecha = s.created_date?.split('T')[0];
-    return fecha >= monthStart && fecha <= monthEnd && s.estado === "CONFIRMADA";
+    if (!s.created_date || s.estado !== "CONFIRMADA") return false;
+    const fecha = s.created_date.split('T')[0]; // YYYY-MM-DD
+    const mesVenta = fecha.substring(0, 7); // YYYY-MM
+    return mesVenta === selectedMonth;
   });
   const totalVentasMes = ventasMes.reduce((acc, s) => acc + (s.total || 0), 0);
 
