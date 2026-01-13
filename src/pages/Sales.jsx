@@ -155,7 +155,12 @@ export default function Sales() {
 
   const { data: talonarios = [] } = useQuery({
     queryKey: ['talonarios'],
-    queryFn: () => base44.entities.Talonario.list()
+    queryFn: async () => {
+      const allTalonarios = await base44.entities.Talonario.list();
+      // Filter by current company - requires company context
+      // For now, return all (will be updated when CompanyProvider is integrated)
+      return allTalonarios;
+    }
   });
 
   const calcularPrecioYMargen = (product, quantity) => {
@@ -479,45 +484,31 @@ export default function Sales() {
         throw new Error(`El talonario seleccionado es para comprobantes tipo ${talonario.tipo_comprobante}, pero la venta requiere tipo ${tipoComprobante}`);
       }
 
-      // Asignar número de comprobante
-      let numeroAsignado;
+      // Generar número de comprobante usando backend function
       let numeroComprobante;
-
-      // Verificar si hay números liberados para reutilizar
-      if (talonario.permite_reutilizar && talonario.numeros_liberados?.length > 0) {
-        // Usar el número liberado más bajo
-        numeroAsignado = Math.min(...talonario.numeros_liberados);
-        numeroComprobante = `${talonario.prefijo}-${String(numeroAsignado).padStart(8, '0')}`;
+      let tipo_comprobante;
+      let punto_venta;
+      
+      try {
+        const result = await base44.functions.invoke('generateDocumentNumber', {
+          talonario_id: talonario.id,
+          company_id: saleData.company_id
+        });
         
-        // Remover el número de la lista de liberados
-        const nuevosLiberados = talonario.numeros_liberados.filter(n => n !== numeroAsignado);
-        await base44.entities.Talonario.update(talonario.id, {
-          numeros_liberados: nuevosLiberados
-        });
-      } else {
-        // Usar el siguiente número correlativo
-        numeroAsignado = talonario.ultimo_numero_usado + 1;
-
-        // Validar que no exceda el límite del talonario
-        if (talonario.numero_hasta && numeroAsignado > talonario.numero_hasta) {
-          throw new Error(`El talonario "${talonario.nombre}" ha alcanzado su límite de numeración`);
-        }
-
-        numeroComprobante = `${talonario.prefijo}-${String(numeroAsignado).padStart(8, '0')}`;
-
-        // Actualizar último número usado
-        await base44.entities.Talonario.update(talonario.id, {
-          ultimo_numero_usado: numeroAsignado
-        });
+        numeroComprobante = result.numero_comprobante;
+        tipo_comprobante = result.tipo_comprobante;
+        punto_venta = result.punto_venta;
+      } catch (error) {
+        throw new Error(`Error generando número de comprobante: ${error.message}`);
       }
 
-      // Crear venta confirmada
+      // Crear venta confirmada con número de comprobante asignado
       const sale = await base44.entities.Sale.create({
         ...saleData,
         tipo_venta: tipoVenta,
         estado: "CONFIRMADA",
-        tipo_comprobante: tipoComprobante,
-        talonario_nombre: talonario.nombre,
+        tipo_comprobante: tipo_comprobante,
+        talonario_nombre: talonario.name,
         numero_comprobante: numeroComprobante
       });
 
