@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,10 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { base44 } from "@/api/base44Client";
+import { Skeleton } from "@/components/ui/skeleton";
+import { createPageUrl } from "@/utils";
+import { useCompany } from "@/components/context/CompanyContext";
 
 export default function EventDetailDialog({ 
   isOpen, 
@@ -18,7 +22,39 @@ export default function EventDetailDialog({
   onNavigate,
   getEventColor 
 }) {
+  const [projectData, setProjectData] = useState(null);
+  const [isLoadingProject, setIsLoadingProject] = useState(false);
+  const { currentCompanyId } = useCompany();
+
   if (!event) return null;
+
+  // Fetch full project data when modal opens and event has project_id
+  useEffect(() => {
+    const fetchProjectData = async () => {
+      if (!event?.project_id || event.type === "project" || !isOpen) {
+        setProjectData(null);
+        return;
+      }
+
+      setIsLoadingProject(true);
+      try {
+        const projects = await base44.entities.Project.filter({ id: event.project_id });
+        if (projects.length > 0) {
+          const project = projects[0];
+          // Safety check: ensure company_id matches
+          if (project.company_id === currentCompanyId) {
+            setProjectData(project);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching project data:", error);
+      } finally {
+        setIsLoadingProject(false);
+      }
+    };
+
+    fetchProjectData();
+  }, [event?.project_id, event?.type, isOpen, currentCompanyId]);
 
   const eventColor = getEventColor ? getEventColor(event) : "#64748b";
 
@@ -350,22 +386,88 @@ export default function EventDetailDialog({
 
           {/* Proyecto relacionado */}
           {event.project_id && event.type !== "project" && (
-            <div className="space-y-1">
+            <div className="space-y-3 bg-slate-50 border border-slate-200 rounded-lg p-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Briefcase className="h-4 w-4" />
                 <span className="font-medium">Proyecto</span>
               </div>
-              <div className="pl-6">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onNavigate && onNavigate(event.project_id, "project")}
-                  className="gap-2"
-                >
-                  Ver proyecto
-                  <ExternalLink className="h-3 w-3" />
-                </Button>
-              </div>
+
+              {isLoadingProject ? (
+                <div className="pl-6 space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              ) : projectData ? (
+                <div className="pl-6 space-y-3">
+                  {/* Nombre del proyecto */}
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-foreground">
+                      {projectData.name}
+                    </p>
+                  </div>
+
+                  {/* Estado del proyecto */}
+                  {projectData.status && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Estado</p>
+                      <div>
+                        <Badge className="bg-slate-100 text-slate-800">
+                          {projectData.status === "en_ejecucion" && "En Ejecución"}
+                          {projectData.status === "aprobado" && "Aprobado"}
+                          {projectData.status === "finalizado" && "Finalizado"}
+                          {projectData.status === "borrador" && "Borrador"}
+                          {projectData.status === "en_presupuestacion" && "En Presupuestación"}
+                          {projectData.status === "pendiente_aprobacion" && "Pendiente Aprobación"}
+                          {projectData.status === "rechazado" && "Rechazado"}
+                          {projectData.status === "cancelado" && "Cancelado"}
+                          {!["en_ejecucion", "aprobado", "finalizado", "borrador", "en_presupuestacion", "pendiente_aprobacion", "rechazado", "cancelado"].includes(projectData.status) && projectData.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Fechas del proyecto */}
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    {projectData.start_date && (
+                      <div className="space-y-1">
+                        <p className="text-muted-foreground">Fecha de inicio</p>
+                        <p className="font-medium text-foreground">
+                          {format(new Date(projectData.start_date), "d MMM yyyy", { locale: es })}
+                        </p>
+                      </div>
+                    )}
+                    {projectData.estimated_end_date && (
+                      <div className="space-y-1">
+                        <p className="text-muted-foreground">Fecha de fin</p>
+                        <p className="font-medium text-foreground">
+                          {format(new Date(projectData.estimated_end_date), "d MMM yyyy", { locale: es })}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Ver proyecto button */}
+                  <div className="pt-2">
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-2"
+                    >
+                      <a href={`/Projects?id=${event.project_id}`}>
+                        Ver proyecto
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="pl-6">
+                  <p className="text-xs text-muted-foreground italic">
+                    No se pudo cargar la información del proyecto
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
