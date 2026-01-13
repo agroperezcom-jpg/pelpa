@@ -352,37 +352,37 @@ export default function CompanyConfiguration({ isAdmin = false }) {
 
           {/* Advanced Tab */}
           {activeTab === "advanced" && isAdmin && (
-           <div className="space-y-6">
-             <div className="p-6 bg-red-50 border border-red-200 rounded-lg space-y-4">
-               <div>
-                 <h3 className="text-sm font-semibold text-red-900 flex items-center gap-2">
-                   <Lock className="h-4 w-4" />
-                   Reseteo Maestro de Datos
-                 </h3>
-                 <p className="text-xs text-red-700 mt-2">
-                   Elimina permanentemente todos los datos operativos, financieros y de planificación de la empresa.
-                 </p>
-               </div>
-               <ul className="text-xs text-red-700 list-disc list-inside space-y-1 ml-2">
-                 <li>Todas las ventas e invoices</li>
-                 <li>Inventario y stock</li>
-                 <li>Cuentas y movimientos financieros</li>
-                 <li>Gastos y pagos</li>
-                 <li>Calendario, tareas y proyectos</li>
-                 <li>Clientes y proveedores</li>
-               </ul>
-               <p className="text-xs font-medium text-red-900">
-                 ⚠️ Esta acción es PERMANENTE y NO se puede deshacer
-               </p>
-               <Button
-                 onClick={() => setShowResetDialog(true)}
-                 className="w-full bg-red-600 hover:bg-red-700 text-white mt-4"
-               >
-                 <Trash2 className="h-4 w-4 mr-2" />
-                 Resetear Todos los Datos
-               </Button>
-             </div>
-           </div>
+            <div className="space-y-6">
+              <div className="p-6 bg-red-50 border border-red-200 rounded-lg space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-red-900 flex items-center gap-2">
+                    <Lock className="h-4 w-4" />
+                    Reseteo Maestro de Datos
+                  </h3>
+                  <p className="text-xs text-red-700 mt-2">
+                    Elimina permanentemente todos los datos operativos, financieros y de planificación de la empresa.
+                  </p>
+                </div>
+                <ul className="text-xs text-red-700 list-disc list-inside space-y-1 ml-2">
+                  <li>Todas las ventas e invoices</li>
+                  <li>Inventario y stock</li>
+                  <li>Cuentas y movimientos financieros</li>
+                  <li>Gastos y pagos</li>
+                  <li>Calendario, tareas y proyectos</li>
+                  <li>Clientes y proveedores</li>
+                </ul>
+                <p className="text-xs font-medium text-red-900">
+                  ⚠️ Esta acción es PERMANENTE y NO se puede deshacer
+                </p>
+                <Button
+                  onClick={() => setShowResetDialog(true)}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white mt-4"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Resetear Todos los Datos
+                </Button>
+              </div>
+            </div>
           )}
           </CardContent>
           </Card>
