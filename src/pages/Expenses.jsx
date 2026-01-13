@@ -66,39 +66,11 @@ import {
   Cell
 } from "recharts";
 
-const CATEGORIES = [
-  { value: "renta", label: "Renta" },
-  { value: "servicios", label: "Servicios (Luz, Agua, Internet)" },
-  { value: "salarios", label: "Salarios y Nómina" },
-  { value: "marketing", label: "Marketing y Publicidad" },
-  { value: "suministros", label: "Suministros de Oficina" },
-  { value: "mantenimiento", label: "Mantenimiento" },
-  { value: "transporte", label: "Transporte" },
-  { value: "impuestos", label: "Impuestos" },
-  { value: "seguros", label: "Seguros" },
-  { value: "tecnologia", label: "Tecnología y Software" },
-  { value: "capacitacion", label: "Capacitación" },
-  { value: "profesionales", label: "Servicios Profesionales" },
-  { value: "otros", label: "Otros" }
-];
+
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#64748b'];
 
-const categoryColors = {
-  renta: "bg-blue-100 text-blue-700",
-  servicios: "bg-emerald-100 text-emerald-700",
-  salarios: "bg-violet-100 text-violet-700",
-  marketing: "bg-pink-100 text-pink-700",
-  suministros: "bg-amber-100 text-amber-700",
-  mantenimiento: "bg-cyan-100 text-cyan-700",
-  transporte: "bg-orange-100 text-orange-700",
-  impuestos: "bg-red-100 text-red-700",
-  seguros: "bg-indigo-100 text-indigo-700",
-  tecnologia: "bg-purple-100 text-purple-700",
-  capacitacion: "bg-lime-100 text-lime-700",
-  profesionales: "bg-teal-100 text-teal-700",
-  otros: "bg-slate-100 text-slate-700"
-};
+
 
 export default function Expenses() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -106,9 +78,13 @@ export default function Expenses() {
   const [monthFilter, setMonthFilter] = useState(format(new Date(), 'yyyy-MM'));
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
+  const [cuentaSearch, setCuentaSearch] = useState("");
   const [formData, setFormData] = useState({
     description: "",
-    category: "otros",
+    category: "",
+    cuenta_contable_id: "",
+    cuenta_contable_codigo: "",
+    cuenta_contable_nombre: "",
     amount: "",
     date: format(new Date(), 'yyyy-MM-dd'),
     payment_method: "efectivo",
@@ -143,6 +119,11 @@ export default function Expenses() {
   const { data: cajas = [] } = useQuery({
     queryKey: ['cajas'],
     queryFn: () => base44.entities.Caja.list()
+  });
+
+  const { data: cuentasContables = [] } = useQuery({
+    queryKey: ['cuentasContables'],
+    queryFn: () => base44.entities.CuentaContable.list('codigo', 500)
   });
 
   const createMutation = useMutation({
@@ -193,8 +174,8 @@ export default function Expenses() {
         importe: data.amount,
         referencia_tipo: "gasto",
         referencia_id: expense.id,
-        observaciones: `Gasto: ${data.description} (${CATEGORIES.find(c => c.value === data.category)?.label || data.category})`
-      });
+        observaciones: `Gasto: ${data.description} (${data.cuenta_contable_nombre || data.category})`
+        });
 
       // Actualizar expense con el ID del movimiento
       await base44.entities.Expense.update(expense.id, {
@@ -291,7 +272,10 @@ export default function Expenses() {
       setEditingExpense(expense);
       setFormData({
         description: expense.description || "",
-        category: expense.category || "otros",
+        category: expense.category || "",
+        cuenta_contable_id: expense.cuenta_contable_id || "",
+        cuenta_contable_codigo: expense.cuenta_contable_codigo || "",
+        cuenta_contable_nombre: expense.cuenta_contable_nombre || "",
         amount: expense.amount?.toString() || "",
         date: expense.date || format(new Date(), 'yyyy-MM-dd'),
         payment_method: expense.payment_method || "efectivo",
@@ -305,11 +289,15 @@ export default function Expenses() {
         notes: expense.notes || "",
         receipt_url: expense.receipt_url || ""
       });
+      setCuentaSearch(expense.cuenta_contable_nombre || "");
     } else {
       setEditingExpense(null);
       setFormData({
         description: "",
-        category: "otros",
+        category: "",
+        cuenta_contable_id: "",
+        cuenta_contable_codigo: "",
+        cuenta_contable_nombre: "",
         amount: "",
         date: format(new Date(), 'yyyy-MM-dd'),
         payment_method: "efectivo",
@@ -323,6 +311,7 @@ export default function Expenses() {
         notes: "",
         receipt_url: ""
       });
+      setCuentaSearch("");
     }
     setIsDialogOpen(true);
   };
@@ -379,14 +368,14 @@ export default function Expenses() {
 
   // Chart data by category
   const categoryData = monthExpenses.reduce((acc, expense) => {
-    const cat = expense.category || 'otros';
+    const cat = expense.cuenta_contable_nombre || expense.category || 'Sin categoría';
     if (!acc[cat]) acc[cat] = 0;
     acc[cat] += expense.amount || 0;
     return acc;
   }, {});
 
   const pieData = Object.entries(categoryData).map(([name, value]) => ({
-    name: CATEGORIES.find(c => c.value === name)?.label || name,
+    name,
     value
   }));
 
@@ -405,14 +394,15 @@ export default function Expenses() {
   });
 
   const exportToCSV = () => {
-    const headers = ["Fecha", "Descripción", "Categoría", "Monto", "Proveedor", "Método de Pago"];
+    const headers = ["Fecha", "Descripción", "Cuenta", "Código", "Monto", "Proveedor", "Medio Pago"];
     const rows = filteredExpenses.map(e => [
       e.date,
       e.description,
-      CATEGORIES.find(c => c.value === e.category)?.label,
+      e.cuenta_contable_nombre || e.category,
+      e.cuenta_contable_codigo || "",
       e.amount,
       e.vendor,
-      e.payment_method
+      e.medio_pago_nombre
     ]);
 
     const csvContent = [headers, ...rows].map(row => row.join(",")).join("\n");
@@ -589,12 +579,14 @@ export default function Expenses() {
             </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Categoría" />
+                <SelectValue placeholder="Cuenta" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas las categorías</SelectItem>
-                {CATEGORIES.map(cat => (
-                  <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                <SelectItem value="all">Todas las cuentas</SelectItem>
+                {cuentasContables.filter(c => c.tipo === "egreso" && c.imputable).map(cuenta => (
+                  <SelectItem key={cuenta.id} value={cuenta.id}>
+                    {cuenta.codigo} - {cuenta.nombre}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -637,9 +629,14 @@ export default function Expenses() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge className={categoryColors[expense.category]}>
-                    {CATEGORIES.find(c => c.value === expense.category)?.label}
-                  </Badge>
+                  {expense.cuenta_contable_codigo || expense.cuenta_contable_nombre ? (
+                    <div>
+                      <p className="font-medium text-sm">{expense.cuenta_contable_nombre}</p>
+                      <p className="text-xs text-slate-500">{expense.cuenta_contable_codigo}</p>
+                    </div>
+                  ) : (
+                    <span className="text-slate-400">-</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-slate-600">{expense.vendor || '-'}</TableCell>
                 <TableCell className="text-right font-bold text-red-600">
@@ -712,31 +709,65 @@ export default function Expenses() {
                 required
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Categoría *</Label>
-                <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map(cat => (
-                      <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Monto *</Label>
+            <div className="space-y-2">
+              <Label>Cuenta Contable *</Label>
+              <div className="relative">
                 <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  placeholder="0.00"
-                  required
+                  placeholder="Buscar cuenta..."
+                  value={cuentaSearch}
+                  onChange={(e) => setCuentaSearch(e.target.value)}
+                  className="mb-2"
                 />
               </div>
+              <div className="border rounded-lg max-h-48 overflow-y-auto">
+                {cuentasContables
+                  .filter(c => c.tipo === "egreso" && c.imputable)
+                  .filter(c => 
+                    c.nombre.toLowerCase().includes(cuentaSearch.toLowerCase()) ||
+                    c.codigo.toLowerCase().includes(cuentaSearch.toLowerCase())
+                  )
+                  .slice(0, 10)
+                  .map(cuenta => (
+                    <button
+                      key={cuenta.id}
+                      type="button"
+                      onClick={() => {
+                        setFormData({
+                          ...formData,
+                          cuenta_contable_id: cuenta.id,
+                          cuenta_contable_codigo: cuenta.codigo,
+                          cuenta_contable_nombre: cuenta.nombre,
+                          category: cuenta.nombre
+                        });
+                        setCuentaSearch(cuenta.nombre);
+                      }}
+                      className={`w-full text-left px-3 py-2 hover:bg-slate-50 border-b last:border-b-0 transition-colors ${
+                        formData.cuenta_contable_id === cuenta.id ? 'bg-blue-50' : ''
+                      }`}
+                    >
+                      <p className="font-medium text-sm">{cuenta.nombre}</p>
+                      <p className="text-xs text-slate-500">{cuenta.codigo}</p>
+                    </button>
+                  ))}
+                {cuentasContables.filter(c => c.tipo === "egreso" && c.imputable).length === 0 && (
+                  <div className="text-center py-4 text-sm text-slate-500">
+                    No hay cuentas de egreso. <br />
+                    Importa un plan de cuentas en Configuración.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Monto *</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                placeholder="0.00"
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label>Fecha *</Label>
