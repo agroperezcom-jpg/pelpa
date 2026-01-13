@@ -123,15 +123,15 @@ export default function Expenses() {
 
   const { data: cuentasContables = [] } = useQuery({
     queryKey: ['cuentasContables'],
-    queryFn: () => base44.entities.CuentaContable.list('codigo', 500)
+    queryFn: async () => {
+      const allCuentas = await base44.entities.CuentaContable.list('codigo', 500);
+      return allCuentas.filter(c => 
+        c.imputable === true && 
+        c.activa !== false &&
+        (c.tipo_resultado === 'Costo' || c.tipo_resultado === 'Gasto')
+      );
+    }
   });
-
-  const cuentasGastos = cuentasContables.filter(c => 
-    c.imputable && 
-    c.usa_en_gastos && 
-    c.is_active !== false &&
-    (c.rubro_contable === "Gastos" || c.tipo_resultado === "Gasto")
-  );
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
@@ -590,9 +590,9 @@ export default function Expenses() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas las cuentas</SelectItem>
-                {cuentasContables.filter(c => c.imputable && c.usa_en_gastos && c.is_active !== false).map(cuenta => (
+                {cuentasContables.map(cuenta => (
                   <SelectItem key={cuenta.id} value={cuenta.id}>
-                    {cuenta.codigo_contable || cuenta.codigo} - {cuenta.nombre}
+                    {cuenta.codigo} - {cuenta.nombre}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -728,10 +728,9 @@ export default function Expenses() {
               </div>
               <div className="border rounded-lg max-h-48 overflow-y-auto">
                 {cuentasContables
-                  .filter(c => c.imputable && c.usa_en_gastos && c.is_active !== false)
                   .filter(c => 
                     c.nombre.toLowerCase().includes(cuentaSearch.toLowerCase()) ||
-                    (c.codigo_contable || c.codigo).toLowerCase().includes(cuentaSearch.toLowerCase())
+                    c.codigo.toLowerCase().includes(cuentaSearch.toLowerCase())
                   )
                   .slice(0, 10)
                   .map(cuenta => (
@@ -752,13 +751,20 @@ export default function Expenses() {
                         formData.cuenta_contable_id === cuenta.id ? 'bg-blue-50' : ''
                       }`}
                     >
-                      <p className="font-medium text-sm">{cuenta.nombre}</p>
-                      <p className="text-xs text-slate-500">{cuenta.codigo}</p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-sm">{cuenta.nombre}</p>
+                          <p className="text-xs text-slate-500">{cuenta.codigo}</p>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {cuenta.tipo_resultado}
+                        </Badge>
+                      </div>
                     </button>
                   ))}
-                {cuentasContables.filter(c => c.imputable && c.usa_en_gastos && c.is_active !== false).length === 0 && (
+                {cuentasContables.length === 0 && (
                   <div className="text-center py-4 text-sm text-slate-500">
-                    No hay cuentas de egreso. <br />
+                    No hay cuentas de Costos/Gastos con imputable=true. <br />
                     Importa un plan de cuentas en Configuración.
                   </div>
                 )}
