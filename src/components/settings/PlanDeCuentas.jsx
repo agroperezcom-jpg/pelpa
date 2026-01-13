@@ -37,12 +37,17 @@ export default function PlanDeCuentas() {
   const [csvFile, setCsvFile] = useState(null);
   const [formData, setFormData] = useState({
     codigo: "",
+    codigo_contable: "",
     nombre: "",
     descripcion: "",
-    tipo: "egreso",
+    rubro_contable: "Gastos",
+    tipo_resultado: null,
     nivel: 1,
-    imputable: true
+    imputable: true,
+    usa_en_gastos: false,
+    usa_en_ingresos: false
   });
+  const [importErrors, setImportErrors] = useState([]);
 
   const queryClient = useQueryClient();
 
@@ -56,35 +61,83 @@ export default function PlanDeCuentas() {
       const text = await file.text();
       const lines = text.split('\n').filter(l => l.trim());
       
-      // Detectar separador (coma o punto y coma)
       const separator = lines[0].includes(';') ? ';' : ',';
+      const headers = lines[0].split(separator).map(h => h.trim().toLowerCase().replace(/_/g, ''));
       
-      // Parsear CSV
-      const headers = lines[0].split(separator).map(h => h.trim().toLowerCase());
       const cuentasData = [];
+      const errors = [];
+      const codigosExistentes = cuentas.map(c => c.codigo_contable || c.codigo);
+      
+      const rubrosValidos = [
+        "Activo Corriente", "Activo No Corriente", "Pasivo Corriente", 
+        "Pasivo No Corriente", "Patrimonio Neto", "Ingresos", "Costos", "Gastos"
+      ];
+      const tiposResultado = ["Ingreso", "Costo", "Gasto"];
+      const rubrosConTipoResultado = ["Ingresos", "Costos", "Gastos"];
 
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(separator).map(v => v.trim());
         if (values.length < 2) continue;
 
-        const cuenta = {};
+        const row = {};
         headers.forEach((header, idx) => {
-          cuenta[header] = values[idx] || "";
+          row[header] = values[idx] || "";
         });
 
-        // Mapear campos comunes
+        const codigo = row.codigo || row.codigocontable || row.code || "";
+        const nombre = row.nombre || row.name || "";
+        const rubro = row.rubrocontable || row.rubro || "Gastos";
+        const tipoRes = row.tiporesultado || row.tipo || null;
+        const imputable = row.imputable !== "false" && row.imputable !== "0" && row.imputable !== "no";
+        const usaGastos = row.usaengastos === "true" || row.usaengastos === "1" || row.usaengastos === "si";
+        const usaIngresos = row.usaeningresos === "true" || row.usaeningresos === "1" || row.usaeningresos === "si";
+
+        // Validaciones
+        if (!codigo) {
+          errors.push(`Fila ${i + 1}: Falta código`);
+          continue;
+        }
+        if (!nombre) {
+          errors.push(`Fila ${i + 1}: Falta nombre`);
+          continue;
+        }
+        if (codigosExistentes.includes(codigo)) {
+          errors.push(`Fila ${i + 1}: Código "${codigo}" duplicado`);
+          continue;
+        }
+        if (!rubrosValidos.includes(rubro)) {
+          errors.push(`Fila ${i + 1}: Rubro "${rubro}" inválido`);
+          continue;
+        }
+        if (rubrosConTipoResultado.includes(rubro) && (!tipoRes || !tiposResultado.includes(tipoRes))) {
+          errors.push(`Fila ${i + 1}: Tipo resultado requerido y válido para rubro "${rubro}"`);
+          continue;
+        }
+        if (!rubrosConTipoResultado.includes(rubro) && tipoRes) {
+          errors.push(`Fila ${i + 1}: Tipo resultado no debe tener valor para rubro "${rubro}"`);
+          continue;
+        }
+
+        codigosExistentes.push(codigo);
         cuentasData.push({
-          codigo: cuenta.codigo || cuenta.code || "",
-          nombre: cuenta.nombre || cuenta.name || cuenta.descripcion || "",
-          descripcion: cuenta.descripcion || cuenta.description || "",
-          tipo: cuenta.tipo || cuenta.type || "egreso",
-          nivel: parseInt(cuenta.nivel || cuenta.level || "1"),
-          imputable: cuenta.imputable !== "false" && cuenta.imputable !== "0",
+          codigo,
+          codigo_contable: codigo,
+          nombre,
+          descripcion: row.descripcion || row.description || "",
+          rubro_contable: rubro,
+          tipo_resultado: rubrosConTipoResultado.includes(rubro) ? tipoRes : null,
+          nivel: parseInt(row.nivel || row.level || "1"),
+          imputable,
+          usa_en_gastos: usaGastos,
+          usa_en_ingresos: usaIngresos,
           is_active: true
         });
       }
 
-      // Crear cuentas en bulk
+      if (errors.length > 0) {
+        throw new Error(`Errores de validación:\n${errors.join('\n')}`);
+      }
+
       if (cuentasData.length > 0) {
         await base44.entities.CuentaContable.bulkCreate(cuentasData);
       }
@@ -95,10 +148,13 @@ export default function PlanDeCuentas() {
       queryClient.invalidateQueries({ queryKey: ['cuentasContables'] });
       setImportDialogOpen(false);
       setCsvFile(null);
+      setImportErrors([]);
       toast.success(`Se importaron ${count} cuentas correctamente`);
     },
     onError: (error) => {
-      toast.error("Error al importar el plan de cuentas: " + error.message);
+      const errMsg = error.message || "Error desconocido";
+      setImportErrors(errMsg.split('\n'));
+      toast.error("Error al importar el plan de cuentas");
     }
   });
 
@@ -109,11 +165,15 @@ export default function PlanDeCuentas() {
       setAddDialogOpen(false);
       setFormData({
         codigo: "",
+        codigo_contable: "",
         nombre: "",
         descripcion: "",
-        tipo: "egreso",
+        rubro_contable: "Gastos",
+        tipo_resultado: null,
         nivel: 1,
-        imputable: true
+        imputable: true,
+        usa_en_gastos: false,
+        usa_en_ingresos: false
       });
       toast.success("Cuenta agregada correctamente");
     }
@@ -153,11 +213,12 @@ export default function PlanDeCuentas() {
   };
 
   const exportTemplate = () => {
-    const csv = "codigo,nombre,descripcion,tipo,nivel,imputable\n" +
-                "1.1.01,Caja,Caja principal,activo,3,true\n" +
-                "4.1.01,Ventas,Ingresos por ventas,ingreso,3,true\n" +
-                "5.1.01,Alquileres,Gasto de alquiler,egreso,3,true\n" +
-                "5.1.02,Servicios,Gastos de servicios,egreso,3,true";
+    const csv = "codigo,nombre,rubro_contable,tipo_resultado,imputable,usa_en_gastos,usa_en_ingresos\n" +
+                "1.1.01,Caja,Activo Corriente,,true,false,false\n" +
+                "4.1.01,Ventas,Ingresos,Ingreso,true,false,true\n" +
+                "5.1.01,Costo Mercaderías,Costos,Costo,true,false,false\n" +
+                "5.2.01,Alquileres,Gastos,Gasto,true,true,false\n" +
+                "5.2.02,Sueldos y Jornales,Gastos,Gasto,true,true,false";
     
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -167,12 +228,15 @@ export default function PlanDeCuentas() {
     link.click();
   };
 
-  const tipoColors = {
-    activo: "bg-blue-100 text-blue-700",
-    pasivo: "bg-red-100 text-red-700",
-    patrimonio: "bg-purple-100 text-purple-700",
-    ingreso: "bg-green-100 text-green-700",
-    egreso: "bg-orange-100 text-orange-700"
+  const rubroColors = {
+    "Activo Corriente": "bg-blue-100 text-blue-700",
+    "Activo No Corriente": "bg-blue-200 text-blue-800",
+    "Pasivo Corriente": "bg-red-100 text-red-700",
+    "Pasivo No Corriente": "bg-red-200 text-red-800",
+    "Patrimonio Neto": "bg-purple-100 text-purple-700",
+    "Ingresos": "bg-green-100 text-green-700",
+    "Costos": "bg-orange-100 text-orange-700",
+    "Gastos": "bg-amber-100 text-amber-700"
   };
 
   return (
@@ -232,59 +296,91 @@ export default function PlanDeCuentas() {
               </div>
 
               <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-slate-50">
-                      <TableHead>Código</TableHead>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Nivel</TableHead>
-                      <TableHead className="text-center">Imputable</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {cuentas.map((cuenta) => (
-                      <TableRow key={cuenta.id}>
-                        <TableCell className="font-mono text-sm">{cuenta.codigo}</TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{cuenta.nombre}</p>
-                            {cuenta.descripcion && (
-                              <p className="text-xs text-slate-500">{cuenta.descripcion}</p>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={tipoColors[cuenta.tipo]}>
-                            {cuenta.tipo}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{cuenta.nivel}</TableCell>
-                        <TableCell className="text-center">
-                          {cuenta.imputable ? (
-                            <Badge className="bg-green-100 text-green-700">Sí</Badge>
-                          ) : (
-                            <Badge variant="secondary">No</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              if (confirm('¿Eliminar esta cuenta?')) {
-                                deleteMutation.mutate(cuenta.id);
-                              }
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-50">
+                        <TableHead>Código</TableHead>
+                        <TableHead>Nombre</TableHead>
+                        <TableHead>Rubro</TableHead>
+                        <TableHead>Tipo Resultado</TableHead>
+                        <TableHead className="text-center">Imputable</TableHead>
+                        <TableHead className="text-center">Usa en Gastos</TableHead>
+                        <TableHead className="text-center">Estado</TableHead>
+                        <TableHead className="text-right">Acciones</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {cuentas.map((cuenta) => (
+                        <TableRow key={cuenta.id}>
+                          <TableCell className="font-mono text-sm">
+                            {cuenta.codigo_contable || cuenta.codigo}
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{cuenta.nombre}</p>
+                              {cuenta.descripcion && (
+                                <p className="text-xs text-slate-500">{cuenta.descripcion}</p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {cuenta.rubro_contable ? (
+                              <Badge className={rubroColors[cuenta.rubro_contable]}>
+                                {cuenta.rubro_contable}
+                              </Badge>
+                            ) : (
+                              <span className="text-xs text-slate-400">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {cuenta.tipo_resultado ? (
+                              <Badge variant="outline" className="text-xs">
+                                {cuenta.tipo_resultado}
+                              </Badge>
+                            ) : (
+                              <span className="text-xs text-slate-400">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {cuenta.imputable ? (
+                              <Badge className="bg-green-100 text-green-700 text-xs">Sí</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">No</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {cuenta.usa_en_gastos ? (
+                              <Badge className="bg-blue-100 text-blue-700 text-xs">Sí</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">No</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {cuenta.is_active !== false ? (
+                              <Badge className="bg-green-100 text-green-700 text-xs">Activa</Badge>
+                            ) : (
+                              <Badge className="bg-slate-100 text-slate-600 text-xs">Inactiva</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm('¿Eliminar esta cuenta?')) {
+                                  deleteMutation.mutate(cuenta.id);
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </div>
           )}
@@ -303,11 +399,22 @@ export default function PlanDeCuentas() {
                 <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-blue-800">
                   <p className="font-medium mb-1">Formato del CSV:</p>
-                  <p className="text-xs mb-2">El archivo debe contener las columnas: <code className="bg-white px-1 rounded">codigo, nombre, tipo</code></p>
-                  <p className="text-xs">Columnas opcionales: <code className="bg-white px-1 rounded">descripcion, nivel, imputable</code></p>
+                  <p className="text-xs mb-2">Columnas requeridas: <code className="bg-white px-1 rounded">codigo, nombre, rubro_contable</code></p>
+                  <p className="text-xs">Columnas opcionales: <code className="bg-white px-1 rounded">tipo_resultado, imputable, usa_en_gastos, usa_en_ingresos</code></p>
                 </div>
               </div>
             </div>
+
+            {importErrors.length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-h-48 overflow-y-auto">
+                <p className="font-medium text-red-800 text-sm mb-2">Errores encontrados:</p>
+                <ul className="text-xs text-red-700 space-y-1">
+                  {importErrors.map((err, idx) => (
+                    <li key={idx}>{err}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>Archivo CSV</Label>
@@ -347,23 +454,36 @@ export default function PlanDeCuentas() {
                 <Label>Código *</Label>
                 <Input
                   value={formData.codigo}
-                  onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, codigo: e.target.value, codigo_contable: e.target.value })}
                   placeholder="1.1.01"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label>Tipo *</Label>
-                <Select value={formData.tipo} onValueChange={(v) => setFormData({ ...formData, tipo: v })}>
+                <Label>Rubro Contable *</Label>
+                <Select 
+                  value={formData.rubro_contable} 
+                  onValueChange={(v) => {
+                    const needsTipoRes = ["Ingresos", "Costos", "Gastos"].includes(v);
+                    setFormData({ 
+                      ...formData, 
+                      rubro_contable: v,
+                      tipo_resultado: needsTipoRes ? (formData.tipo_resultado || "Gasto") : null
+                    });
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="activo">Activo</SelectItem>
-                    <SelectItem value="pasivo">Pasivo</SelectItem>
-                    <SelectItem value="patrimonio">Patrimonio</SelectItem>
-                    <SelectItem value="ingreso">Ingreso</SelectItem>
-                    <SelectItem value="egreso">Egreso</SelectItem>
+                    <SelectItem value="Activo Corriente">Activo Corriente</SelectItem>
+                    <SelectItem value="Activo No Corriente">Activo No Corriente</SelectItem>
+                    <SelectItem value="Pasivo Corriente">Pasivo Corriente</SelectItem>
+                    <SelectItem value="Pasivo No Corriente">Pasivo No Corriente</SelectItem>
+                    <SelectItem value="Patrimonio Neto">Patrimonio Neto</SelectItem>
+                    <SelectItem value="Ingresos">Ingresos</SelectItem>
+                    <SelectItem value="Costos">Costos</SelectItem>
+                    <SelectItem value="Gastos">Gastos</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -385,14 +505,52 @@ export default function PlanDeCuentas() {
                 placeholder="Descripción opcional"
               />
             </div>
-            <div className="space-y-2">
-              <Label>Nivel</Label>
-              <Input
-                type="number"
-                value={formData.nivel}
-                onChange={(e) => setFormData({ ...formData, nivel: parseInt(e.target.value) || 1 })}
-                min="1"
-              />
+            {["Ingresos", "Costos", "Gastos"].includes(formData.rubro_contable) && (
+              <div className="space-y-2">
+                <Label>Tipo de Resultado *</Label>
+                <Select 
+                  value={formData.tipo_resultado || ""} 
+                  onValueChange={(v) => setFormData({ ...formData, tipo_resultado: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Ingreso">Ingreso</SelectItem>
+                    <SelectItem value="Costo">Costo</SelectItem>
+                    <SelectItem value="Gasto">Gasto</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.imputable}
+                  onChange={(e) => setFormData({ ...formData, imputable: e.target.checked })}
+                  className="rounded"
+                />
+                <span className="text-sm">Imputable</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.usa_en_gastos}
+                  onChange={(e) => setFormData({ ...formData, usa_en_gastos: e.target.checked })}
+                  className="rounded"
+                />
+                <span className="text-sm">Usa en Gastos</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.usa_en_ingresos}
+                  onChange={(e) => setFormData({ ...formData, usa_en_ingresos: e.target.checked })}
+                  className="rounded"
+                />
+                <span className="text-sm">Usa en Ingresos</span>
+              </label>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setAddDialogOpen(false)}>

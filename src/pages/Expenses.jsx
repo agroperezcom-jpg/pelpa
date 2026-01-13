@@ -583,9 +583,9 @@ export default function Expenses() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas las cuentas</SelectItem>
-                {cuentasContables.filter(c => c.tipo === "egreso" && c.imputable).map(cuenta => (
+                {cuentasContables.filter(c => c.imputable && c.usa_en_gastos && c.is_active !== false).map(cuenta => (
                   <SelectItem key={cuenta.id} value={cuenta.id}>
-                    {cuenta.codigo} - {cuenta.nombre}
+                    {cuenta.codigo_contable || cuenta.codigo} - {cuenta.nombre}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -721,10 +721,10 @@ export default function Expenses() {
               </div>
               <div className="border rounded-lg max-h-48 overflow-y-auto">
                 {cuentasContables
-                  .filter(c => c.tipo === "egreso" && c.imputable)
+                  .filter(c => c.imputable && c.usa_en_gastos && c.is_active !== false)
                   .filter(c => 
                     c.nombre.toLowerCase().includes(cuentaSearch.toLowerCase()) ||
-                    c.codigo.toLowerCase().includes(cuentaSearch.toLowerCase())
+                    (c.codigo_contable || c.codigo).toLowerCase().includes(cuentaSearch.toLowerCase())
                   )
                   .slice(0, 10)
                   .map(cuenta => (
@@ -749,7 +749,7 @@ export default function Expenses() {
                       <p className="text-xs text-slate-500">{cuenta.codigo}</p>
                     </button>
                   ))}
-                {cuentasContables.filter(c => c.tipo === "egreso" && c.imputable).length === 0 && (
+                {cuentasContables.filter(c => c.imputable && c.usa_en_gastos && c.is_active !== false).length === 0 && (
                   <div className="text-center py-4 text-sm text-slate-500">
                     No hay cuentas de egreso. <br />
                     Importa un plan de cuentas en Configuración.
