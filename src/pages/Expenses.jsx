@@ -175,9 +175,15 @@ export default function Expenses() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
+      // Buscar el gasto primero para obtener la descripción
+      const gasto = expenses.find(e => e.id === id);
+      
       // Buscar y eliminar el movimiento de tesorería asociado
       const movimientos = await base44.entities.MovimientoTesoreria.list();
-      const relacionado = movimientos.find(m => m.comprobante === `GASTO-${id}`);
+      const relacionado = movimientos.find(m => 
+        m.referencia_tipo === "gasto" && 
+        m.observaciones?.includes(gasto?.description)
+      );
       
       if (relacionado) {
         await base44.entities.MovimientoTesoreria.delete(relacionado.id);
