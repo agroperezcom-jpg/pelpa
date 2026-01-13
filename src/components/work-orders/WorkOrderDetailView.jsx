@@ -10,6 +10,8 @@ import { es } from 'date-fns/locale';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import toast from 'react-hot-toast';
+import WorkOrderStatusBadge from './WorkOrderStatusBadge';
+import WorkOrderDeliveryInfo from './WorkOrderDeliveryInfo';
 
 const workOrderStatusMap = {
   DESIGN: { label: 'En diseño', color: 'bg-blue-100 text-blue-800' },
@@ -22,8 +24,18 @@ const workOrderStatusMap = {
 
 export default function WorkOrderDetailView({ workOrder, onBack, onUpdate }) {
   const [selectedStatus, setSelectedStatus] = useState(workOrder.work_order_status);
-  const [showDeliveryForm, setShowDeliveryForm] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const queryClient = useQueryClient();
+
+  // Get current user to check if admin
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      setIsAdmin(user?.role === 'admin');
+      return user;
+    }
+  });
 
   // Fetch related data
   const { data: tasks = [] } = useQuery({
@@ -56,16 +68,52 @@ export default function WorkOrderDetailView({ workOrder, onBack, onUpdate }) {
   });
 
   // Calculate delivery date status
-  const isOverdue = workOrder.estimated_delivery_date && 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const estimatedDate = workOrder.estimated_delivery_date
+    ? new Date(workOrder.estimated_delivery_date)
+    : null;
+  estimatedDate?.setHours(0, 0, 0, 0);
+  
+  const isOverdue = estimatedDate && 
     !['DELIVERED', 'CANCELLED'].includes(workOrder.work_order_status) &&
-    isBefore(new Date(workOrder.estimated_delivery_date), new Date());
+    estimatedDate < today;
 
   const handleStatusChange = (newStatus) => {
     setSelectedStatus(newStatus);
     updateStatusMutation.mutate(newStatus);
   };
 
-  const statusInfo = workOrderStatusMap[selectedStatus] || { label: selectedStatus, color: 'bg-gray-100 text-gray-800' };
+  const handleMarkDelivered = async () => {
+    if (!isAdmin) return;
+    try {
+      await base44.functions.invoke('markWorkOrderDelivered', {
+        project_id: workOrder.id,
+        company_id: workOrder.company_id
+      });
+      toast.success('Orden marcada como entregada');
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      toast.error('Error: ' + error.message);
+    }
+  };
+
+  const handleAutoUpdateStatus = async () => {
+    try {
+      await base44.functions.invoke('updateWorkOrderStatusAutomatically', {
+        project_id: workOrder.id,
+        company_id: workOrder.company_id
+      });
+      toast.success('Estado actualizado automáticamente');
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      toast.error('Error: ' + error.message);
+    }
+  };
+
+
 
   return (
     <div className="space-y-6">
@@ -86,66 +134,50 @@ export default function WorkOrderDetailView({ workOrder, onBack, onUpdate }) {
       </div>
 
       {/* Status & Delivery Control */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-base">Estado de la Orden</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {isOverdue && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-red-900">Orden Vencida</p>
-                <p className="text-xs text-red-700 mt-0.5">
-                  Entrega estimada: {format(new Date(workOrder.estimated_delivery_date), 'dd MMMM yyyy', { locale: es })}
-                </p>
-              </div>
+      <div className="space-y-4">
+        <Card className="border-0 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-base">Estado de la Orden</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <WorkOrderStatusBadge status={selectedStatus} isOverdue={isOverdue} />
+              {isAdmin && (
+                <Select value={selectedStatus} onValueChange={handleStatusChange}>
+                  <SelectTrigger className="w-64">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DESIGN">En diseño</SelectItem>
+                    <SelectItem value="PRINTING">En impresión</SelectItem>
+                    <SelectItem value="FINISHING">En terminación</SelectItem>
+                    <SelectItem value="READY">Listo para retirar</SelectItem>
+                    <SelectItem value="DELIVERED">Entregado</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
-          )}
 
-          <div className="flex items-center justify-between">
-            <Badge className={statusInfo.color}>
-              {statusInfo.label}
-            </Badge>
-            <Select value={selectedStatus} onValueChange={handleStatusChange}>
-              <SelectTrigger className="w-64">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="DESIGN">En diseño</SelectItem>
-                <SelectItem value="PRINTING">En impresión</SelectItem>
-                <SelectItem value="FINISHING">En terminación</SelectItem>
-                <SelectItem value="READY">Listo para retirar</SelectItem>
-                <SelectItem value="DELIVERED">Entregado</SelectItem>
-                <SelectItem value="CANCELLED">Cancelado</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Delivery Dates */}
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-            <div>
-              <p className="text-xs text-muted-foreground mb-2">Entrega Estimada</p>
-              <p className="font-medium text-sm">
-                {workOrder.estimated_delivery_date
-                  ? format(new Date(workOrder.estimated_delivery_date), 'dd MMM yyyy', { locale: es })
-                  : 'No definida'}
-              </p>
-            </div>
-            {workOrder.real_delivery_date && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-                  <Check className="h-3 w-3 text-green-600" />
-                  Entrega Real
-                </p>
-                <p className="font-medium text-sm">
-                  {format(new Date(workOrder.real_delivery_date), 'dd MMM yyyy', { locale: es })}
-                </p>
-              </div>
+            {isAdmin && workOrder.work_order_status !== 'DELIVERED' && (
+              <Button
+                onClick={handleAutoUpdateStatus}
+                variant="outline"
+                className="w-full"
+              >
+                Actualizar estado automático (basado en tareas)
+              </Button>
             )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        <WorkOrderDeliveryInfo 
+          workOrder={workOrder}
+          onMarkDelivered={handleMarkDelivered}
+          isAdmin={isAdmin}
+          isLoading={updateStatusMutation.isPending}
+        />
+      </div>
 
       {/* Tabs */}
       <Tabs defaultValue="general" className="w-full">
