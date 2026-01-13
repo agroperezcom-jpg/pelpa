@@ -4,6 +4,7 @@ import Cheques from './pages/Cheques';
 import Clients from './pages/Clients';
 import Dashboard from './pages/Dashboard';
 import DashboardEjecutivo from './pages/DashboardEjecutivo';
+import EstadoResultados from './pages/EstadoResultados';
 import Expenses from './pages/Expenses';
 import Finance from './pages/Finance';
 import HistorialControlesStock from './pages/HistorialControlesStock';
@@ -27,7 +28,6 @@ import Talonarios from './pages/Talonarios';
 import TesoreriaV2 from './pages/TesoreriaV2';
 import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
-import EstadoResultados from './pages/EstadoResultados';
 import __Layout from './Layout.jsx';
 
 
@@ -38,6 +38,7 @@ export const PAGES = {
     "Clients": Clients,
     "Dashboard": Dashboard,
     "DashboardEjecutivo": DashboardEjecutivo,
+    "EstadoResultados": EstadoResultados,
     "Expenses": Expenses,
     "Finance": Finance,
     "HistorialControlesStock": HistorialControlesStock,
@@ -61,7 +62,6 @@ export const PAGES = {
     "TesoreriaV2": TesoreriaV2,
     "TiposArticulo": TiposArticulo,
     "Treasury": Treasury,
-    "EstadoResultados": EstadoResultados,
 }
 
 export const pagesConfig = {

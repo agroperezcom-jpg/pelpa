@@ -52,7 +52,9 @@ import {
   MessageCircle,
   Smartphone,
   Printer,
-  Download
+  Download,
+  Eye,
+  Mail
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
