@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { usePermissions } from "@/components/permissions/usePermissions";
 import { CompanyProvider } from "@/components/context/CompanyContext";
+import { useExternalAuth } from "@/components/context/ExternalAuthContext";
 import { Toaster } from 'react-hot-toast';
 import {
         LayoutDashboard,
@@ -44,19 +45,20 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function Layout({ children, currentPageName }) {
-    const [user, setUser] = useState(null);
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [sidebarPinned, setSidebarPinned] = useState(() => {
-      try {
-        return JSON.parse(localStorage.getItem('sidebarPinned')) ?? false;
-      } catch {
-        return false;
-      }
-    });
-    const [commandOpen, setCommandOpen] = useState(false);
-    const [commandSearch, setCommandSearch] = useState("");
-    const location = useLocation();
-    const { hasPermission, getAllowedModules, isAdmin, loading: permissionsLoading } = usePermissions();
+  const [user, setUser] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarPinned, setSidebarPinned] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('sidebarPinned')) ?? false;
+    } catch {
+      return false;
+    }
+  });
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [commandSearch, setCommandSearch] = useState("");
+  const location = useLocation();
+  const { user: externalUser, isAdmin: externalIsAdmin } = useExternalAuth();
+  const { hasPermission, getAllowedModules, isAdmin, loading: permissionsLoading } = usePermissions();
 
   const { data: configuracionEmpresa = [] } = useQuery({
     queryKey: ['configuracionEmpresa'],
@@ -81,17 +83,16 @@ export default function Layout({ children, currentPageName }) {
     "nunito": "'Nunito', sans-serif"
   };
 
+  // Use external auth context
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        console.log("Not logged in");
-      }
-    };
-    loadUser();
-  }, []);
+    if (externalUser) {
+      setUser({
+        email: externalUser.email,
+        full_name: externalUser.full_name,
+        role: externalUser.role
+      });
+    }
+  }, [externalUser]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -117,7 +118,12 @@ export default function Layout({ children, currentPageName }) {
   }, [sidebarPinned]);
 
   const handleLogout = async () => {
-    base44.auth.logout();
+    // Logout handled by external auth gateway
+    if (window.__AUTH_GATEWAY_LOGOUT__) {
+      window.__AUTH_GATEWAY_LOGOUT__();
+    } else {
+      console.warn('No external logout handler configured');
+    }
   };
 
   const allowedModules = permissionsLoading ? [] : getAllowedModules();
