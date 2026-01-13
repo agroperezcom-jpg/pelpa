@@ -202,6 +202,7 @@ export default function Layout({ children, currentPageName }) {
           permiso: "analytics",
           items: [
             { name: "Dashboard Ejecutivo", page: "DashboardEjecutivo", icon: BarChart3, permiso: "analytics" },
+            { name: "Estado de Resultados", page: "EstadoResultados", icon: FileText, permiso: "analytics" },
             { name: "Analytics", page: "Analytics", icon: TrendingUp, permiso: "analytics" },
             { name: "Tablero Fiscal", page: "TableroFiscal", icon: FileText, permiso: "tablero_fiscal" },
             { name: "IVA Mensual", page: "IVAMensual", icon: Percent, permiso: "iva_mensual" },
