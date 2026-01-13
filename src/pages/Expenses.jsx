@@ -112,6 +112,9 @@ export default function Expenses() {
     amount: "",
     date: format(new Date(), 'yyyy-MM-dd'),
     payment_method: "efectivo",
+    medio_pago_id: "",
+    banco_id: "",
+    caja_id: "",
     vendor: "",
     invoice_number: "",
     is_recurring: false,
@@ -132,61 +135,82 @@ export default function Expenses() {
     queryFn: () => base44.entities.MedioPago.list()
   });
 
+  const { data: bancos = [] } = useQuery({
+    queryKey: ['bancos'],
+    queryFn: () => base44.entities.Banco.list()
+  });
+
+  const { data: cajas = [] } = useQuery({
+    queryKey: ['cajas'],
+    queryFn: () => base44.entities.Caja.list()
+  });
+
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const expense = await base44.entities.Expense.create(data);
+      const medio = mediosPago.find(m => m.id === data.medio_pago_id);
       
-      // Buscar medio de pago "Efectivo" o el primero disponible
-      const medioEfectivo = mediosPago.find(m => m.nombre?.toLowerCase().includes('efectivo')) || mediosPago[0];
+      if (!medio) {
+        throw new Error("Debe seleccionar un medio de pago");
+      }
       
-      if (medioEfectivo) {
-        // Obtener caja si el medio requiere caja
-        let cajaId = null;
-        let cajaNombre = "";
-        if (medioEfectivo.requiere_caja) {
-          const cajas = await base44.entities.Caja.list();
-          const cajaDefault = cajas.find(c => c.is_active) || cajas[0];
-          if (cajaDefault) {
-            cajaId = cajaDefault.id;
-            cajaNombre = cajaDefault.nombre;
-            
-            // Actualizar saldo de la caja
-            await base44.entities.Caja.update(cajaId, {
-              saldo_actual: cajaDefault.saldo_actual - data.amount
-            });
-          }
-        }
-        
-        // Obtener banco si el medio requiere banco
-        let bancoId = null;
-        let bancoNombre = "";
-        if (medioEfectivo.requiere_banco) {
-          const bancos = await base44.entities.Banco.list();
-          const bancoDefault = bancos.find(b => b.is_active) || bancos[0];
-          if (bancoDefault) {
-            bancoId = bancoDefault.id;
-            bancoNombre = bancoDefault.nombre;
-            
-            // Actualizar saldo del banco
-            await base44.entities.Banco.update(bancoId, {
-              saldo_actual: bancoDefault.saldo_actual - data.amount
-            });
-          }
-        }
-        
-        // Crear movimiento de tesorería como egreso
-        await base44.entities.MovimientoTesoreria.create({
-          fecha: data.date,
-          tipo: "EGRESO",
-          medio_pago_id: medioEfectivo.id,
-          medio_pago_nombre: medioEfectivo.nombre,
-          banco_id: bancoId,
-          banco_nombre: bancoNombre,
-          caja_id: cajaId,
-          caja_nombre: cajaNombre,
-          importe: data.amount,
-          referencia_tipo: "gasto",
-          observaciones: `Gasto: ${data.description} (${CATEGORIES.find(c => c.value === data.category)?.label || data.category})`
+      // Validaciones
+      if (medio.requiere_banco && !data.banco_id) {
+        throw new Error("Este medio de pago requiere seleccionar un banco");
+      }
+      if (medio.requiere_caja && !data.caja_id) {
+        throw new Error("Este medio de pago requiere seleccionar una caja");
+      }
+
+      const banco = bancos.find(b => b.id === data.banco_id);
+      const caja = cajas.find(c => c.id === data.caja_id);
+
+      // Validar saldo suficiente
+      if (data.banco_id && banco && banco.saldo_actual < data.amount) {
+        throw new Error(`Saldo insuficiente en ${banco.nombre}. Saldo disponible: $${banco.saldo_actual}`);
+      }
+      if (data.caja_id && caja && caja.saldo_actual < data.amount) {
+        throw new Error(`Saldo insuficiente en ${caja.nombre}. Saldo disponible: $${caja.saldo_actual}`);
+      }
+
+      // Crear gasto con toda la información
+      const expense = await base44.entities.Expense.create({
+        ...data,
+        medio_pago_nombre: medio.nombre,
+        banco_nombre: banco?.nombre || "",
+        caja_nombre: caja?.nombre || ""
+      });
+      
+      // Crear movimiento de tesorería
+      const movimiento = await base44.entities.MovimientoTesoreria.create({
+        fecha: data.date,
+        tipo: "EGRESO",
+        medio_pago_id: medio.id,
+        medio_pago_nombre: medio.nombre,
+        banco_id: data.banco_id || null,
+        banco_nombre: banco?.nombre || "",
+        caja_id: data.caja_id || null,
+        caja_nombre: caja?.nombre || "",
+        importe: data.amount,
+        referencia_tipo: "gasto",
+        referencia_id: expense.id,
+        observaciones: `Gasto: ${data.description} (${CATEGORIES.find(c => c.value === data.category)?.label || data.category})`
+      });
+
+      // Actualizar expense con el ID del movimiento
+      await base44.entities.Expense.update(expense.id, {
+        movimiento_tesoreria_id: movimiento.id
+      });
+
+      // Actualizar saldos
+      if (data.banco_id && banco) {
+        await base44.entities.Banco.update(data.banco_id, {
+          saldo_actual: banco.saldo_actual - data.amount
+        });
+      }
+
+      if (data.caja_id && caja) {
+        await base44.entities.Caja.update(data.caja_id, {
+          saldo_actual: caja.saldo_actual - data.amount
         });
       }
       
@@ -198,6 +222,9 @@ export default function Expenses() {
       queryClient.invalidateQueries({ queryKey: ['bancos'] });
       queryClient.invalidateQueries({ queryKey: ['cajas'] });
       handleCloseDialog();
+    },
+    onError: (error) => {
+      alert(error.message);
     }
   });
 
@@ -211,25 +238,51 @@ export default function Expenses() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
-      // Buscar el gasto primero para obtener la descripción
       const gasto = expenses.find(e => e.id === id);
       
-      // Buscar y eliminar el movimiento de tesorería asociado
-      const movimientos = await base44.entities.MovimientoTesoreria.list();
-      const relacionado = movimientos.find(m => 
-        m.referencia_tipo === "gasto" && 
-        m.observaciones?.includes(gasto?.description)
-      );
-      
-      if (relacionado) {
-        await base44.entities.MovimientoTesoreria.delete(relacionado.id);
+      if (!gasto) {
+        throw new Error("Gasto no encontrado");
+      }
+
+      // Si tiene movimiento vinculado, eliminarlo y revertir saldos
+      if (gasto.movimiento_tesoreria_id) {
+        const movimiento = await base44.entities.MovimientoTesoreria.list();
+        const mov = movimiento.find(m => m.id === gasto.movimiento_tesoreria_id);
+        
+        if (mov) {
+          // Revertir saldo del banco
+          if (mov.banco_id) {
+            const banco = bancos.find(b => b.id === mov.banco_id);
+            if (banco) {
+              await base44.entities.Banco.update(mov.banco_id, {
+                saldo_actual: banco.saldo_actual + mov.importe
+              });
+            }
+          }
+
+          // Revertir saldo de la caja
+          if (mov.caja_id) {
+            const caja = cajas.find(c => c.id === mov.caja_id);
+            if (caja) {
+              await base44.entities.Caja.update(mov.caja_id, {
+                saldo_actual: caja.saldo_actual + mov.importe
+              });
+            }
+          }
+
+          // Eliminar movimiento
+          await base44.entities.MovimientoTesoreria.delete(mov.id);
+        }
       }
       
+      // Eliminar gasto
       await base44.entities.Expense.delete(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
+      queryClient.invalidateQueries({ queryKey: ['bancos'] });
+      queryClient.invalidateQueries({ queryKey: ['cajas'] });
     }
   });
 
@@ -242,6 +295,9 @@ export default function Expenses() {
         amount: expense.amount?.toString() || "",
         date: expense.date || format(new Date(), 'yyyy-MM-dd'),
         payment_method: expense.payment_method || "efectivo",
+        medio_pago_id: expense.medio_pago_id || "",
+        banco_id: expense.banco_id || "",
+        caja_id: expense.caja_id || "",
         vendor: expense.vendor || "",
         invoice_number: expense.invoice_number || "",
         is_recurring: expense.is_recurring || false,
@@ -257,6 +313,9 @@ export default function Expenses() {
         amount: "",
         date: format(new Date(), 'yyyy-MM-dd'),
         payment_method: "efectivo",
+        medio_pago_id: "",
+        banco_id: "",
+        caja_id: "",
         vendor: "",
         invoice_number: "",
         is_recurring: false,
@@ -679,32 +738,68 @@ export default function Expenses() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Fecha *</Label>
+              <Input
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Medio de Pago *</Label>
+              <Select 
+                value={formData.medio_pago_id} 
+                onValueChange={(v) => setFormData({ ...formData, medio_pago_id: v, banco_id: "", caja_id: "" })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar medio" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mediosPago.map(m => (
+                    <SelectItem key={m.id} value={m.id}>{m.nombre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {mediosPago.find(m => m.id === formData.medio_pago_id)?.requiere_banco && (
               <div className="space-y-2">
-                <Label>Fecha *</Label>
-                <Input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Método de Pago</Label>
-                <Select value={formData.payment_method} onValueChange={(v) => setFormData({ ...formData, payment_method: v })}>
+                <Label>Banco *</Label>
+                <Select value={formData.banco_id} onValueChange={(v) => setFormData({ ...formData, banco_id: v })}>
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Seleccionar banco" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="efectivo">Efectivo</SelectItem>
-                    <SelectItem value="tarjeta">Tarjeta</SelectItem>
-                    <SelectItem value="transferencia">Transferencia</SelectItem>
-                    <SelectItem value="cheque">Cheque</SelectItem>
-                    <SelectItem value="otro">Otro</SelectItem>
+                    {bancos.map(b => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.nombre} (Saldo: ${b.saldo_actual?.toLocaleString() || 0})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-            </div>
+            )}
+
+            {mediosPago.find(m => m.id === formData.medio_pago_id)?.requiere_caja && (
+              <div className="space-y-2">
+                <Label>Caja *</Label>
+                <Select value={formData.caja_id} onValueChange={(v) => setFormData({ ...formData, caja_id: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar caja" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cajas.map(c => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.nombre} (Saldo: ${c.saldo_actual?.toLocaleString() || 0})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Proveedor</Label>
