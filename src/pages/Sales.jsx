@@ -1071,7 +1071,8 @@ export default function Sales() {
 
       {/* Sales Table */}
       <Card className="border-0 shadow-sm overflow-hidden">
-        <Table>
+        <div className="overflow-x-auto">
+          <Table>
           <TableHeader>
             <TableRow className="bg-slate-50">
               <TableHead>Fecha</TableHead>
@@ -1174,21 +1175,22 @@ export default function Sales() {
             )}
           </TableBody>
         </Table>
+        </div>
       </Card>
 
       {/* New Sale Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen} key={dialogKey}>
-        <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden p-0 flex flex-col">
-          <div className="bg-white border-b border-slate-200 px-6 py-4">
-            <DialogTitle className="flex items-center gap-3 text-slate-800 m-0">
-              <ShoppingCart className="h-6 w-6 text-slate-600" />
-              <span className="text-lg font-semibold">Nueva Venta</span>
+        <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden p-0 flex flex-col w-[95vw]">
+          <div className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4">
+            <DialogTitle className="flex items-center gap-2 sm:gap-3 text-slate-800 m-0">
+              <ShoppingCart className="h-5 sm:h-6 w-5 sm:w-6 text-slate-600" />
+              <span className="text-base sm:text-lg font-semibold">Nueva Venta</span>
             </DialogTitle>
           </div>
 
-          <div className="flex flex-1 overflow-hidden gap-0">
+          <div className="flex flex-col lg:flex-row flex-1 overflow-hidden gap-0">
             {/* Left: Products */}
-            <div className="flex-1 flex flex-col border-r border-slate-200 bg-white">
+            <div className="flex-1 flex flex-col lg:border-r border-slate-200 bg-white min-h-[200px] lg:min-h-0">
               <div className="p-4 space-y-3 border-b border-slate-200">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -1253,10 +1255,10 @@ export default function Sales() {
             </div>
 
             {/* Center: Cart */}
-            <div className="w-80 flex flex-col border-r border-slate-200 bg-gradient-to-b from-slate-50 to-white">
-              <div className="px-4 py-3 border-b border-slate-200 bg-white">
-                <h3 className="font-semibold text-sm flex items-center gap-2 text-slate-800">
-                  <Receipt className="h-4 w-4 text-emerald-600" />
+            <div className="lg:w-80 w-full flex flex-col lg:border-r border-slate-200 bg-gradient-to-b from-slate-50 to-white">
+              <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-slate-200 bg-white">
+                <h3 className="font-semibold text-xs sm:text-sm flex items-center gap-2 text-slate-800">
+                  <Receipt className="h-3 sm:h-4 w-3 sm:w-4 text-emerald-600" />
                   Carrito ({cart.length})
                 </h3>
               </div>
@@ -1317,7 +1319,7 @@ export default function Sales() {
 
             {/* Right: Config & Summary */}
             <div className="flex-1 flex flex-col bg-white overflow-y-auto">
-              <div className="p-4 space-y-4">
+              <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
                 {/* Cliente */}
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold text-slate-700">Cliente</Label>
@@ -1445,11 +1447,11 @@ export default function Sales() {
             </div>
           </div>
 
-          <div className="border-t border-slate-200 bg-slate-50 px-6 py-3 flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={handleCloseDialog} className="px-6 text-slate-700">
+          <div className="border-t border-slate-200 bg-slate-50 px-3 sm:px-6 py-3 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
+            <Button type="button" variant="outline" onClick={handleCloseDialog} className="w-full sm:w-auto px-4 sm:px-6 text-slate-700">
               Cancelar
             </Button>
-            <Button onClick={handleSubmit} className="bg-slate-700 hover:bg-slate-800 px-6 text-white" disabled={cart.length === 0 || tieneItemsInvalidos || !currentSale.talonario_id}>
+            <Button onClick={handleSubmit} className="bg-slate-700 hover:bg-slate-800 w-full sm:w-auto px-4 sm:px-6 text-white" disabled={cart.length === 0 || tieneItemsInvalidos || !currentSale.talonario_id}>
               <DollarSign className="h-4 w-4 mr-2" />
               Confirmar y Pagar
             </Button>

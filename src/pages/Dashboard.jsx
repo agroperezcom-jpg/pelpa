@@ -169,7 +169,7 @@ export default function Dashboard() {
       )}
 
       {/* Stats Grid - PMS Focused */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="stat-card">
           <div className="flex items-start justify-between mb-3">
             <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center">
@@ -228,7 +228,7 @@ export default function Dashboard() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* Activity Chart */}
         <div className="lg:col-span-3 chart-container">
           <div className="flex items-center justify-between mb-4">
@@ -237,7 +237,7 @@ export default function Dashboard() {
               <p className="text-xs text-muted-foreground mt-0.5">Últimos 30 días</p>
             </div>
           </div>
-          <div className="h-64">
+          <div className="h-48 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={activityChartData}>
                 <defs>
@@ -321,17 +321,17 @@ export default function Dashboard() {
 
 
       {/* Quick Actions - PMS Focused */}
-      <div className="premium-card p-5">
-        <h3 className="text-sm font-medium text-foreground mb-4">Acciones rápidas</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="premium-card p-4 sm:p-5">
+        <h3 className="text-xs sm:text-sm font-medium text-foreground mb-3 sm:mb-4">Acciones rápidas</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
           <Link 
             to={createPageUrl("Projects")} 
-            className="flex items-center gap-3 p-4 rounded-xl bg-secondary/40 hover:bg-secondary/70 transition-colors group"
+            className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl bg-secondary/40 hover:bg-secondary/70 transition-colors group"
           >
-            <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center group-hover:bg-violet-100 transition-colors">
+            <div className="w-8 sm:w-9 h-8 sm:h-9 rounded-lg bg-violet-50 flex items-center justify-center group-hover:bg-violet-100 transition-colors">
               <Briefcase className="h-4 w-4 text-violet-600" />
             </div>
-            <span className="text-sm font-medium text-foreground">Nuevo Proyecto</span>
+            <span className="text-xs sm:text-sm font-medium text-foreground">Nuevo Proyecto</span>
           </Link>
 
           <Link 

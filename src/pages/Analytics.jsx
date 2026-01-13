@@ -392,14 +392,14 @@ export default function Analytics() {
 
     return (
       <Card className="border-0 shadow-sm">
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           <div className="flex items-start justify-between mb-4">
             <p className="text-xs font-medium text-slate-500 uppercase">{titulo}</p>
             <div className={`w-10 h-10 bg-${colorClass}-50 rounded-xl flex items-center justify-center`}>
               {Icon && <Icon className={`h-5 w-5 text-${colorClass}-600`} />}
             </div>
           </div>
-          <p className={`text-3xl font-bold text-${colorClass}-600 mb-2`}>
+          <p className={`text-xl sm:text-2xl md:text-3xl font-bold text-${colorClass}-600 mb-2`}>
             {formato === 'moneda' && '$'}
             {typeof valor === 'number' ? valor.toLocaleString(undefined, { maximumFractionDigits: formato === 'porcentaje' ? 1 : 0 }) : valor}
             {formato === 'porcentaje' && '%'}
@@ -583,10 +583,10 @@ export default function Analytics() {
         </div>
       </div>
 
-      <div className="flex items-center gap-4 mb-6">
-        <span className="text-sm font-medium text-slate-700">Vista:</span>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 mb-6">
+        <span className="text-xs sm:text-sm font-medium text-slate-700">Vista:</span>
         <Select value={activeView} onValueChange={setActiveView}>
-          <SelectTrigger className="w-80">
+          <SelectTrigger className="w-full sm:w-80">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -658,13 +658,13 @@ export default function Analytics() {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
-           <Card className="border-0 shadow-sm w-full">
-             <CardHeader>
-               <CardTitle className="text-sm sm:text-base">Tendencia de Ventas (Últimos 30 días)</CardTitle>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 w-full">
+           <Card className="border-0 shadow-sm w-full overflow-hidden">
+             <CardHeader className="p-4 sm:p-6">
+               <CardTitle className="text-xs sm:text-sm md:text-base">Tendencia de Ventas (Últimos 30 días)</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="h-64">
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                <div className="h-48 sm:h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={(() => {
                       const ultimos30Dias = Array.from({ length: 30 }, (_, i) => {
@@ -694,14 +694,14 @@ export default function Analytics() {
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-amber-500" />
+            <Card className="border-0 shadow-sm overflow-hidden">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-xs sm:text-sm md:text-base flex items-center gap-2">
+                  <Zap className="h-4 sm:h-5 w-4 sm:w-5 text-amber-500" />
                   Recomendaciones Inteligentes
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
                 <div className="space-y-3">
                   {(() => {
                     const recomendaciones = [];
@@ -804,10 +804,10 @@ export default function Analytics() {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full">
-            <Card className="border-0 shadow-sm w-full">
-              <CardHeader>
-                <CardTitle className="text-sm sm:text-base">Top 5 Productos</CardTitle>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 w-full">
+            <Card className="border-0 shadow-sm w-full overflow-hidden">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-xs sm:text-sm md:text-base">Top 5 Productos</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -826,9 +826,9 @@ export default function Analytics() {
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base">Top 5 Clientes</CardTitle>
+            <Card className="border-0 shadow-sm overflow-hidden">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-xs sm:text-sm md:text-base">Top 5 Clientes</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -847,9 +847,9 @@ export default function Analytics() {
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base">Alertas Críticas</CardTitle>
+            <Card className="border-0 shadow-sm overflow-hidden">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-xs sm:text-sm md:text-base">Alertas Críticas</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -900,13 +900,13 @@ export default function Analytics() {
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
-            <Card className="border-0 shadow-sm w-full">
-              <CardHeader>
-                <CardTitle className="text-sm sm:text-base">Margen por Categoría</CardTitle>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 w-full">
+            <Card className="border-0 shadow-sm w-full overflow-hidden">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-xs sm:text-sm md:text-base">Margen por Categoría</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="h-64">
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                <div className="h-48 sm:h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={margenCategoriaData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -920,12 +920,12 @@ export default function Analytics() {
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base">Ventas por Día de Semana</CardTitle>
+            <Card className="border-0 shadow-sm overflow-hidden">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-xs sm:text-sm md:text-base">Ventas por Día de Semana</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="h-64">
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                <div className="h-48 sm:h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={(() => {
                       const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -948,12 +948,12 @@ export default function Analytics() {
             </Card>
           </div>
 
-          <Card className="border-0 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base">Ventas por Franja Horaria</CardTitle>
+          <Card className="border-0 shadow-sm overflow-hidden">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-xs sm:text-sm md:text-base">Ventas por Franja Horaria</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="h-64">
+            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+              <div className="h-48 sm:h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={(() => {
                     const franjas = {
@@ -1122,10 +1122,11 @@ export default function Analytics() {
           </div>
 
           <Card className="border-0 shadow-sm overflow-hidden">
-            <CardHeader>
-              <CardTitle className="text-base">Top 10 Clientes con CLV (Customer Lifetime Value)</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-xs sm:text-sm md:text-base">Top 10 Clientes con CLV</CardTitle>
             </CardHeader>
-            <Table>
+            <div className="overflow-x-auto">
+              <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50">
                   <TableHead className="w-12">#</TableHead>
@@ -1171,9 +1172,10 @@ export default function Analytics() {
                 })}
               </TableBody>
             </Table>
+            </div>
           </Card>
 
-          <div className="grid lg:grid-cols-3 gap-4 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 w-full">
             <Card className="border-0 shadow-sm">
               <CardContent className="p-6">
                 <p className="text-sm font-medium text-slate-500 mb-2">CLV Promedio Total</p>
