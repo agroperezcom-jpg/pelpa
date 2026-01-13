@@ -113,7 +113,7 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Lock className="h-5 w-5 text-red-600" />
-              Master Company Reset
+              Reseteo Maestro de Empresa
             </DialogTitle>
           </DialogHeader>
 
@@ -128,7 +128,7 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
                     : "text-slate-500 hover:text-slate-700"
                 }`}
               >
-                Configure PIN
+                Configurar PIN
               </button>
               <button
                 onClick={() => setTab("reset")}
@@ -139,7 +139,7 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
                 }`}
                 disabled={!resetConfig?.reset_enabled}
               >
-                Reset Data
+                Resetear Datos
               </button>
             </div>
 
@@ -148,30 +148,30 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
               <div className="space-y-4">
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                   <p className="text-xs text-amber-800">
-                    <strong>⚠️ Security:</strong> Set a strong PIN (4+ characters). You'll need this PIN to reset company data.
+                    <strong>⚠️ Seguridad:</strong> Establece un PIN fuerte (mínimo 4 caracteres). Lo necesitarás para resetear los datos de la empresa.
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="pin">Master Reset PIN</Label>
+                  <Label htmlFor="pin">PIN Maestro de Reseteo</Label>
                   <Input
                     id="pin"
                     type="password"
                     value={resetPin}
                     onChange={(e) => setResetPin(e.target.value)}
-                    placeholder="Enter PIN (min 4 chars)"
+                    placeholder="Ingresa PIN (mín. 4 caracteres)"
                     className="font-mono"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPin">Confirm PIN</Label>
+                  <Label htmlFor="confirmPin">Confirmar PIN</Label>
                   <Input
                     id="confirmPin"
                     type="password"
                     value={confirmPin}
                     onChange={(e) => setConfirmPin(e.target.value)}
-                    placeholder="Confirm PIN"
+                    placeholder="Confirma PIN"
                     className="font-mono"
                   />
                 </div>
@@ -188,13 +188,13 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
                     htmlFor="enableReset"
                     className="text-sm cursor-pointer flex-1"
                   >
-                    Enable reset capability for this company
+                    Habilitar capacidad de reseteo para esta empresa
                   </label>
                 </div>
 
                 {resetConfig?.reset_enabled && (
                   <div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded p-2">
-                    ✓ Reset is currently <strong>enabled</strong>
+                    ✓ El reseteo está actualmente <strong>habilitado</strong>
                   </div>
                 )}
               </div>
@@ -206,20 +206,20 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3 space-y-2">
                   <p className="text-sm font-semibold text-red-800 flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4" />
-                    ⚠️ IRREVERSIBLE ACTION
+                    ⚠️ ACCIÓN IRREVERSIBLE
                   </p>
                   <p className="text-xs text-red-700">
-                    This will permanently delete ALL data for this company:
+                    Esto eliminará permanentemente TODOS los datos de esta empresa:
                   </p>
                   <ul className="text-xs text-red-700 list-disc list-inside space-y-1 ml-2">
-                    <li>All sales and invoices</li>
-                    <li>All clients and contacts</li>
-                    <li>All products and inventory</li>
-                    <li>All accounts and transactions</li>
-                    <li>All expenses and payments</li>
+                    <li>Todas las ventas e invoices</li>
+                    <li>Todos los clientes y contactos</li>
+                    <li>Todos los productos e inventario</li>
+                    <li>Todas las cuentas y movimientos</li>
+                    <li>Todos los gastos y pagos</li>
                   </ul>
                   <p className="text-xs font-medium text-red-800 mt-2">
-                    This CANNOT be undone!
+                    ¡NO se puede deshacer!
                   </p>
                 </div>
 
@@ -228,7 +228,7 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
                   className="w-full bg-red-600 hover:bg-red-700 text-white gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
-                  Delete All Company Data
+                  Eliminar Todos los Datos
                 </Button>
               </div>
             )}
@@ -236,7 +236,7 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
 
           <DialogFooter>
             <Button variant="outline" onClick={onClose}>
-              Cancel
+              Cancelar
             </Button>
             {tab === "configure" && (
               <Button
@@ -244,7 +244,7 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
                 disabled={!resetPin || resetPin !== confirmPin || resetPin.length < 4}
                 className="bg-slate-700 hover:bg-slate-800"
               >
-                {setResetPinMutation.isPending ? "Saving..." : "Save PIN"}
+                {setResetPinMutation.isPending ? "Guardando..." : "Guardar PIN"}
               </Button>
             )}
           </DialogFooter>
@@ -257,23 +257,23 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-red-600" />
-              Confirm Company Reset
+              Confirmar Reseteo de Empresa
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Enter your master reset PIN to confirm deletion of all company data.
-              This action is permanent and cannot be undone.
+              Ingresa tu PIN maestro de reseteo para confirmar la eliminación de todos los datos de la empresa.
+              Esta acción es permanente y no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="resetPin">Master Reset PIN</Label>
+              <Label htmlFor="resetPin">PIN Maestro de Reseteo</Label>
               <Input
                 id="resetPin"
                 type="password"
                 value={resetConfirmPin}
                 onChange={(e) => setResetConfirmPin(e.target.value)}
-                placeholder="Enter PIN to confirm"
+                placeholder="Ingresa PIN para confirmar"
                 className="font-mono"
                 autoFocus
               />
@@ -282,14 +282,14 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
 
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setResetConfirmPin("")}>
-              Cancel
+              Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => masterResetMutation.mutate()}
               disabled={!resetConfirmPin || masterResetMutation.isPending}
               className="bg-red-600 hover:bg-red-700"
             >
-              {masterResetMutation.isPending ? "Resetting..." : "Confirm & Delete All Data"}
+              {masterResetMutation.isPending ? "Reseteando..." : "Confirmar y Eliminar Todos los Datos"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
