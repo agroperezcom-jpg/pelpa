@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building2, Upload, Loader2, Lock, Trash2 } from "lucide-react";
 import CompanyResetDialog from "./CompanyResetDialog";
+import CompanyModeSection from "./CompanyModeSection";
 
 /**
  * Company Configuration Component
@@ -353,35 +354,47 @@ export default function CompanyConfiguration({ isAdmin = false }) {
           {/* Advanced Tab */}
           {activeTab === "advanced" && isAdmin && (
             <div className="space-y-6">
-              <div className="p-6 bg-red-50 border border-red-200 rounded-lg space-y-4">
-                <div>
-                  <h3 className="text-sm font-semibold text-red-900 flex items-center gap-2">
-                    <Lock className="h-4 w-4" />
-                    Reseteo Maestro de Datos
-                  </h3>
-                  <p className="text-xs text-red-700 mt-2">
-                    Elimina permanentemente todos los datos operativos, financieros y de planificación de la empresa.
+              {/* Company Mode Section */}
+              <CompanyModeSection isAdmin={isAdmin} />
+
+              {/* Reset Section (only in DEMO mode) */}
+              {companies[0]?.environment_mode === 'DEMO' && (
+                <div className="p-6 bg-red-50 border border-red-200 rounded-lg space-y-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-red-900 flex items-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      Reseteo Maestro de Datos
+                    </h3>
+                    <p className="text-xs text-red-700 mt-2">
+                      Elimina permanentemente todos los datos operativos, financieros y de planificación de la empresa.
+                    </p>
+                  </div>
+                  <ul className="text-xs text-red-700 list-disc list-inside space-y-1 ml-2">
+                    <li>Todas las ventas e invoices</li>
+                    <li>Inventario y stock</li>
+                    <li>Cuentas y movimientos financieros</li>
+                    <li>Gastos y pagos</li>
+                    <li>Calendario, tareas y proyectos</li>
+                    <li>Clientes y proveedores</li>
+                  </ul>
+                  <p className="text-xs font-medium text-red-900">
+                    ⚠️ Esta acción es PERMANENTE y NO se puede deshacer
                   </p>
+                  <Button
+                    onClick={() => setShowResetDialog(true)}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white mt-4"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Resetear Todos los Datos
+                  </Button>
                 </div>
-                <ul className="text-xs text-red-700 list-disc list-inside space-y-1 ml-2">
-                  <li>Todas las ventas e invoices</li>
-                  <li>Inventario y stock</li>
-                  <li>Cuentas y movimientos financieros</li>
-                  <li>Gastos y pagos</li>
-                  <li>Calendario, tareas y proyectos</li>
-                  <li>Clientes y proveedores</li>
-                </ul>
-                <p className="text-xs font-medium text-red-900">
-                  ⚠️ Esta acción es PERMANENTE y NO se puede deshacer
-                </p>
-                <Button
-                  onClick={() => setShowResetDialog(true)}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white mt-4"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Resetear Todos los Datos
-                </Button>
-              </div>
+              )}
+
+              {companies[0]?.environment_mode === 'PRODUCCION' && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+                  ✓ Modo PRODUCCIÓN activado. El reseteo de datos está deshabilitado para proteger los datos reales.
+                </div>
+              )}
             </div>
           )}
           </CardContent>
