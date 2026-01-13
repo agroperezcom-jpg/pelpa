@@ -5,14 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Search, Briefcase } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Search, Briefcase, Calendar } from 'lucide-react';
 import WorkOrderCard from '../components/work-orders/WorkOrderCard';
 import WorkOrderDetailView from '../components/work-orders/WorkOrderDetailView';
+import WorkOrderOperationalCalendar from '../components/work-orders/WorkOrderOperationalCalendar';
 
 export default function WorkOrders() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedWorkOrder, setSelectedWorkOrder] = useState(null);
+  const [viewMode, setViewMode] = useState('list');
 
   const { data: workOrders = [], refetch } = useQuery({
     queryKey: ['workOrders'],
@@ -121,29 +124,50 @@ export default function WorkOrders() {
         </CardContent>
       </Card>
 
-      {/* Work Orders Grid */}
-      {filteredWorkOrders.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredWorkOrders.map(wo => (
-            <WorkOrderCard
-              key={wo.id}
-              workOrder={wo}
-              onView={() => setSelectedWorkOrder(wo)}
-            />
-          ))}
-        </div>
-      ) : (
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-12 text-center">
-            <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <p className="text-muted-foreground">
-              {searchTerm || filterStatus !== 'all'
-                ? 'No se encontraron órdenes de trabajo'
-                : 'No hay órdenes de trabajo creadas aún'}
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      {/* View Toggle */}
+      <Tabs value={viewMode} onValueChange={setViewMode} className="w-full">
+        <TabsList>
+          <TabsTrigger value="list" className="flex items-center gap-2">
+            <Briefcase className="h-4 w-4" />
+            Lista
+          </TabsTrigger>
+          <TabsTrigger value="calendar" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Calendario
+          </TabsTrigger>
+        </TabsList>
+
+        {/* List View */}
+        <TabsContent value="list" className="mt-6">
+          {filteredWorkOrders.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredWorkOrders.map(wo => (
+                <WorkOrderCard
+                  key={wo.id}
+                  workOrder={wo}
+                  onView={() => setSelectedWorkOrder(wo)}
+                />
+              ))}
+            </div>
+          ) : (
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-12 text-center">
+                <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                <p className="text-muted-foreground">
+                  {searchTerm || filterStatus !== 'all'
+                    ? 'No se encontraron órdenes de trabajo'
+                    : 'No hay órdenes de trabajo creadas aún'}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Calendar View */}
+        <TabsContent value="calendar" className="mt-6">
+          <WorkOrderOperationalCalendar workOrders={workOrders} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
