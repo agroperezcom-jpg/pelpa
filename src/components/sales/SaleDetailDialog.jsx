@@ -17,7 +17,6 @@ import TicketDownloadDialog from "../tickets/TicketDownloadDialog";
 import toast from "react-hot-toast";
 
 export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) {
-  const [paperWidth, setPaperWidth] = useState(PAPER_WIDTHS.LARGE);
   const [showTicketDialog, setShowTicketDialog] = useState(false);
   const [downloadingType, setDownloadingType] = useState(null);
   const [previewType, setPreviewType] = useState(null);
@@ -29,7 +28,7 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
   if (!sale) return null;
 
   const handlePrint = () => {
-    printTicket(sale, pagos, true, paperWidth);
+    printTicket(sale, pagos, true, PAPER_WIDTHS.LARGE);
   };
 
   const handleDownloadPDF = async (type) => {
