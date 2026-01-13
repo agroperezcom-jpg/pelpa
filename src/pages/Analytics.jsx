@@ -987,7 +987,7 @@ export default function Analytics() {
 
         {activeView === "stock" && (
           <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <KPICard
               titulo="Rotación de Stock"
               valor={rotacionStock}
@@ -1018,10 +1018,10 @@ export default function Analytics() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <Card className="border-0 shadow-sm">
-              <CardContent className="p-6">
-                <p className="text-sm font-medium text-slate-500 mb-2">Valor Total Inventario</p>
+              <CardContent className="p-4 sm:p-6">
+                <p className="text-xs sm:text-sm font-medium text-slate-500 mb-2">Valor Total Inventario</p>
                 <p className="text-3xl font-bold text-blue-600">${valorInventario.toLocaleString()}</p>
                 <p className="text-xs text-slate-500 mt-1">{products.length} productos activos</p>
               </CardContent>
@@ -1039,7 +1039,7 @@ export default function Analytics() {
 
         {activeView === "financieros" && (
           <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <KPICard
               titulo="Margen Neto"
               valor={porcentajeMargenNeto}
@@ -1069,10 +1069,10 @@ export default function Analytics() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <Card className="border-0 shadow-sm">
-              <CardContent className="p-6">
-                <p className="text-sm font-medium text-slate-500 mb-2">Ganancia Neta Período</p>
+              <CardContent className="p-4 sm:p-6">
+                <p className="text-xs sm:text-sm font-medium text-slate-500 mb-2">Ganancia Neta Período</p>
                 <p className={`text-3xl font-bold ${margenNeto > 0 ? 'text-green-600' : 'text-red-600'}`}>
                   ${margenNeto.toLocaleString()}
                 </p>
@@ -1092,7 +1092,7 @@ export default function Analytics() {
 
         {activeView === "clientes" && (
           <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <KPICard
               titulo="Clientes Activos"
               valor={clientesActivos}
