@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import EstadoResultadosWidget from "@/components/analytics/EstadoResultadosWidget";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -508,7 +509,10 @@ export default function DashboardEjecutivo() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Estado de Resultados */}
+        <EstadoResultadosWidget mesInicio={monthStart} mesFin={monthEnd} />
+
         {/* 2️⃣ TESORERÍA */}
         <Card className="border-0 shadow-sm">
           <CardHeader className="pb-3">
@@ -674,7 +678,7 @@ export default function DashboardEjecutivo() {
               </div>
             </div>
 
-            <div className="lg:col-span-2">
+            <div>
               <p className="text-sm font-medium text-slate-600 mb-3">Top 5 Clientes con Mayor Deuda</p>
               <div className="space-y-2">
                 {clientesConDeuda.map((cliente, idx) => (
