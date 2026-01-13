@@ -56,7 +56,7 @@ import {
 
 export default function Finance() {
   const [monthFilter, setMonthFilter] = useState(format(new Date(), 'yyyy-MM'));
-  const [activeView, setActiveView] = useState("statement");
+  const [activeView, setActiveView] = useState("trends");
 
   const { data: sales = [] } = useQuery({
     queryKey: ['sales'],
@@ -373,7 +373,6 @@ export default function Finance() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="statement">Estado de Resultados</SelectItem>
             <SelectItem value="trends">Tendencias</SelectItem>
             <SelectItem value="margins">Márgenes</SelectItem>
             <SelectItem value="iva">Libro IVA Ventas</SelectItem>
@@ -383,118 +382,6 @@ export default function Finance() {
       </div>
 
       <div className="space-y-4">
-        {activeView === "statement" && (
-          <>
-          <Card className="border-0 shadow-sm">
-            <CardHeader className="border-b">
-              <CardTitle className="text-base">
-                Estado de Resultados - {format(new Date(monthFilter + '-01'), "MMMM yyyy", { locale: es })}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableBody>
-                  {/* Revenue */}
-                  <TableRow className="bg-emerald-50">
-                    <TableCell className="font-bold">INGRESOS</TableCell>
-                    <TableCell className="text-right font-bold text-emerald-600">
-                      ${currentMetrics.totalRevenue.toLocaleString()}
-                    </TableCell>
-                  </TableRow>
-                  {Object.entries(currentMetrics.ingresosPorCuenta).map(([cuenta, monto]) => (
-                    <TableRow key={cuenta}>
-                      <TableCell className="pl-8 text-slate-600">{cuenta}</TableCell>
-                      <TableCell className="text-right text-slate-600">
-                        ${monto.toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {Object.keys(currentMetrics.ingresosPorCuenta).length === 0 && (
-                    <TableRow>
-                      <TableCell className="pl-8 text-slate-500">
-                        ({currentMetrics.salesCount} ventas sin cuenta asignada)
-                      </TableCell>
-                      <TableCell></TableCell>
-                    </TableRow>
-                  )}
-
-                  {/* COGS */}
-                  <TableRow className="border-t-2">
-                    <TableCell className="font-semibold">COSTOS</TableCell>
-                    <TableCell className="text-right font-semibold text-red-600">
-                      -${currentMetrics.cogs.toLocaleString()}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="pl-8 text-slate-500">Costo de mercadería vendida</TableCell>
-                    <TableCell className="text-right text-slate-600">
-                      ${currentMetrics.cogs.toLocaleString()}
-                    </TableCell>
-                  </TableRow>
-
-                  {/* Gross Profit */}
-                  <TableRow className="bg-blue-50 border-t-2">
-                    <TableCell className="font-bold">Utilidad Bruta</TableCell>
-                    <TableCell className="text-right font-bold">
-                      ${currentMetrics.grossProfit.toLocaleString()}
-                      <Badge className="ml-2 bg-blue-100 text-blue-700">
-                        {currentMetrics.grossMargin.toFixed(1)}%
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-
-                  {/* Operating Expenses */}
-                  <TableRow className="border-t-2">
-                    <TableCell className="font-semibold">GASTOS</TableCell>
-                    <TableCell className="text-right font-semibold text-red-600">
-                      -${currentMetrics.totalExpenses.toLocaleString()}
-                    </TableCell>
-                  </TableRow>
-                  {Object.entries(currentMetrics.gastosPorCuenta).map(([cuenta, monto]) => (
-                    <TableRow key={cuenta}>
-                      <TableCell className="pl-8 text-slate-600">{cuenta}</TableCell>
-                      <TableCell className="text-right text-slate-600">
-                        ${monto.toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {Object.keys(currentMetrics.gastosPorCuenta).length === 0 && (
-                    <TableRow>
-                      <TableCell className="pl-8 text-slate-500">Sin gastos clasificados</TableCell>
-                      <TableCell className="text-right text-slate-600">
-                        ${currentMetrics.totalExpenses.toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                  )}
-
-                  {/* Operating Profit */}
-                  <TableRow className="bg-violet-50 border-t-2">
-                    <TableCell className="font-bold">Utilidad Operativa</TableCell>
-                    <TableCell className="text-right font-bold">
-                      ${currentMetrics.operatingProfit.toLocaleString()}
-                      <Badge className="ml-2 bg-violet-100 text-violet-700">
-                        {currentMetrics.operatingMargin.toFixed(1)}%
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-
-                  {/* Net Profit */}
-                  <TableRow className={`border-t-4 ${currentMetrics.netProfit >= 0 ? 'bg-emerald-100' : 'bg-red-100'}`}>
-                    <TableCell className="font-bold text-lg">Utilidad Neta</TableCell>
-                    <TableCell className={`text-right font-bold text-lg ${currentMetrics.netProfit >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-                      ${currentMetrics.netProfit.toLocaleString()}
-                      <Badge className={`ml-2 ${currentMetrics.netProfit >= 0 ? 'bg-emerald-200 text-emerald-800' : 'bg-red-200 text-red-800'}`}>
-                        {currentMetrics.netMargin.toFixed(1)}%
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-          </>
-        )}
-
         {activeView === "trends" && (
           <>
           {/* Revenue & Profit Trend */}
