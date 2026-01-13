@@ -71,6 +71,7 @@ export default function Cheques() {
     tipo_soporte: "FISICO",
     numero_cheque: "",
     banco_id: "",
+    banco_nombre: "",
     fecha_emision: format(new Date(), 'yyyy-MM-dd'),
     fecha_vencimiento: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
     importe: "",
@@ -112,7 +113,7 @@ export default function Cheques() {
     mutationFn: async (chequeData) => {
       if (!chequeData.numero_cheque) throw new Error("Ingrese número de cheque");
       if (!chequeData.importe || chequeData.importe <= 0) throw new Error("Ingrese un importe válido");
-      if (!chequeData.banco_id) throw new Error("Seleccione un banco");
+      if (!chequeData.banco_nombre) throw new Error("Ingrese el nombre del banco");
 
       // Definir estado inicial según tipo
       let estadoInicial;
@@ -338,6 +339,7 @@ export default function Cheques() {
       tipo_soporte: "FISICO",
       numero_cheque: "",
       banco_id: "",
+      banco_nombre: "",
       fecha_emision: format(new Date(), 'yyyy-MM-dd'),
       fecha_vencimiento: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
       importe: "",
@@ -360,7 +362,11 @@ export default function Cheques() {
       return;
     }
 
-    const banco = bancos.find(b => b.id === currentCheque.banco_id);
+    if (!currentCheque.banco_nombre) {
+      alert("Ingrese el nombre del banco");
+      return;
+    }
+
     let titular, titularNombre;
 
     if (currentCheque.titular_tipo === "CLIENTE") {
@@ -373,7 +379,6 @@ export default function Cheques() {
 
     createChequeMutation.mutate({
       ...currentCheque,
-      banco_nombre: banco?.nombre || "",
       titular_nombre: titularNombre || "",
       importe: parseFloat(currentCheque.importe) || 0
     });
@@ -851,19 +856,11 @@ export default function Cheques() {
 
               <div className="space-y-2">
                 <Label>Banco *</Label>
-                <Select 
-                  value={currentCheque.banco_id} 
-                  onValueChange={(v) => setCurrentCheque({ ...currentCheque, banco_id: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bancos.map(b => (
-                      <SelectItem key={b.id} value={b.id}>{b.nombre}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input
+                  value={currentCheque.banco_nombre || ""}
+                  onChange={(e) => setCurrentCheque({ ...currentCheque, banco_nombre: e.target.value, banco_id: "" })}
+                  placeholder="Nombre del banco"
+                />
               </div>
             </div>
 
