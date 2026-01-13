@@ -68,6 +68,11 @@ export default function Finance() {
     queryFn: () => base44.entities.Expense.list()
   });
 
+  const { data: cuentasContables = [] } = useQuery({
+    queryKey: ['cuentasContables'],
+    queryFn: () => base44.entities.CuentaContable.list('codigo', 500)
+  });
+
   const { data: products = [] } = useQuery({
     queryKey: ['products'],
     queryFn: () => base44.entities.Product.list()
@@ -106,9 +111,32 @@ export default function Finance() {
     const monthExpenses = expenses.filter(e => e.date?.startsWith(month));
     const totalExpenses = monthExpenses.reduce((acc, e) => acc + (e.amount || 0), 0);
 
-    // Expense breakdown by category
+    // Ingresos por cuenta contable
+    const monthSalesConfirmed = sales.filter(s => 
+      s.created_date?.startsWith(month) && 
+      s.estado === "CONFIRMADA" &&
+      s.cuenta_contable_asignada
+    );
+    const ingresosPorCuenta = monthSalesConfirmed.reduce((acc, s) => {
+      const cuenta = s.cuenta_contable_nombre || 'Sin clasificar';
+      if (!acc[cuenta]) acc[cuenta] = 0;
+      acc[cuenta] += s.total || 0;
+      return acc;
+    }, {});
+
+    // Gastos por cuenta contable
+    const gastosPorCuenta = monthExpenses
+      .filter(e => e.cuenta_contable_nombre)
+      .reduce((acc, e) => {
+        const cuenta = e.cuenta_contable_nombre;
+        if (!acc[cuenta]) acc[cuenta] = 0;
+        acc[cuenta] += e.amount || 0;
+        return acc;
+      }, {});
+
+    // Expense breakdown by category (legacy)
     const expensesByCategory = monthExpenses.reduce((acc, e) => {
-      const cat = e.category || 'otros';
+      const cat = e.cuenta_contable_nombre || e.category || 'otros';
       if (!acc[cat]) acc[cat] = 0;
       acc[cat] += e.amount || 0;
       return acc;
@@ -129,6 +157,8 @@ export default function Finance() {
       grossMargin,
       totalExpenses,
       expensesByCategory,
+      ingresosPorCuenta,
+      gastosPorCuenta,
       operatingProfit,
       operatingMargin,
       netProfit,
@@ -366,21 +396,39 @@ export default function Finance() {
                 <TableBody>
                   {/* Revenue */}
                   <TableRow className="bg-emerald-50">
-                    <TableCell className="font-bold">Ingresos por Ventas</TableCell>
+                    <TableCell className="font-bold">INGRESOS</TableCell>
                     <TableCell className="text-right font-bold text-emerald-600">
                       ${currentMetrics.totalRevenue.toLocaleString()}
                     </TableCell>
                   </TableRow>
-                  <TableRow>
-                    <TableCell className="pl-8 text-slate-500">({currentMetrics.salesCount} ventas)</TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
+                  {Object.entries(currentMetrics.ingresosPorCuenta).map(([cuenta, monto]) => (
+                    <TableRow key={cuenta}>
+                      <TableCell className="pl-8 text-slate-600">{cuenta}</TableCell>
+                      <TableCell className="text-right text-slate-600">
+                        ${monto.toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {Object.keys(currentMetrics.ingresosPorCuenta).length === 0 && (
+                    <TableRow>
+                      <TableCell className="pl-8 text-slate-500">
+                        ({currentMetrics.salesCount} ventas sin cuenta asignada)
+                      </TableCell>
+                      <TableCell></TableCell>
+                    </TableRow>
+                  )}
 
                   {/* COGS */}
                   <TableRow className="border-t-2">
-                    <TableCell className="font-semibold">Costo de Ventas</TableCell>
+                    <TableCell className="font-semibold">COSTOS</TableCell>
                     <TableCell className="text-right font-semibold text-red-600">
                       -${currentMetrics.cogs.toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="pl-8 text-slate-500">Costo de mercadería vendida</TableCell>
+                    <TableCell className="text-right text-slate-600">
+                      ${currentMetrics.cogs.toLocaleString()}
                     </TableCell>
                   </TableRow>
 
@@ -397,21 +445,27 @@ export default function Finance() {
 
                   {/* Operating Expenses */}
                   <TableRow className="border-t-2">
-                    <TableCell className="font-semibold">Gastos Operativos</TableCell>
+                    <TableCell className="font-semibold">GASTOS</TableCell>
                     <TableCell className="text-right font-semibold text-red-600">
                       -${currentMetrics.totalExpenses.toLocaleString()}
                     </TableCell>
                   </TableRow>
-                  {Object.entries(currentMetrics.expensesByCategory).map(([cat, amount]) => (
-                    <TableRow key={cat}>
-                      <TableCell className="pl-8 text-slate-600">
-                        {categoryLabels[cat] || cat}
-                      </TableCell>
+                  {Object.entries(currentMetrics.gastosPorCuenta).map(([cuenta, monto]) => (
+                    <TableRow key={cuenta}>
+                      <TableCell className="pl-8 text-slate-600">{cuenta}</TableCell>
                       <TableCell className="text-right text-slate-600">
-                        ${amount.toLocaleString()}
+                        ${monto.toLocaleString()}
                       </TableCell>
                     </TableRow>
                   ))}
+                  {Object.keys(currentMetrics.gastosPorCuenta).length === 0 && (
+                    <TableRow>
+                      <TableCell className="pl-8 text-slate-500">Sin gastos clasificados</TableCell>
+                      <TableCell className="text-right text-slate-600">
+                        ${currentMetrics.totalExpenses.toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  )}
 
                   {/* Operating Profit */}
                   <TableRow className="bg-violet-50 border-t-2">

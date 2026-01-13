@@ -28,13 +28,20 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { Upload, FileSpreadsheet, Trash2, Plus, Download, AlertCircle, Edit } from "lucide-react";
+import { Upload, FileSpreadsheet, Trash2, Plus, Download, AlertCircle, Edit, CheckSquare } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function PlanDeCuentas() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editingCuenta, setEditingCuenta] = useState(null);
+  const [bulkEditDialogOpen, setBulkEditDialogOpen] = useState(false);
+  const [selectedCuentas, setSelectedCuentas] = useState([]);
+  const [bulkFormData, setBulkFormData] = useState({
+    imputable: null,
+    usa_en_gastos: null,
+    usa_en_ingresos: null
+  });
   const [csvFile, setCsvFile] = useState(null);
   const [formData, setFormData] = useState({
     codigo: "",
@@ -273,6 +280,49 @@ export default function PlanDeCuentas() {
     }
   };
 
+  const bulkUpdateMutation = useMutation({
+    mutationFn: async (updates) => {
+      for (const cuentaId of selectedCuentas) {
+        await base44.entities.CuentaContable.update(cuentaId, updates);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cuentasContables'] });
+      setBulkEditDialogOpen(false);
+      setSelectedCuentas([]);
+      setBulkFormData({ imputable: null, usa_en_gastos: null, usa_en_ingresos: null });
+      toast.success(`${selectedCuentas.length} cuentas actualizadas`);
+    }
+  });
+
+  const handleBulkEdit = () => {
+    const updates = {};
+    if (bulkFormData.imputable !== null) updates.imputable = bulkFormData.imputable;
+    if (bulkFormData.usa_en_gastos !== null) updates.usa_en_gastos = bulkFormData.usa_en_gastos;
+    if (bulkFormData.usa_en_ingresos !== null) updates.usa_en_ingresos = bulkFormData.usa_en_ingresos;
+    
+    if (Object.keys(updates).length === 0) {
+      toast.error("Selecciona al menos un campo para actualizar");
+      return;
+    }
+    
+    bulkUpdateMutation.mutate(updates);
+  };
+
+  const toggleSelectCuenta = (cuentaId) => {
+    setSelectedCuentas(prev => 
+      prev.includes(cuentaId) ? prev.filter(id => id !== cuentaId) : [...prev, cuentaId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedCuentas.length === cuentas.length) {
+      setSelectedCuentas([]);
+    } else {
+      setSelectedCuentas(cuentas.map(c => c.id));
+    }
+  };
+
   const exportTemplate = () => {
     const csv = "codigo,nombre,rubro_contable,tipo_resultado,imputable,usa_en_gastos,usa_en_ingresos\n" +
                 "1.1.01,Caja,Activo Corriente,,true,false,false\n" +
@@ -341,19 +391,36 @@ export default function PlanDeCuentas() {
               <div className="flex items-center justify-between mb-4">
                 <p className="text-sm text-slate-600">
                   Total de cuentas: <span className="font-bold">{cuentas.length}</span>
+                  {selectedCuentas.length > 0 && (
+                    <span className="ml-3 text-blue-600">
+                      ({selectedCuentas.length} seleccionadas)
+                    </span>
+                  )}
                 </p>
-                <Button 
-                  variant="destructive" 
-                  size="sm" 
-                  onClick={() => {
-                    if (confirm('¿Eliminar todo el plan de cuentas?')) {
-                      deleteAllMutation.mutate();
-                    }
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Eliminar Todo
-                </Button>
+                <div className="flex gap-2">
+                  {selectedCuentas.length > 0 && (
+                    <Button 
+                      size="sm" 
+                      onClick={() => setBulkEditDialogOpen(true)}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <CheckSquare className="h-4 w-4 mr-2" />
+                      Editar Selección
+                    </Button>
+                  )}
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={() => {
+                      if (confirm('¿Eliminar todo el plan de cuentas?')) {
+                        deleteAllMutation.mutate();
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Eliminar Todo
+                  </Button>
+                </div>
               </div>
 
               <div className="border rounded-lg overflow-hidden">
@@ -361,6 +428,14 @@ export default function PlanDeCuentas() {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-slate-50">
+                        <TableHead className="w-12">
+                          <input
+                            type="checkbox"
+                            checked={selectedCuentas.length === cuentas.length}
+                            onChange={toggleSelectAll}
+                            className="rounded"
+                          />
+                        </TableHead>
                         <TableHead>Código</TableHead>
                         <TableHead>Nombre</TableHead>
                         <TableHead>Rubro</TableHead>
@@ -374,6 +449,14 @@ export default function PlanDeCuentas() {
                     <TableBody>
                       {cuentas.map((cuenta) => (
                         <TableRow key={cuenta.id}>
+                          <TableCell>
+                            <input
+                              type="checkbox"
+                              checked={selectedCuentas.includes(cuenta.id)}
+                              onChange={() => toggleSelectCuenta(cuenta.id)}
+                              className="rounded"
+                            />
+                          </TableCell>
                           <TableCell className="font-mono text-sm">
                             {cuenta.codigo_contable || cuenta.codigo}
                           </TableCell>
@@ -631,6 +714,111 @@ export default function PlanDeCuentas() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Edición en Masa */}
+      <Dialog open={bulkEditDialogOpen} onOpenChange={setBulkEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar {selectedCuentas.length} Cuentas en Masa</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+              Solo se actualizarán los campos que selecciones. Los demás mantendrán sus valores actuales.
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <span className="text-sm font-medium">Imputable</span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={bulkFormData.imputable === true ? "default" : "outline"}
+                    onClick={() => setBulkFormData({ ...bulkFormData, imputable: true })}
+                  >
+                    Sí
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={bulkFormData.imputable === false ? "default" : "outline"}
+                    onClick={() => setBulkFormData({ ...bulkFormData, imputable: false })}
+                  >
+                    No
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={bulkFormData.imputable === null ? "default" : "outline"}
+                    onClick={() => setBulkFormData({ ...bulkFormData, imputable: null })}
+                  >
+                    Sin cambio
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <span className="text-sm font-medium">Usa en Gastos</span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={bulkFormData.usa_en_gastos === true ? "default" : "outline"}
+                    onClick={() => setBulkFormData({ ...bulkFormData, usa_en_gastos: true })}
+                  >
+                    Sí
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={bulkFormData.usa_en_gastos === false ? "default" : "outline"}
+                    onClick={() => setBulkFormData({ ...bulkFormData, usa_en_gastos: false })}
+                  >
+                    No
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={bulkFormData.usa_en_gastos === null ? "default" : "outline"}
+                    onClick={() => setBulkFormData({ ...bulkFormData, usa_en_gastos: null })}
+                  >
+                    Sin cambio
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <span className="text-sm font-medium">Usa en Ingresos</span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={bulkFormData.usa_en_ingresos === true ? "default" : "outline"}
+                    onClick={() => setBulkFormData({ ...bulkFormData, usa_en_ingresos: true })}
+                  >
+                    Sí
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={bulkFormData.usa_en_ingresos === false ? "default" : "outline"}
+                    onClick={() => setBulkFormData({ ...bulkFormData, usa_en_ingresos: false })}
+                  >
+                    No
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={bulkFormData.usa_en_ingresos === null ? "default" : "outline"}
+                    onClick={() => setBulkFormData({ ...bulkFormData, usa_en_ingresos: null })}
+                  >
+                    Sin cambio
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkEditDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleBulkEdit} disabled={bulkUpdateMutation.isPending}>
+              {bulkUpdateMutation.isPending ? "Actualizando..." : "Aplicar Cambios"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

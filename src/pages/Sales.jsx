@@ -10,6 +10,7 @@ import PagosDialog from "../components/pos/PagosDialog";
 import ReportesDialog from "../components/pos/ReportesDialog";
 import TicketPrint from "../components/pos/TicketPrint";
 import SaleDetailDialog from "../components/sales/SaleDetailDialog";
+import AsignarCuentaDialog from "../components/sales/AsignarCuentaDialog";
 
 import {
   Dialog,
@@ -65,6 +66,8 @@ export default function Sales() {
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState(null);
   const [selectedSalePagos, setSelectedSalePagos] = useState([]);
+  const [isAsignarCuentaDialogOpen, setIsAsignarCuentaDialogOpen] = useState(false);
+  const [ventaParaCuenta, setVentaParaCuenta] = useState(null);
   const [user, setUser] = useState(null);
   const [cart, setCart] = useState([]);
   const [currentSale, setCurrentSale] = useState({
@@ -670,6 +673,12 @@ export default function Sales() {
       setVentaConfirmada(sale);
       setPagosConfirmados(variables.pagos);
       setIsTicketDialogOpen(true);
+      
+      // Abrir diálogo de asignación de cuenta si no tiene cuenta asignada
+      if (!sale.cuenta_contable_asignada) {
+        setVentaParaCuenta(sale);
+        setIsAsignarCuentaDialogOpen(true);
+      }
     },
     onError: (error) => {
       alert(error.message);
@@ -1011,6 +1020,7 @@ export default function Sales() {
               <TableHead>Cliente</TableHead>
               <TableHead>IVA</TableHead>
               <TableHead>Estado</TableHead>
+              <TableHead>Cuenta</TableHead>
               <TableHead>Items</TableHead>
               <TableHead className="text-right">Total</TableHead>
               <TableHead></TableHead>
@@ -1047,6 +1057,27 @@ export default function Sales() {
                     <Badge className="bg-red-100 text-red-700">Anulada</Badge>
                   ) : (
                     <Badge className="bg-green-100 text-green-700">Confirmada</Badge>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {sale.cuenta_contable_asignada ? (
+                    <div className="text-xs">
+                      <p className="font-medium">{sale.cuenta_contable_nombre}</p>
+                      <p className="text-slate-500">{sale.cuenta_contable_codigo}</p>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-7"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setVentaParaCuenta(sale);
+                        setIsAsignarCuentaDialogOpen(true);
+                      }}
+                    >
+                      Asignar
+                    </Button>
                   )}
                 </TableCell>
                 <TableCell>
@@ -1532,6 +1563,15 @@ export default function Sales() {
         pagos={selectedSalePagos}
       />
 
+      {/* Asignar Cuenta Dialog */}
+      <AsignarCuentaDialog
+        isOpen={isAsignarCuentaDialogOpen}
+        onClose={() => {
+          setIsAsignarCuentaDialogOpen(false);
+          setVentaParaCuenta(null);
+        }}
+        venta={ventaParaCuenta}
+      />
 
     </div>
   );
