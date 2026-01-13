@@ -225,6 +225,7 @@ export default function Layout({ children, currentPageName }) {
           permiso: "proyectos",
           items: [
             { name: "Proyectos", page: "Projects", icon: Briefcase, permiso: "proyectos" },
+            { name: "Órdenes de Trabajo", page: "WorkOrders", icon: Briefcase, permiso: "proyectos" },
           ]
         },
         {
