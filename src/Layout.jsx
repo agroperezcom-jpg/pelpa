@@ -1,14 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { createPageUrl } from "./utils";
-import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import React from "react";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
-import { usePermissions } from "@/components/permissions/usePermissions";
 import { ExternalAuthProvider } from "@/components/context/ExternalAuthContext";
 import { CompanyProvider } from "@/components/context/CompanyContext";
-import { useExternalAuth } from "@/components/context/ExternalAuthContext";
 import { Toaster } from 'react-hot-toast';
+import LayoutContent from "@/components/layout/LayoutContent";
 import {
         LayoutDashboard,
         ShoppingCart,
