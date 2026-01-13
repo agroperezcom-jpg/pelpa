@@ -39,7 +39,7 @@ import CompanyConfiguration from "../components/settings/CompanyConfiguration";
 
 export default function Settings() {
   const [user, setUser] = useState(null);
-  const [activeView, setActiveView] = useState("usuarios");
+  const [activeView, setActiveView] = useState("empresa");
   
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRol, setEditingRol] = useState(null);
@@ -328,33 +328,30 @@ export default function Settings() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Configuración</h1>
-        <p className="text-slate-500 text-sm mt-1">
-          Gestiona usuarios, configuración del sistema y preferencias
-        </p>
-      </div>
+         <h1 className="text-2xl font-bold text-foreground">Empresa</h1>
+         <p className="text-muted-foreground text-sm mt-1">
+           Configuración de la empresa
+         </p>
+       </div>
 
-      <div className="flex items-center gap-4">
-        <span className="text-sm font-medium text-slate-700">Vista:</span>
-        <Select value={activeView} onValueChange={setActiveView}>
-          <SelectTrigger className="w-80">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="empresa">Empresa</SelectItem>
-            <SelectItem value="usuarios">Usuarios</SelectItem>
-            <SelectItem value="sesiones">Registro de Sesiones</SelectItem>
-            <SelectItem value="identidad">Identidad</SelectItem>
-            <SelectItem value="tema">Tema Visual</SelectItem>
-            <SelectItem value="regional">Configuración Regional</SelectItem>
-            <SelectItem value="proyectos">Proyectos</SelectItem>
-            <SelectItem value="impresoras">Impresoras</SelectItem>
-            <SelectItem value="plan_cuentas">Plan de Cuentas</SelectItem>
-            <SelectItem value="roles">Roles y Permisos</SelectItem>
-            <SelectItem value="reset">Master Reset</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+       <div className="flex items-center gap-4">
+         <span className="text-sm font-medium text-foreground">Vistas:</span>
+         <Select value={activeView} onValueChange={setActiveView}>
+           <SelectTrigger className="w-80">
+             <SelectValue />
+           </SelectTrigger>
+           <SelectContent>
+             <SelectItem value="empresa">Datos Empresa</SelectItem>
+             <SelectItem value="identidad">Identidad</SelectItem>
+             <SelectItem value="tema">Tema Visual</SelectItem>
+             <SelectItem value="regional">Configuración Regional</SelectItem>
+             <SelectItem value="proyectos">Proyectos</SelectItem>
+             <SelectItem value="impresoras">Impresoras</SelectItem>
+             <SelectItem value="plan_cuentas">Plan de Cuentas</SelectItem>
+             <SelectItem value="reset">Master Reset</SelectItem>
+           </SelectContent>
+         </Select>
+       </div>
 
       {user?.role === 'admin' ? (
         <div className="space-y-6">
@@ -362,126 +359,7 @@ export default function Settings() {
             <CompanyConfiguration isAdmin={true} />
           )}
 
-          {activeView === "usuarios" && (
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-5 w-5 text-blue-600" />
-                    <CardTitle className="text-base">Usuarios del Sistema</CardTitle>
-                  </div>
-                  <div className="text-xs text-muted-foreground italic">
-                    Gestión de usuarios en sistema externo
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-700">Total Usuarios</p>
-                    <p className="text-2xl font-bold text-blue-900 mt-1">{totalUsers}</p>
-                  </div>
-                  <div className="p-4 bg-purple-50 rounded-lg">
-                    <p className="text-sm text-purple-700">Administradores</p>
-                    <p className="text-2xl font-bold text-purple-900 mt-1">{admins}</p>
-                  </div>
-                  <div className="p-4 bg-green-50 rounded-lg">
-                    <p className="text-sm text-green-700">Sesiones Hoy</p>
-                    <p className="text-2xl font-bold text-green-900 mt-1">{sessionsToday}</p>
-                  </div>
-                </div>
 
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-slate-50">
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Rol</TableHead>
-                      <TableHead>Sesiones (mes)</TableHead>
-                      <TableHead>Último Acceso</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users.map(u => {
-                      const userSessions = sessionLogs.filter(log => log.user_email === u.email);
-                      const monthSessions = userSessions.filter(log => {
-                        if (!log.login_time) return false;
-                        const logDate = new Date(log.login_time);
-                        return logDate >= firstDayOfMonth;
-                      }).length;
-                      const lastSession = userSessions[0];
-
-                      return (
-                        <TableRow key={u.id}>
-                          <TableCell className="font-medium">{u.full_name}</TableCell>
-                          <TableCell className="text-sm text-slate-600">{u.email}</TableCell>
-                          <TableCell>
-                            <Badge className={u.role === 'admin' ? 'bg-slate-800 text-white' : 'bg-blue-100 text-blue-700'}>
-                              {u.role === 'admin' ? 'Administrador' : 'Empleado'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{monthSessions}</TableCell>
-                          <TableCell className="text-sm text-slate-600">
-                            {lastSession ? new Date(lastSession.login_time).toLocaleString('es-AR') : 'Sin registro'}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-
-          {activeView === "sesiones" && (
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-green-600" />
-                  <CardTitle className="text-base">Registro de Sesiones</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="p-4 bg-green-50 rounded-lg">
-                    <p className="text-sm text-green-700">Sesiones Hoy</p>
-                    <p className="text-2xl font-bold text-green-900 mt-1">{sessionsToday}</p>
-                  </div>
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-700">Sesiones Este Mes</p>
-                    <p className="text-2xl font-bold text-blue-900 mt-1">{sessionsThisMonth}</p>
-                  </div>
-                </div>
-
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-slate-50">
-                      <TableHead>Usuario</TableHead>
-                      <TableHead>Inicio</TableHead>
-                      <TableHead>Fin</TableHead>
-                      <TableHead>Duración</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sessionLogs.slice(0, 50).map(log => (
-                      <TableRow key={log.id}>
-                        <TableCell className="font-medium">{log.user_name}</TableCell>
-                        <TableCell className="text-sm text-slate-600">
-                          {log.login_time ? new Date(log.login_time).toLocaleString('es-AR') : '-'}
-                        </TableCell>
-                        <TableCell className="text-sm text-slate-600">
-                          {log.logout_time ? new Date(log.logout_time).toLocaleString('es-AR') : 'En sesión'}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {log.duration_minutes ? `${log.duration_minutes} min` : '-'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
 
           {activeView === "identidad" && <IdentidadEmpresa />}
 
@@ -526,156 +404,7 @@ export default function Settings() {
             </Card>
           )}
 
-          {activeView === "roles" && (
-            <>
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-slate-700" />
-                    Roles y Permisos
-                  </h2>
-                  <p className="text-sm text-slate-500 mt-1">Gestión centralizada de accesos y control de seguridad</p>
-                </div>
-                <Button onClick={() => handleOpenRolDialog()} className="bg-slate-700 hover:bg-slate-800">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nuevo Rol
-                </Button>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {roles.map(rol => (
-                  <Card key={rol.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
-                    <CardHeader className="pb-4 border-b border-slate-100">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                          <CardTitle className="text-base font-semibold">{rol.nombre}</CardTitle>
-                          <p className="text-sm text-slate-500 mt-1.5 line-clamp-2">
-                            {rol.descripcion || "Sin descripción"}
-                          </p>
-                        </div>
-                        {rol.es_sistema && (
-                          <Badge className="bg-slate-100 text-slate-700 text-xs">Sistema</Badge>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-4 space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="p-3 bg-slate-50 rounded-lg">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Users className="h-4 w-4 text-slate-600" />
-                            <span className="text-xs text-slate-600 font-medium">Usuarios</span>
-                          </div>
-                          <p className="text-xl font-bold">{getRolUsers(rol.id).length}</p>
-                        </div>
-                        <div className="p-3 bg-slate-50 rounded-lg">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Lock className="h-4 w-4 text-slate-600" />
-                            <span className="text-xs text-slate-600 font-medium">Permisos</span>
-                          </div>
-                          <p className="text-xl font-bold">{getRolPermisosCount(rol.id)}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleOpenPermisos(rol)}
-                          className="flex-1"
-                        >
-                          <Lock className="h-3.5 w-3.5 mr-1.5" />
-                          Configurar
-                        </Button>
-                        {!rol.es_sistema && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleOpenRolDialog(rol)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => {
-                                setRolToDelete(rol);
-                                setDeleteConfirmOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              <Card className="border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-base">Asignación de Roles a Usuarios</CardTitle>
-                  <CardDescription className="text-xs">Asigna roles personalizados para controlar el acceso</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-slate-50">
-                        <TableHead>Usuario</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Rol Sistema</TableHead>
-                        <TableHead>Rol Personalizado</TableHead>
-                        <TableHead className="w-16">Estado</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {users.map(u => (
-                        <TableRow key={u.id}>
-                          <TableCell className="font-medium">{u.full_name}</TableCell>
-                          <TableCell className="text-sm text-slate-600">{u.email}</TableCell>
-                          <TableCell>
-                            <Badge className={u.role === 'admin' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'}>
-                              {u.role === 'admin' ? 'Admin' : 'Usuario'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {u.role === 'admin' ? (
-                              <span className="text-sm text-muted-foreground italic">Acceso total</span>
-                            ) : (
-                              <Select value={u.rol_id || "none"} onValueChange={(v) => handleUserRoleChange(u.id, v)}>
-                                <SelectTrigger className="w-48">
-                                  <SelectValue placeholder="Sin asignar" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="none">Sin rol personalizado</SelectItem>
-                                  {roles.filter(r => !r.es_sistema).map(rol => (
-                                    <SelectItem key={rol.id} value={rol.id}>{rol.nombre}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {u.role !== 'admin' && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleToggleUserStatus(u.id, u.activo !== false)}
-                                className={u.activo !== false ? "text-green-600" : "text-red-600"}
-                              >
-                                <Power className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </>
-          )}
         </div>
       ) : (
         <Card className="border-l-4 border-l-amber-500 bg-amber-50">
