@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "./utils";
@@ -63,7 +64,7 @@ export default function Layout({ children, currentPageName }) {
 
   const { data: configuracionEmpresa = [] } = useQuery({
     queryKey: ['configuracionEmpresa'],
-    queryFn: () => base44.entities.ConfiguracionEmpresa.list()
+    queryFn: () => base44.modules.configuracion.configuracionEmpresa.list()
   });
 
   const config = configuracionEmpresa[0];
@@ -127,7 +128,7 @@ export default function Layout({ children, currentPageName }) {
     }
   };
 
-  const allowedModules = permissionsLoading ? [] : getAllowedModules();
+  const allowedModules = permissionsLoading ? [] : getAllowedModules(externalIsAdmin);
 
   const sectionIcons = {
       general: LayoutDashboard,
@@ -239,7 +240,7 @@ export default function Layout({ children, currentPageName }) {
             { name: "Calendario", page: "Calendar", icon: CalendarIcon, permiso: "calendario" },
           ]
         },
-        ...(isAdmin ? [{
+        ...(externalIsAdmin ? [{
           id: "sistema",
           name: "Sistema",
           section: "sistema",
@@ -260,7 +261,7 @@ export default function Layout({ children, currentPageName }) {
       }
 
       // Verificar si el usuario tiene acceso al módulo
-      const hasModuleAccess = isAdmin || allowedModules.includes(module.permiso);
+      const hasModuleAccess = externalIsAdmin || allowedModules.includes(module.permiso);
       
       if (!hasModuleAccess) {
         return null;
@@ -269,7 +270,7 @@ export default function Layout({ children, currentPageName }) {
       // Filtrar items dentro del módulo
       const filteredItems = module.items.filter(item => {
         if (!item.permiso) return true;
-        return isAdmin || allowedModules.includes(item.permiso);
+        return externalIsAdmin || allowedModules.includes(item.permiso);
       });
 
       // Si no quedan items después del filtro, ocultar el módulo
