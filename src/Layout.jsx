@@ -5,6 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { usePermissions } from "@/components/permissions/usePermissions";
+import { ExternalAuthProvider } from "@/components/context/ExternalAuthContext";
 import { CompanyProvider } from "@/components/context/CompanyContext";
 import { useExternalAuth } from "@/components/context/ExternalAuthContext";
 import { Toaster } from 'react-hot-toast';
