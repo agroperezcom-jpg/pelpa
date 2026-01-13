@@ -839,8 +839,6 @@ export default function Settings() {
 
       {/* Company Reset Dialog */}
       <CompanyResetDialog isOpen={resetDialogOpen} onClose={() => setResetDialogOpen(false)} />
-
-
-    </div>
-  );
-}
+      </div>
+      );
+      }
