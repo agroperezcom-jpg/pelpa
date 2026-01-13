@@ -39,9 +39,6 @@ import CompanyConfiguration from "../components/settings/CompanyConfiguration";
 
 export default function Settings() {
   const [user, setUser] = useState(null);
-  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("user");
   const [activeView, setActiveView] = useState("usuarios");
   
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -90,25 +87,13 @@ export default function Settings() {
     loadUser();
   }, []);
 
-  const inviteUserMutation = useMutation({
+  // User management disabled in integrated mode - handled by external gateway
+  const createUserMutation = useMutation({
     mutationFn: async ({ email, full_name, role }) => {
-      return await base44.functions.invoke('createUserWithStatus', {
-        email,
-        full_name: full_name || email.split('@')[0],
-        role
-      });
-    },
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      setInviteDialogOpen(false);
-      setInviteEmail("");
-      setInviteRole("user");
-      
-      // Display modal with temporary password for admin to share
-      alert(`✓ Usuario creado con estado PENDIENTE\n\nContraseña temporal: ${response.data.temporary_password}\n\n⚠️ IMPORTANTE: Comparte esta contraseña por un canal seguro. No será mostrada nuevamente.`);
+      throw new Error('User management is handled externally. Contact your administrator.');
     },
     onError: (error) => {
-      alert('Error: ' + (error.message || 'No se pudo crear el usuario'));
+      alert('Información: ' + (error.message || 'Contacta al administrador'));
     }
   });
 
@@ -219,13 +204,10 @@ export default function Settings() {
     }
   });
 
-  const handleInvite = () => {
-    if (!inviteEmail) return;
-    inviteUserMutation.mutate({ 
-      email: inviteEmail, 
-      full_name: inviteEmail,
-      role: inviteRole 
-    });
+  // Placeholder for external user management
+  const handleCreateUser = () => {
+    // This is handled by the external auth gateway
+    alert('La gestión de usuarios se realiza a través del sistema de administración externo.');
   };
 
   const MODULOS = [
@@ -388,10 +370,9 @@ export default function Settings() {
                     <Users className="h-5 w-5 text-blue-600" />
                     <CardTitle className="text-base">Usuarios del Sistema</CardTitle>
                   </div>
-                  <Button onClick={() => setInviteDialogOpen(true)} size="sm">
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Invitar Usuario
-                  </Button>
+                  <div className="text-xs text-muted-foreground italic">
+                    Gestión de usuarios en sistema externo
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -859,53 +840,7 @@ export default function Settings() {
       {/* Company Reset Dialog */}
       <CompanyResetDialog isOpen={resetDialogOpen} onClose={() => setResetDialogOpen(false)} />
 
-      {/* Dialog Crear Usuario */}
-      <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Crear Nuevo Usuario</DialogTitle>
-          </DialogHeader>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800 mb-4">
-            ℹ️ Se creará el usuario con estado PENDIENTE. Comparte la contraseña por un canal seguro.
-          </div>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Email *</Label>
-              <Input
-                type="email"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                placeholder="usuario@ejemplo.com"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Rol en el Sistema</Label>
-              <Select value={inviteRole} onValueChange={setInviteRole}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">Empleado</SelectItem>
-                  <SelectItem value="admin">Administrador</SelectItem>
-                </SelectContent>
-              </Select>
-              {inviteRole === 'admin' && (
-                <p className="text-xs text-amber-600">
-                  ⚠️ Los administradores tienen acceso total al sistema
-                </p>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleInvite} disabled={!inviteEmail || inviteUserMutation.isPending}>
-              {inviteUserMutation.isPending ? 'Creando...' : 'Crear Usuario'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
     </div>
   );
 }
