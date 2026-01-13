@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Receipt, Printer, FileCheck, Calendar, User, Package, X, MessageCircle, Download } from "lucide-react";
+import { Receipt, Printer, FileCheck, Calendar, User, Package, X, MessageCircle, Download, Smartphone, FileText } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { printTicket } from "../pos/TicketPrint";
@@ -16,11 +17,37 @@ import toast from "react-hot-toast";
 export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) {
   const [paperWidth, setPaperWidth] = useState(PAPER_WIDTHS.LARGE);
   const [showTicketDialog, setShowTicketDialog] = useState(false);
+  const [downloadingType, setDownloadingType] = useState(null);
   
   if (!sale) return null;
 
   const handlePrint = () => {
     printTicket(sale, pagos, true, paperWidth);
+  };
+
+  const handleDownloadPDF = async (type) => {
+    setDownloadingType(type);
+    try {
+      const response = await base44.functions.invoke('generateSaleTicket', {
+        sale_id: sale.id,
+        type: type
+      });
+      
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ticket_${type}_${sale.numero_comprobante || sale.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+      toast.success("PDF descargado correctamente");
+    } catch (error) {
+      toast.error("Error al generar PDF: " + error.message);
+    } finally {
+      setDownloadingType(null);
+    }
   };
 
   const ticketData = {
@@ -264,24 +291,48 @@ export default function SaleDetailDialog({ isOpen, onClose, sale, pagos = [] }) 
                 </Select>
               </div>
               
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={onClose}>
-                  Cerrar
-                </Button>
-                <Button 
-                  onClick={() => setShowTicketDialog(true)}
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Descargar Ticket
-                </Button>
-                <Button 
-                  onClick={handlePrint}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <Printer className="h-4 w-4 mr-2" />
-                  Impresión Térmica Directa
-                </Button>
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => handleDownloadPDF('mobile')}
+                    variant="outline"
+                    className="flex-1"
+                    disabled={downloadingType !== null}
+                  >
+                    <Smartphone className="h-4 w-4 mr-2" />
+                    {downloadingType === 'mobile' ? 'Generando...' : 'Ticket Mobile'}
+                  </Button>
+                  <Button 
+                    onClick={() => handleDownloadPDF('80mm')}
+                    variant="outline"
+                    className="flex-1"
+                    disabled={downloadingType !== null}
+                  >
+                    <Printer className="h-4 w-4 mr-2" />
+                    {downloadingType === '80mm' ? 'Generando...' : 'Ticket 80mm'}
+                  </Button>
+                  <Button 
+                    onClick={() => handleDownloadPDF('a4')}
+                    variant="outline"
+                    className="flex-1"
+                    disabled={downloadingType !== null}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    {downloadingType === 'a4' ? 'Generando...' : 'Comprobante A4'}
+                  </Button>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={onClose}>
+                    Cerrar
+                  </Button>
+                  <Button 
+                    onClick={handlePrint}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Printer className="h-4 w-4 mr-2" />
+                    Impresión Térmica Directa
+                  </Button>
+                </div>
               </div>
             </div>
           )}

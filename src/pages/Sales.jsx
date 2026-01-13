@@ -49,7 +49,10 @@ import {
   TrendingUp,
   FileText,
   FileCheck,
-  MessageCircle
+  MessageCircle,
+  Smartphone,
+  Printer,
+  Download
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -68,6 +71,7 @@ export default function Sales() {
   const [selectedSalePagos, setSelectedSalePagos] = useState([]);
   const [isAsignarCuentaDialogOpen, setIsAsignarCuentaDialogOpen] = useState(false);
   const [ventaParaCuenta, setVentaParaCuenta] = useState(null);
+  const [downloadingTicket, setDownloadingTicket] = useState(null);
   const [user, setUser] = useState(null);
   const [cart, setCart] = useState([]);
   const [currentSale, setCurrentSale] = useState({
@@ -719,6 +723,31 @@ export default function Sales() {
       total_manual: null
     });
     setProductSearch("");
+  };
+
+  const handleDownloadTicket = async (type) => {
+    setDownloadingTicket(type);
+    try {
+      const response = await base44.functions.invoke('generateSaleTicket', {
+        sale_id: ventaConfirmada.id,
+        type: type
+      });
+      
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ticket_${type}_${ventaConfirmada.numero_comprobante || ventaConfirmada.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+      toast.success("PDF descargado");
+    } catch (error) {
+      toast.error("Error al generar PDF");
+    } finally {
+      setDownloadingTicket(null);
+    }
   };
 
   const handleCloseTicket = () => {
@@ -1535,18 +1564,54 @@ export default function Sales() {
             )}
           </div>
 
-          <DialogFooter className="px-6 py-4 border-t mt-0 flex gap-2">
-            <Button 
-              variant="outline"
-              onClick={() => setIsWhatsAppDialogOpen(true)}
-              className="gap-2 flex-1"
-            >
-              <MessageCircle className="h-4 w-4" />
-              WhatsApp
-            </Button>
-            <Button onClick={handleCloseTicket} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
-              Cerrar
-            </Button>
+          <DialogFooter className="px-6 py-4 border-t mt-0">
+            <div className="w-full space-y-3">
+              <div className="grid grid-cols-3 gap-2">
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownloadTicket('mobile')}
+                  disabled={downloadingTicket !== null}
+                  className="text-xs"
+                >
+                  <Smartphone className="h-3 w-3 mr-1" />
+                  {downloadingTicket === 'mobile' ? 'Gen...' : 'Mobile'}
+                </Button>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownloadTicket('80mm')}
+                  disabled={downloadingTicket !== null}
+                  className="text-xs"
+                >
+                  <Printer className="h-3 w-3 mr-1" />
+                  {downloadingTicket === '80mm' ? 'Gen...' : '80mm'}
+                </Button>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownloadTicket('a4')}
+                  disabled={downloadingTicket !== null}
+                  className="text-xs"
+                >
+                  <FileText className="h-3 w-3 mr-1" />
+                  {downloadingTicket === 'a4' ? 'Gen...' : 'A4'}
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={() => setIsWhatsAppDialogOpen(true)}
+                  className="gap-2 flex-1"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  WhatsApp
+                </Button>
+                <Button onClick={handleCloseTicket} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
+                  Cerrar
+                </Button>
+              </div>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
