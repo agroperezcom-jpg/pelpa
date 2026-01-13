@@ -35,6 +35,7 @@ import RegionalConfig from "../components/settings/RegionalConfig";
 import ConfiguracionImpresoras from "../components/settings/ConfiguracionImpresoras";
 import PlanDeCuentas from "../components/settings/PlanDeCuentas";
 import CompanyResetDialog from "../components/settings/CompanyResetDialog";
+import CompanyConfiguration from "../components/settings/CompanyConfiguration";
 
 export default function Settings() {
   const [user, setUser] = useState(null);
@@ -348,6 +349,7 @@ export default function Settings() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="empresa">Empresa</SelectItem>
             <SelectItem value="usuarios">Usuarios</SelectItem>
             <SelectItem value="sesiones">Registro de Sesiones</SelectItem>
             <SelectItem value="identidad">Identidad</SelectItem>
@@ -364,6 +366,10 @@ export default function Settings() {
 
       {user?.role === 'admin' ? (
         <div className="space-y-6">
+          {activeView === "empresa" && (
+            <CompanyConfiguration isAdmin={true} />
+          )}
+
           {activeView === "usuarios" && (
             <Card className="border-0 shadow-sm">
               <CardHeader>

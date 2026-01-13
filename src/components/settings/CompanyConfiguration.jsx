@@ -1,0 +1,322 @@
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCompany } from "@/components/context/CompanyContext";
+import toast from "react-hot-toast";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Building2, Upload, Loader2 } from "lucide-react";
+
+/**
+ * Company Configuration Component
+ * Allows admins to manage company data
+ * All UI labels are in Spanish
+ */
+export default function CompanyConfiguration({ isAdmin = false }) {
+  const { currentCompanyId } = useCompany();
+  const queryClient = useQueryClient();
+  
+  const [formData, setFormData] = useState({
+    name: "",
+    legal_name: "",
+    tax_id: "",
+    tipo_iva: "RESP_INSCRIPTO",
+    address: "",
+    phone: "",
+    email: "",
+    logo_url: "",
+    is_active: true
+  });
+  
+  const [logoPreview, setLogoPreview] = useState("");
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+
+  // Fetch current company data
+  const { data: companies = [], isLoading } = useQuery({
+    queryKey: ['companies'],
+    queryFn: () => base44.entities.Company.list()
+  });
+
+  useEffect(() => {
+    if (currentCompanyId && companies.length > 0) {
+      const company = companies.find(c => c.id === currentCompanyId);
+      if (company) {
+        setFormData({
+          name: company.name || "",
+          legal_name: company.legal_name || "",
+          tax_id: company.tax_id || "",
+          tipo_iva: company.tipo_iva || "RESP_INSCRIPTO",
+          address: company.address || "",
+          phone: company.phone || "",
+          email: company.email || "",
+          logo_url: company.logo_url || "",
+          is_active: company.is_active !== false
+        });
+        if (company.logo_url) {
+          setLogoPreview(company.logo_url);
+        }
+      }
+    }
+  }, [currentCompanyId, companies]);
+
+  // Save company mutation
+  const saveCompanyMutation = useMutation({
+    mutationFn: async () => {
+      if (!formData.name || !formData.tax_id) {
+        throw new Error("El nombre comercial y CUIT son obligatorios");
+      }
+
+      // Validate CUIT format (11 digits)
+      if (!/^\d{11}$/.test(formData.tax_id.replace(/[^0-9]/g, ''))) {
+        throw new Error("El CUIT debe contener 11 dígitos");
+      }
+
+      const currentCompany = companies.find(c => c.id === currentCompanyId);
+      if (!currentCompany) {
+        throw new Error("Empresa no encontrada");
+      }
+
+      return await base44.entities.Company.update(currentCompanyId, {
+        name: formData.name,
+        legal_name: formData.legal_name,
+        tax_id: formData.tax_id,
+        tipo_iva: formData.tipo_iva,
+        address: formData.address,
+        phone: formData.phone,
+        email: formData.email,
+        logo_url: formData.logo_url,
+        is_active: formData.is_active
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success("Datos de la empresa guardados correctamente");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Error al guardar los datos");
+    }
+  });
+
+  // Handle logo upload
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingLogo(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setFormData(prev => ({ ...prev, logo_url: file_url }));
+      setLogoPreview(file_url);
+      toast.success("Logo cargado correctamente");
+    } catch (error) {
+      toast.error("Error al cargar el logo");
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card className="border-0 shadow-sm">
+        <CardContent className="p-6 text-center">
+          <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="border-0 shadow-sm">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Building2 className="h-5 w-5 text-slate-700" />
+          <div>
+            <CardTitle className="text-base">Datos de la Empresa</CardTitle>
+            <CardDescription>Gestiona la información de tu empresa</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-6">
+          {/* Logo Section */}
+          <div className="p-6 bg-slate-50 rounded-lg border border-slate-200">
+            <Label className="block text-sm font-medium mb-3">Logo de la Empresa</Label>
+            <div className="flex items-center gap-4">
+              {logoPreview && (
+                <div className="w-20 h-20 rounded-lg bg-white border border-slate-200 flex items-center justify-center overflow-hidden">
+                  <img src={logoPreview} alt="Logo preview" className="w-full h-full object-contain" />
+                </div>
+              )}
+              <label className="cursor-pointer">
+                <div className="flex items-center gap-2 px-4 py-2 border border-dashed border-slate-300 rounded-lg hover:bg-slate-100 transition-colors">
+                  <Upload className="h-4 w-4 text-slate-600" />
+                  <span className="text-sm text-slate-700">{isUploadingLogo ? "Cargando..." : "Cargar logo"}</span>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  disabled={isUploadingLogo || !isAdmin}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Main Form */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Nombre comercial */}
+            <div className="space-y-2">
+              <Label htmlFor="nombre">
+                Nombre comercial <span className="text-red-600">*</span>
+              </Label>
+              <Input
+                id="nombre"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Ej: MiEmpresa S.A."
+                disabled={!isAdmin}
+                className={!isAdmin ? "bg-slate-50" : ""}
+              />
+            </div>
+
+            {/* Razón social */}
+            <div className="space-y-2">
+              <Label htmlFor="legal_name">Razón social</Label>
+              <Input
+                id="legal_name"
+                value={formData.legal_name}
+                onChange={(e) => setFormData({ ...formData, legal_name: e.target.value })}
+                placeholder="Razón social de la empresa"
+                disabled={!isAdmin}
+                className={!isAdmin ? "bg-slate-50" : ""}
+              />
+            </div>
+
+            {/* CUIT */}
+            <div className="space-y-2">
+              <Label htmlFor="tax_id">
+                CUIT <span className="text-red-600">*</span>
+              </Label>
+              <Input
+                id="tax_id"
+                value={formData.tax_id}
+                onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })}
+                placeholder="XX-XXXXXXXX-X"
+                disabled={!isAdmin}
+                className={!isAdmin ? "bg-slate-50" : ""}
+              />
+              <p className="text-xs text-slate-500">Ingresa 11 dígitos sin guiones</p>
+            </div>
+
+            {/* Tipo de IVA */}
+            <div className="space-y-2">
+              <Label htmlFor="tipo_iva">Tipo de IVA</Label>
+              <Select 
+                value={formData.tipo_iva}
+                onValueChange={(value) => setFormData({ ...formData, tipo_iva: value })}
+                disabled={!isAdmin}
+              >
+                <SelectTrigger disabled={!isAdmin} className={!isAdmin ? "bg-slate-50" : ""}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="RESP_INSCRIPTO">Responsable Inscripto</SelectItem>
+                  <SelectItem value="MONOTRIBUTO">Monotributo</SelectItem>
+                  <SelectItem value="EXENTO">Exento</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Dirección */}
+            <div className="space-y-2">
+              <Label htmlFor="address">Dirección</Label>
+              <Input
+                id="address"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                placeholder="Calle, número, piso"
+                disabled={!isAdmin}
+                className={!isAdmin ? "bg-slate-50" : ""}
+              />
+            </div>
+
+            {/* Teléfono */}
+            <div className="space-y-2">
+              <Label htmlFor="phone">Teléfono</Label>
+              <Input
+                id="phone"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="+54 9 11 XXXX-XXXX"
+                disabled={!isAdmin}
+                className={!isAdmin ? "bg-slate-50" : ""}
+              />
+            </div>
+
+            {/* Email */}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="contacto@empresa.com"
+                disabled={!isAdmin}
+                className={!isAdmin ? "bg-slate-50" : ""}
+              />
+            </div>
+
+            {/* Estado */}
+            <div className="space-y-2">
+              <Label htmlFor="is_active">Estado</Label>
+              <Select 
+                value={formData.is_active ? "active" : "inactive"}
+                onValueChange={(value) => setFormData({ ...formData, is_active: value === "active" })}
+                disabled={!isAdmin}
+              >
+                <SelectTrigger disabled={!isAdmin} className={!isAdmin ? "bg-slate-50" : ""}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Activa</SelectItem>
+                  <SelectItem value="inactive">Inactiva</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Save Button */}
+          {isAdmin && (
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+              <Button
+                onClick={() => saveCompanyMutation.mutate()}
+                disabled={saveCompanyMutation.isPending}
+                className="bg-slate-700 hover:bg-slate-800"
+              >
+                {saveCompanyMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  "Guardar cambios"
+                )}
+              </Button>
+            </div>
+          )}
+
+          {!isAdmin && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+              ℹ️ Solo los administradores pueden editar estos datos
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
