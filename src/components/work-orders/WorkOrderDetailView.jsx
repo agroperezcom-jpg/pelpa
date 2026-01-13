@@ -4,8 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, User, Wrench, Package, DollarSign, ChevronLeft } from 'lucide-react';
-import { format } from 'date-fns';
+import { FileText, User, Wrench, Package, DollarSign, ChevronLeft, AlertCircle, Check } from 'lucide-react';
+import { format, isBefore, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -22,6 +22,7 @@ const workOrderStatusMap = {
 
 export default function WorkOrderDetailView({ workOrder, onBack, onUpdate }) {
   const [selectedStatus, setSelectedStatus] = useState(workOrder.work_order_status);
+  const [showDeliveryForm, setShowDeliveryForm] = useState(false);
   const queryClient = useQueryClient();
 
   // Fetch related data
@@ -37,8 +38,13 @@ export default function WorkOrderDetailView({ workOrder, onBack, onUpdate }) {
 
   // Update status mutation
   const updateStatusMutation = useMutation({
-    mutationFn: (newStatus) =>
-      base44.entities.Project.update(workOrder.id, { work_order_status: newStatus }),
+    mutationFn: (newStatus) => {
+      const updates = { work_order_status: newStatus };
+      if (newStatus === 'DELIVERED' && !workOrder.real_delivery_date) {
+        updates.real_delivery_date = new Date().toISOString().split('T')[0];
+      }
+      return base44.entities.Project.update(workOrder.id, updates);
+    },
     onSuccess: () => {
       toast.success('Estado actualizado');
       queryClient.invalidateQueries({ queryKey: ['projects'] });
@@ -48,6 +54,11 @@ export default function WorkOrderDetailView({ workOrder, onBack, onUpdate }) {
       toast.error('Error al actualizar: ' + error.message);
     }
   });
+
+  // Calculate delivery date status
+  const isOverdue = workOrder.estimated_delivery_date && 
+    !['DELIVERED', 'CANCELLED'].includes(workOrder.work_order_status) &&
+    isBefore(new Date(workOrder.estimated_delivery_date), new Date());
 
   const handleStatusChange = (newStatus) => {
     setSelectedStatus(newStatus);
@@ -74,12 +85,24 @@ export default function WorkOrderDetailView({ workOrder, onBack, onUpdate }) {
         </div>
       </div>
 
-      {/* Status Control */}
+      {/* Status & Delivery Control */}
       <Card className="border-0 shadow-sm">
         <CardHeader>
           <CardTitle className="text-base">Estado de la Orden</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {isOverdue && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-red-900">Orden Vencida</p>
+                <p className="text-xs text-red-700 mt-0.5">
+                  Entrega estimada: {format(new Date(workOrder.estimated_delivery_date), 'dd MMMM yyyy', { locale: es })}
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
             <Badge className={statusInfo.color}>
               {statusInfo.label}
@@ -97,6 +120,29 @@ export default function WorkOrderDetailView({ workOrder, onBack, onUpdate }) {
                 <SelectItem value="CANCELLED">Cancelado</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Delivery Dates */}
+          <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+            <div>
+              <p className="text-xs text-muted-foreground mb-2">Entrega Estimada</p>
+              <p className="font-medium text-sm">
+                {workOrder.estimated_delivery_date
+                  ? format(new Date(workOrder.estimated_delivery_date), 'dd MMM yyyy', { locale: es })
+                  : 'No definida'}
+              </p>
+            </div>
+            {workOrder.real_delivery_date && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                  <Check className="h-3 w-3 text-green-600" />
+                  Entrega Real
+                </p>
+                <p className="font-medium text-sm">
+                  {format(new Date(workOrder.real_delivery_date), 'dd MMM yyyy', { locale: es })}
+                </p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -170,35 +216,51 @@ export default function WorkOrderDetailView({ workOrder, onBack, onUpdate }) {
         <TabsContent value="tasks" className="space-y-4">
           {tasks.length > 0 ? (
             <div className="space-y-3">
-              {tasks.map(task => (
-                <Card key={task.id} className="border-0 shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <h3 className="font-medium">{task.name}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {task.description}
-                        </p>
-                        <div className="flex items-center gap-2 mt-3">
-                          <Badge variant="outline" className="text-xs">
-                            {task.status === 'pendiente' && 'Pendiente'}
-                            {task.status === 'en_progreso' && 'En progreso'}
-                            {task.status === 'completado' && 'Completada'}
-                          </Badge>
-                        </div>
-                      </div>
-                      {task.due_date && (
-                        <div className="text-right">
-                          <p className="text-xs text-muted-foreground">Vencimiento</p>
-                          <p className="text-sm font-medium">
-                            {format(new Date(task.due_date), 'dd MMM', { locale: es })}
+              {tasks.map(task => {
+                const taskTypeMap = {
+                  DESIGN: { label: 'Diseño', color: 'bg-blue-100 text-blue-800' },
+                  PRINTING: { label: 'Impresión', color: 'bg-orange-100 text-orange-800' },
+                  FINISHING: { label: 'Terminación', color: 'bg-amber-100 text-amber-800' },
+                  DELIVERY: { label: 'Entrega', color: 'bg-green-100 text-green-800' },
+                  OTHER: { label: 'Otra', color: 'bg-gray-100 text-gray-800' }
+                };
+                const taskType = taskTypeMap[task.task_type] || taskTypeMap.OTHER;
+
+                return (
+                  <Card key={task.id} className="border-0 shadow-sm">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-medium">{task.name}</h3>
+                            <Badge className={taskType.color + ' text-xs'}>
+                              {taskType.label}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {task.description}
                           </p>
+                          <div className="flex items-center gap-2 mt-3">
+                            <Badge variant="outline" className="text-xs">
+                              {task.status === 'pendiente' && 'Pendiente'}
+                              {task.status === 'en_progreso' && 'En progreso'}
+                              {task.status === 'completado' && 'Completada'}
+                            </Badge>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                        {task.due_date && (
+                          <div className="text-right">
+                            <p className="text-xs text-muted-foreground">Vencimiento</p>
+                            <p className="text-sm font-medium">
+                              {format(new Date(task.due_date), 'dd MMM', { locale: es })}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           ) : (
             <Card className="border-0 shadow-sm">
