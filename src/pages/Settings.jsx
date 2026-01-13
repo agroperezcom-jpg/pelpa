@@ -91,18 +91,24 @@ export default function Settings() {
   }, []);
 
   const inviteUserMutation = useMutation({
-    mutationFn: async ({ email, role }) => {
-      return await base44.users.inviteUser(email, role);
+    mutationFn: async ({ email, full_name, role }) => {
+      return await base44.functions.invoke('createUserWithStatus', {
+        email,
+        full_name: full_name || email.split('@')[0],
+        role
+      });
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       setInviteDialogOpen(false);
       setInviteEmail("");
       setInviteRole("user");
-      alert('Usuario invitado correctamente');
+      
+      // Display modal with temporary password for admin to share
+      alert(`✓ Usuario creado con estado PENDIENTE\n\nContraseña temporal: ${response.data.temporary_password}\n\n⚠️ IMPORTANTE: Comparte esta contraseña por un canal seguro. No será mostrada nuevamente.`);
     },
     onError: (error) => {
-      alert('Error al invitar usuario: ' + error.message);
+      alert('Error: ' + (error.message || 'No se pudo crear el usuario'));
     }
   });
 
@@ -215,7 +221,11 @@ export default function Settings() {
 
   const handleInvite = () => {
     if (!inviteEmail) return;
-    inviteUserMutation.mutate({ email: inviteEmail, role: inviteRole });
+    inviteUserMutation.mutate({ 
+      email: inviteEmail, 
+      full_name: inviteEmail,
+      role: inviteRole 
+    });
   };
 
   const MODULOS = [
@@ -849,12 +859,15 @@ export default function Settings() {
       {/* Company Reset Dialog */}
       <CompanyResetDialog isOpen={resetDialogOpen} onClose={() => setResetDialogOpen(false)} />
 
-      {/* Dialog Invitar Usuario */}
+      {/* Dialog Crear Usuario */}
       <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Invitar Nuevo Usuario</DialogTitle>
+            <DialogTitle>Crear Nuevo Usuario</DialogTitle>
           </DialogHeader>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800 mb-4">
+            ℹ️ Se creará el usuario con estado PENDIENTE. Comparte la contraseña por un canal seguro.
+          </div>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Email *</Label>
@@ -888,7 +901,7 @@ export default function Settings() {
               Cancelar
             </Button>
             <Button onClick={handleInvite} disabled={!inviteEmail || inviteUserMutation.isPending}>
-              {inviteUserMutation.isPending ? 'Invitando...' : 'Enviar Invitación'}
+              {inviteUserMutation.isPending ? 'Creando...' : 'Crear Usuario'}
             </Button>
           </DialogFooter>
         </DialogContent>
