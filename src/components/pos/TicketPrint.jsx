@@ -222,21 +222,6 @@ export default function TicketPrint({ venta, pagos, isCopia = false }) {
         </button>
       )}
 
-      {/* Opciones para impresión genérica */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">Ancho de papel (método genérico)</Label>
-        <Select value={String(paperWidth)} onValueChange={(v) => setPaperWidth(Number(v))}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={String(PAPER_WIDTHS.SMALL)}>58mm (32 caracteres)</SelectItem>
-            <SelectItem value={String(PAPER_WIDTHS.MEDIUM)}>72mm (42 caracteres)</SelectItem>
-            <SelectItem value={String(PAPER_WIDTHS.LARGE)}>80mm (48 caracteres)</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      
       <button
         onClick={handlePrint}
         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
