@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, X, Loader2 } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import toast from "react-hot-toast";
 
@@ -56,12 +56,7 @@ export default function PDFPreviewDialog({ isOpen, onClose, saleId, type, typeNa
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl h-[90vh] p-0 flex flex-col">
         <DialogHeader className="px-6 py-4 border-b">
-          <DialogTitle className="flex items-center justify-between">
-            <span>Vista Previa - {typeName}</span>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          </DialogTitle>
+          <DialogTitle>Vista Previa - {typeName}</DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden bg-slate-100">
