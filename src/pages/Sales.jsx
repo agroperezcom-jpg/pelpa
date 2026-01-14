@@ -463,9 +463,9 @@ export default function Sales() {
         throw new Error("Talonario no encontrado");
       }
 
-      if (!talonario.activo) {
-        throw new Error("El talonario seleccionado está inactivo");
-      }
+      if (!talonario.is_active) {
+         throw new Error("El talonario seleccionado está inactivo");
+       }
 
       // Determinar tipo de comprobante
       let tipoComprobante;
