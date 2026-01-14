@@ -211,7 +211,8 @@ export default function ControlStockDialog({ isOpen, onClose, products, existing
     createControlMutation.mutate({
       nombre: formData.get('nombre'),
       deposito: formData.get('deposito'),
-      observaciones: formData.get('observaciones')
+      observaciones: formData.get('observaciones'),
+      control_padre_id: existingControl?.id || null
     });
   };
 
