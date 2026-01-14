@@ -450,7 +450,6 @@ export default function LayoutContent({ children, currentPageName }) {
             </div>
             
             <div className="flex items-center gap-3">
-              <CompanySelector />
               <button className="p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
                 <Bell className="h-4 w-4" />
               </button>
