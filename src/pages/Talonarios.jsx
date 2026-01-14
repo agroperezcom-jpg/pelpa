@@ -456,7 +456,7 @@ export default function Talonarios() {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-xs text-blue-900 font-medium mb-2">Vista previa:</p>
               <p className="font-mono text-lg font-bold text-blue-600">
-                {formData.prefijo || "PREFIJO"}-{String(formData.numero_desde || 1).padStart(8, '0')}
+                {formData.punto_venta || "0001"}-{String(formData.numero_desde || 1).padStart(8, '0')}
               </p>
             </div>
 
