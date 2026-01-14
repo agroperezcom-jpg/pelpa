@@ -411,11 +411,11 @@ export default function Talonarios() {
               </div>
 
               <div className="space-y-2">
-                <Label>Prefijo *</Label>
+                <Label>Punto de Venta *</Label>
                 <Input
-                  value={formData.prefijo}
-                  onChange={(e) => setFormData({ ...formData, prefijo: e.target.value.toUpperCase() })}
-                  placeholder="X, B, FAC"
+                  value={formData.punto_venta}
+                  onChange={(e) => setFormData({ ...formData, punto_venta: e.target.value })}
+                  placeholder="0001"
                   disabled={!!editingTalonario}
                 />
               </div>
