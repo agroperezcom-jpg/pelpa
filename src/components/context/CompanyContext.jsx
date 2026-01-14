@@ -29,67 +29,15 @@ export function CompanyProvider({ children }) {
         const allCompanies = await base44.entities.Company.list();
         setCompanies(allCompanies);
 
-        // Determine user's assigned companies
-        let userAssignedCompanies = [];
-        if (authenticatedUser) {
-          if (authenticatedUser.role === 'admin') {
-            // Admins see all companies
-            userAssignedCompanies = allCompanies;
-          } else {
-            // Get UserCompany assignments
-            const userCompanyAssignments = await base44.entities.UserCompany.filter({
-              user_email: authenticatedUser.email
-            });
-            
-            const assignedCompanyIds = userCompanyAssignments.map(uc => uc.company_id);
-            userAssignedCompanies = allCompanies.filter(c => assignedCompanyIds.includes(c.id));
-            
-            // Fallback: if no assignments, assign first company
-            if (userAssignedCompanies.length === 0 && allCompanies.length > 0) {
-              userAssignedCompanies = [allCompanies[0]];
-            }
-          }
-          
-          setAssignedCompanies(userAssignedCompanies);
+        // Single-Company Mode: use first company for all users
+        setAssignedCompanies(allCompanies);
 
-          // Set active company
-          let activeCompany = null;
-          
-          // Check if user has active_company_id stored
-          if (userInDB?.active_company_id) {
-            activeCompany = userAssignedCompanies.find(c => c.id === userInDB.active_company_id);
-          }
-          
-          // Fallback: localStorage
-          if (!activeCompany) {
-            const storedCompanyId = localStorage.getItem("currentCompanyId");
-            activeCompany = userAssignedCompanies.find(c => c.id === storedCompanyId);
-          }
-          
-          // Fallback: first assigned company
-          if (!activeCompany && userAssignedCompanies.length > 0) {
-            activeCompany = userAssignedCompanies[0];
-          }
-
-          if (activeCompany) {
-            setDefaultCompanyId(activeCompany.id);
-            setCurrentCompany(activeCompany);
-            localStorage.setItem("currentCompanyId", activeCompany.id);
-            
-            // Update user's active_company_id in DB
-            if (userInDB && userInDB.active_company_id !== activeCompany.id) {
-              await base44.auth.updateMe({ active_company_id: activeCompany.id });
-            }
-          }
-        } else {
-          // No user authenticated: default behavior
-          const defaultCompany = allCompanies.find(c => c.name === "Empresa Principal") || allCompanies[0];
-          if (defaultCompany) {
-            setDefaultCompanyId(defaultCompany.id);
-            setCurrentCompany(defaultCompany);
-            setAssignedCompanies(allCompanies);
-            localStorage.setItem("currentCompanyId", defaultCompany.id);
-          }
+        // Set fixed active company (first company)
+        const activeCompany = allCompanies[0];
+        if (activeCompany) {
+          setDefaultCompanyId(activeCompany.id);
+          setCurrentCompany(activeCompany);
+          localStorage.removeItem("currentCompanyId");
         }
       } catch (error) {
         console.error("Error initializing company context:", error);
@@ -101,31 +49,9 @@ export function CompanyProvider({ children }) {
     initializeCompany();
   }, []);
 
-  const switchCompany = async (companyId) => {
-    const company = assignedCompanies.find(c => c.id === companyId);
-    if (!company) {
-      console.error("Company not assigned to user");
-      return;
-    }
-
-    // Update state
-    setCurrentCompany(company);
-    localStorage.setItem("currentCompanyId", companyId);
-
-    // Update user's active_company_id in DB
-    if (user) {
-      try {
-        await base44.auth.updateMe({ active_company_id: companyId });
-      } catch (err) {
-        console.error("Error updating active company:", err);
-      }
-    }
-
-    // Clear cached data (permissions, entities, etc.)
-    queryClient.clear();
-    
-    // Reload page to ensure clean state
-    window.location.reload();
+  const switchCompany = () => {
+    // Single-company mode: company switching is disabled
+    console.warn("Company switching is disabled in single-company mode");
   };
 
   const value = {
