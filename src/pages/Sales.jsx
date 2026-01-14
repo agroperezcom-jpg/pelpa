@@ -379,9 +379,10 @@ export default function Sales() {
       if (talonario?.permite_reutilizar && !venta.genera_iva) {
         const numeroComprobante = parseInt(venta.numero_comprobante.split('-')[1]);
         const numerosLiberados = talonario.numeros_liberados || [];
-        
+
         await base44.entities.Talonario.update(talonario.id, {
-          numeros_liberados: [...numerosLiberados, numeroComprobante].sort((a, b) => a - b)
+          numeros_liberados: [...numerosLiberados, numeroComprobante].sort((a, b) => a - b),
+          ultimo_numero: Math.max(talonario.ultimo_numero, numeroComprobante - 1)
         });
       }
 
