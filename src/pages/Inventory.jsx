@@ -102,22 +102,20 @@ export default function Inventory() {
     }, '-created_date')
   });
 
-  const { data: controlDetails = {}, isLoading: loadingDetails } = useQuery({
-    queryKey: ['controlDetails', activeView],
-    queryFn: async () => {
-      const details = {};
-      for (const control of completedControls) {
-        const detalles = await base44.entities.ControlStockDetalle.filter({
-          control_stock_id: control.id
-        });
-        details[control.id] = detalles;
-      }
-      return details;
-    },
-    enabled: activeView === 'historial'
-  });
-
   const [expandedControl, setExpandedControl] = useState(null);
+  const [controlDetailsCache, setControlDetailsCache] = useState({});
+
+  const loadControlDetails = async (controlId) => {
+    if (controlDetailsCache[controlId]) return;
+    
+    const detalles = await base44.entities.ControlStockDetalle.filter({
+      control_stock_id: controlId
+    });
+    setControlDetailsCache(prev => ({
+      ...prev,
+      [controlId]: detalles
+    }));
+  };
 
 
 
@@ -683,7 +681,12 @@ export default function Inventory() {
                   {/* Header del control */}
                   <div 
                     className="p-4 bg-emerald-50 border-b border-emerald-200 cursor-pointer hover:bg-emerald-100 transition-colors"
-                    onClick={() => setExpandedControl(expandedControl === control.id ? null : control.id)}
+                    onClick={() => {
+                      if (expandedControl !== control.id) {
+                        loadControlDetails(control.id);
+                      }
+                      setExpandedControl(expandedControl === control.id ? null : control.id);
+                    }}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
@@ -732,9 +735,11 @@ export default function Inventory() {
                   {/* Detalles expandibles */}
                   {expandedControl === control.id && (
                     <div className="p-4 border-t border-slate-200">
-                      {loadingDetails ? (
-                        <p className="text-center text-slate-500 py-4">Cargando detalles...</p>
-                      ) : controlDetails[control.id]?.length === 0 ? (
+                      {!controlDetailsCache[control.id] ? (
+                        <div className="text-center py-4">
+                          <p className="text-slate-500">Cargando detalles...</p>
+                        </div>
+                      ) : controlDetailsCache[control.id]?.length === 0 ? (
                         <p className="text-center text-slate-500 py-4">No hay detalles registrados</p>
                       ) : (
                         <div className="border rounded-lg overflow-y-auto max-h-96">
@@ -749,7 +754,7 @@ export default function Inventory() {
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {controlDetails[control.id]?.map((detalle) => (
+                              {controlDetailsCache[control.id]?.map((detalle) => (
                                 <TableRow key={detalle.id} className={
                                   detalle.diferencia > 0 ? "bg-green-50" :
                                   detalle.diferencia < 0 ? "bg-red-50" : ""
