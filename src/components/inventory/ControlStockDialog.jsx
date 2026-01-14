@@ -243,32 +243,34 @@ export default function ControlStockDialog({ isOpen, onClose, products, existing
   };
 
   const saveDetalles = async (detallesData) => {
-    for (const { product, cantidad } of detallesData) {
-      const diferencia = cantidad - (product.stock || 0);
-      const valorDif = diferencia * (product.costo_unitario || 0);
-      const detalleExistente = detallesEnCurso.find(d => d.product_id === product.id);
-      
-      if (detalleExistente) {
-        await base44.entities.ControlStockDetalle.update(detalleExistente.id, {
-          stock_contado: cantidad,
-          diferencia: diferencia,
-          valor_diferencia: valorDif
-        });
-      } else {
-        await base44.entities.ControlStockDetalle.create({
-          control_stock_id: currentControl.id,
-          product_id: product.id,
-          product_name: product.name,
-          barcode: product.barcode,
-          stock_teorico: product.stock || 0,
-          stock_contado: cantidad,
-          diferencia: diferencia,
-          costo_unitario: product.costo_unitario || 0,
-          valor_diferencia: valorDif,
-          ajuste_aplicado: false
-        });
-      }
-    }
+    await Promise.all(
+      detallesData.map(({ product, cantidad }) => {
+        const diferencia = cantidad - (product.stock || 0);
+        const valorDif = diferencia * (product.costo_unitario || 0);
+        const detalleExistente = detallesEnCurso.find(d => d.product_id === product.id);
+        
+        if (detalleExistente) {
+          return base44.entities.ControlStockDetalle.update(detalleExistente.id, {
+            stock_contado: cantidad,
+            diferencia: diferencia,
+            valor_diferencia: valorDif
+          });
+        } else {
+          return base44.entities.ControlStockDetalle.create({
+            control_stock_id: currentControl.id,
+            product_id: product.id,
+            product_name: product.name,
+            barcode: product.barcode,
+            stock_teorico: product.stock || 0,
+            stock_contado: cantidad,
+            diferencia: diferencia,
+            costo_unitario: product.costo_unitario || 0,
+            valor_diferencia: valorDif,
+            ajuste_aplicado: false
+          });
+        }
+      })
+    );
   };
 
   const guardarParcialMutation = useMutation({
