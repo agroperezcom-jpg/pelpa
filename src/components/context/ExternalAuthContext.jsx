@@ -16,7 +16,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 const ExternalAuthContext = createContext(null);
 
 export function ExternalAuthProvider({ children }) {
-  const [authContext, setAuthContext] = useState(null);
+  const [authContext, setAuthContext] = useState(undefined); // undefined = loading
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -27,7 +27,11 @@ export function ExternalAuthProvider({ children }) {
         const context = window.__AUTH_CONTEXT__;
         
         if (!context) {
-          throw new Error('No external authentication context provided');
+          // No context = unauthenticated (null)
+          setAuthContext(null);
+          setError(null);
+          setIsLoading(false);
+          return;
         }
 
         // Validate required fields
@@ -38,7 +42,7 @@ export function ExternalAuthProvider({ children }) {
           throw new Error(`Missing required context fields: ${missing.join(', ')}`);
         }
 
-        // Validate role - CRITICAL: admin check is done here
+        // Validate role - CRITICAL: admin check is single source of truth
         if (!['admin', 'user'].includes(context.role)) {
           throw new Error('Invalid role in context');
         }
@@ -48,9 +52,10 @@ export function ExternalAuthProvider({ children }) {
           throw new Error('Invalid environment_mode in context');
         }
 
-        // Clear any cached permissions to force fresh evaluation
+        // Clear cached permissions to force fresh evaluation
         sessionStorage.removeItem('cached_permissions');
         
+        // Context is valid - set authenticated
         setAuthContext(context);
         setError(null);
       } catch (err) {
@@ -64,26 +69,34 @@ export function ExternalAuthProvider({ children }) {
 
     initializeContext();
     
-    // Re-evaluate context when window regains focus (login refresh)
-    const handleFocus = () => initializeContext();
+    // Re-evaluate context on focus (login/refresh)
+    const handleFocus = () => {
+      setIsLoading(true);
+      initializeContext();
+    };
     window.addEventListener('focus', handleFocus);
     
     return () => window.removeEventListener('focus', handleFocus);
   }, []);
+
+  // Build user object from authContext - single source of truth
+  const user = authContext ? {
+    email: authContext.user_email,
+    full_name: authContext.user_full_name,
+    role: authContext.role,
+    company_id: authContext.company_id,
+    environment_mode: authContext.environment_mode
+  } : null;
 
   const value = {
     authContext,
     isLoading,
     error,
     isAuthenticated: !!authContext,
-    user: authContext ? {
-      email: authContext.user_email,
-      full_name: authContext.user_full_name,
-      role: authContext.role
-    } : null,
+    user,
     companyId: authContext?.company_id,
     environmentMode: authContext?.environment_mode,
-    isAdmin: authContext?.role === 'admin',
+    isAdmin: user?.role === 'admin', // Direct check from user object
     isDemo: authContext?.environment_mode === 'DEMO',
     isProduction: authContext?.environment_mode === 'PRODUCCION'
   };
