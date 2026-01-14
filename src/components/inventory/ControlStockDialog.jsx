@@ -142,35 +142,35 @@ export default function ControlStockDialog({ isOpen, onClose, products, existing
 
   const finalizarControlMutation = useMutation({
     mutationFn: async ({ controlId, ajustes, observaciones }) => {
-      // 1. Aplicar ajustes de stock
-      for (const ajuste of ajustes) {
-        if (ajuste.diferencia !== 0) {
-          const product = products.find(p => p.id === ajuste.product_id);
-          if (product) {
-            // Actualizar stock
-            await base44.entities.Product.update(ajuste.product_id, {
-              stock: ajuste.stock_contado
-            });
-
-            // Crear movimiento de inventario
-            await base44.entities.InventoryMovement.create({
-              product_id: ajuste.product_id,
-              product_name: ajuste.product_name,
-              type: "ajuste",
-              quantity: ajuste.diferencia,
-              previous_stock: ajuste.stock_teorico,
-              new_stock: ajuste.stock_contado,
-              reason: `Control de stock: ${currentControl.nombre}`,
-              reference: `control-${controlId}`
-            });
-
-            // Marcar detalle como aplicado
-            await base44.entities.ControlStockDetalle.update(ajuste.id, {
-              ajuste_aplicado: true
-            });
-          }
-        }
-      }
+      // 1. Aplicar todos los ajustes en paralelo
+      await Promise.all(
+        ajustes
+          .filter(ajuste => ajuste.diferencia !== 0)
+          .map(async (ajuste) => {
+            const product = products.find(p => p.id === ajuste.product_id);
+            if (product) {
+              // Hacer estas 3 operaciones en paralelo
+              return Promise.all([
+                base44.entities.Product.update(ajuste.product_id, {
+                  stock: ajuste.stock_contado
+                }),
+                base44.entities.InventoryMovement.create({
+                  product_id: ajuste.product_id,
+                  product_name: ajuste.product_name,
+                  type: "ajuste",
+                  quantity: ajuste.diferencia,
+                  previous_stock: ajuste.stock_teorico,
+                  new_stock: ajuste.stock_contado,
+                  reason: `Control de stock: ${currentControl.nombre}`,
+                  reference: `control-${controlId}`
+                }),
+                base44.entities.ControlStockDetalle.update(ajuste.id, {
+                  ajuste_aplicado: true
+                })
+              ]);
+            }
+          })
+      );
 
       // 2. Finalizar control
       const totalDiferencias = ajustes.filter(a => a.diferencia !== 0).length;
