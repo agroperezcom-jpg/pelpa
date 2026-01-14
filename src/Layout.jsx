@@ -1,18 +1,13 @@
 import React from "react";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ExternalAuthProvider } from "@/components/context/ExternalAuthContext";
-import { CompanyProvider } from "@/components/context/CompanyContext";
 import { Toaster } from 'react-hot-toast';
 import LayoutContent from "@/components/layout/LayoutContent";
 
 export default function Layout({ children, currentPageName }) {
-
-
-
   return (
     <ExternalAuthProvider>
-      <CompanyProvider>
-        <ThemeProvider>
+      <ThemeProvider>
           <Toaster 
             position="top-right"
             toastOptions={{
@@ -31,10 +26,9 @@ export default function Layout({ children, currentPageName }) {
             }}
           />
           <LayoutContent currentPageName={currentPageName}>
-            {children}
-          </LayoutContent>
-        </ThemeProvider>
-      </CompanyProvider>
-    </ExternalAuthProvider>
-  );
-}
+                    {children}
+                  </LayoutContent>
+                </ThemeProvider>
+              </ExternalAuthProvider>
+          );
+          }
