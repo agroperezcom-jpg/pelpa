@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCompany } from "@/components/context/CompanyContext";
 import toast from "react-hot-toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,20 +19,19 @@ import {
 import { AlertTriangle, Zap, Loader2 } from "lucide-react";
 
 export default function CompanyModeSection({ isAdmin = false }) {
-  const { currentCompanyId } = useCompany();
   const queryClient = useQueryClient();
   const [showProductionDialog, setShowProductionDialog] = useState(false);
   const [productionPin, setProductionPin] = useState("");
 
-  // Fetch company data
-  const { data: companies = [] } = useQuery({
-    queryKey: ['companies'],
-    queryFn: () => base44.entities.Company.list()
+  // Fetch system configuration
+  const { data: configuracionEmpresa = [] } = useQuery({
+    queryKey: ['configuracionEmpresa'],
+    queryFn: () => base44.entities.ConfiguracionEmpresa.list()
   });
 
-  const company = companies.find(c => c.id === currentCompanyId);
-  const isDemo = company?.environment_mode === 'DEMO';
-  const productionDate = company?.production_activated_at;
+  const config = configuracionEmpresa[0];
+  const isDemo = config?.ambiente === 'DEMO';
+  const productionDate = config?.fecha_activacion_produccion;
 
   // Switch to production mutation
   const switchToProductionMutation = useMutation({
@@ -43,7 +41,6 @@ export default function CompanyModeSection({ isAdmin = false }) {
       }
 
       return await base44.functions.invoke('switchToProductionMode', {
-        company_id: currentCompanyId,
         reset_pin: productionPin
       });
     },
@@ -51,14 +48,14 @@ export default function CompanyModeSection({ isAdmin = false }) {
       toast.success('¡Empresa activada en modo PRODUCCIÓN!');
       setProductionPin("");
       setShowProductionDialog(false);
-      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      queryClient.invalidateQueries({ queryKey: ['configuracionEmpresa'] });
     },
     onError: (error) => {
       toast.error(error.message || 'Error al activar modo producción');
     }
   });
 
-  if (!company) {
+  if (!config) {
     return null;
   }
 
