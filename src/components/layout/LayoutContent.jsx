@@ -19,6 +19,9 @@ import { cn } from "@/lib/utils";
 export default function LayoutContent({ children, currentPageName }) {
   // Now useExternalAuth is called inside a component that's a child of the provider
   const { user: externalUser, isAdmin: externalIsAdmin } = useExternalAuth();
+  
+  // Debug logging
+  console.log('[LayoutContent] External Auth:', { externalUser, externalIsAdmin });
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarPinned, setSidebarPinned] = useState(() => {
@@ -97,6 +100,13 @@ export default function LayoutContent({ children, currentPageName }) {
   };
 
   const allowedModules = permissionsLoading ? [] : getAllowedModules(externalIsAdmin);
+  
+  console.log('[LayoutContent] Permission check:', { 
+    externalIsAdmin, 
+    permissionsLoading, 
+    allowedModules,
+    totalModules: allModules.length
+  });
 
   const sectionIcons = {
     general: LayoutDashboard,
@@ -214,16 +224,21 @@ export default function LayoutContent({ children, currentPageName }) {
 
   const modules = allModules
     .map(module => {
-      // Hide configuracion module for non-admins (strict admin-only access)
-      if (module.id === "configuracion" && !externalIsAdmin) {
-        console.log('[LayoutContent] Configuración hidden - externalIsAdmin:', externalIsAdmin);
-        return null;
-      }
+      console.log('[LayoutContent] Processing module:', module.id, { 
+        isConfiguracion: module.id === "configuracion",
+        externalIsAdmin,
+        hasPermiso: module.permiso
+      });
 
-      // Configuración module is always shown for admins (no permission checks)
-      if (module.id === "configuracion" && externalIsAdmin) {
-        console.log('[LayoutContent] Configuración shown - ADMIN ACCESS');
-        return module;
+      // Hide configuracion module for non-admins (strict admin-only access)
+      if (module.id === "configuracion") {
+        if (!externalIsAdmin) {
+          console.log('[LayoutContent] ❌ Configuración HIDDEN - not admin');
+          return null;
+        } else {
+          console.log('[LayoutContent] ✅ Configuración SHOWN - admin access confirmed');
+          return module;
+        }
       }
 
       if (!module.permiso) {
@@ -250,6 +265,8 @@ export default function LayoutContent({ children, currentPageName }) {
       };
     })
     .filter(Boolean);
+
+  console.log('[LayoutContent] Final modules:', modules.map(m => m.id));
 
   const allPages = modules.flatMap(m => m.items);
   const filteredPages = allPages.filter(p =>
