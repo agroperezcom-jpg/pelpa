@@ -675,26 +675,35 @@ export default function ControlStockDialog({ isOpen, onClose, products, existing
               </Tabs>
 
               <DialogFooter>
-                <Button variant="outline" onClick={handleClose}>
-                  Cancelar
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleGuardarParcial}
-                  disabled={guardarParcialMutation.isPending}
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {guardarParcialMutation.isPending ? "Guardando..." : "Guardar Parcial"}
-                </Button>
-                <Button
-                  onClick={handleGuardarConteo}
-                  className="bg-blue-600 hover:bg-blue-700"
-                  disabled={guardarConteoMutation.isPending}
-                >
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  {guardarConteoMutation.isPending ? "Guardando..." : `Finalizar Conteo (${productosContados} productos)`}
-                </Button>
-              </DialogFooter>
+                 <Button 
+                   variant="ghost" 
+                   onClick={handleDeleteControl}
+                   disabled={deleteControlMutation.isPending}
+                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                 >
+                   <X className="h-4 w-4 mr-2" />
+                   Eliminar
+                 </Button>
+                 <Button variant="outline" onClick={handleClose}>
+                   Cancelar
+                 </Button>
+                 <Button
+                   variant="outline"
+                   onClick={handleGuardarParcial}
+                   disabled={guardarParcialMutation.isPending}
+                 >
+                   <Save className="h-4 w-4 mr-2" />
+                   {guardarParcialMutation.isPending ? "Guardando..." : "Guardar Parcial"}
+                 </Button>
+                 <Button
+                   onClick={handleGuardarConteo}
+                   className="bg-blue-600 hover:bg-blue-700"
+                   disabled={guardarConteoMutation.isPending}
+                 >
+                   <CheckCircle2 className="h-4 w-4 mr-2" />
+                   {guardarConteoMutation.isPending ? "Guardando..." : `Finalizar Conteo (${productosContados} productos)`}
+                 </Button>
+               </DialogFooter>
             </div>
           )}
 
