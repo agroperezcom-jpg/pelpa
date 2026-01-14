@@ -104,8 +104,7 @@ export default function LayoutContent({ children, currentPageName }) {
   console.log('[LayoutContent] Permission check:', { 
     externalIsAdmin, 
     permissionsLoading, 
-    allowedModules,
-    totalModules: allModules.length
+    allowedModules
   });
 
   const sectionIcons = {
