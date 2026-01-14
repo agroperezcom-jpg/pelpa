@@ -919,11 +919,11 @@ export default function Expenses() {
               />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleCloseDialog}>
+              <Button type="button" variant="outline" onClick={handleCloseDialog} disabled={createMutation.isPending || updateMutation.isPending}>
                 Cancelar
               </Button>
-              <Button type="submit" className="bg-red-600 hover:bg-red-700">
-                {editingExpense ? 'Actualizar' : 'Crear'}
+              <Button type="submit" className="bg-red-600 hover:bg-red-700" disabled={createMutation.isPending || updateMutation.isPending}>
+                {createMutation.isPending || updateMutation.isPending ? 'Guardando...' : (editingExpense ? 'Actualizar' : 'Crear')}
               </Button>
             </DialogFooter>
           </form>
