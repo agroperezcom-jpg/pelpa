@@ -28,7 +28,7 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Warehouse,
   Plus,
@@ -70,6 +70,7 @@ export default function Inventory() {
   const [isDragging, setIsDragging] = useState(false);
   const [isControlStockDialogOpen, setIsControlStockDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeView, setActiveView] = useState("stock");
   const itemsPerPage = 20;
 
   const queryClient = useQueryClient();
@@ -363,14 +364,22 @@ export default function Inventory() {
         </Card>
       </div>
 
-      <Tabs defaultValue="stock" className="space-y-4">
-        <TabsList className="bg-white border shadow-sm">
-          <TabsTrigger value="stock">Stock Actual</TabsTrigger>
-          <TabsTrigger value="movements">Movimientos</TabsTrigger>
-          <TabsTrigger value="analytics">Distribución</TabsTrigger>
-        </TabsList>
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-medium text-foreground">Vistas:</span>
+          <Select value={activeView} onValueChange={setActiveView}>
+            <SelectTrigger className="w-80">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="stock">Stock Actual</SelectItem>
+              <SelectItem value="movements">Movimientos</SelectItem>
+              <SelectItem value="analytics">Distribución</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-        <TabsContent value="stock" className="space-y-4">
+        {activeView === "stock" && (
           {/* Filters */}
           <Card className="border-0 shadow-sm">
             <CardContent className="p-4">
@@ -484,9 +493,9 @@ export default function Inventory() {
               </div>
             )}
           </Card>
-        </TabsContent>
+        )}
 
-        <TabsContent value="movements">
+        {activeView === "movements" && (
           <Card className="border-0 shadow-sm overflow-hidden">
             <Table>
               <TableHeader>
@@ -535,9 +544,9 @@ export default function Inventory() {
               </TableBody>
             </Table>
           </Card>
-        </TabsContent>
+        )}
 
-        <TabsContent value="analytics">
+        {activeView === "analytics" && (
           <Card className="border-0 shadow-sm">
             <CardHeader>
               <CardTitle className="text-base">Distribución por Categoría</CardTitle>
@@ -567,8 +576,8 @@ export default function Inventory() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
 
       {/* Delete Products Dialog */}
       <DeleteProductsDialog
