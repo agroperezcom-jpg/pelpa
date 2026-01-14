@@ -56,7 +56,7 @@ export default function LayoutContent({ children, currentPageName }) {
     "nunito": "'Nunito', sans-serif"
   };
 
-  // Use external auth context
+  // Reconstruct user from external auth - single source of truth
   useEffect(() => {
     if (externalUser) {
       setUser({
@@ -64,6 +64,9 @@ export default function LayoutContent({ children, currentPageName }) {
         full_name: externalUser.full_name,
         role: externalUser.role
       });
+    } else {
+      // Only set to null if explicitly unauthenticated, not during loading
+      setUser(null);
     }
   }, [externalUser]);
 
@@ -402,8 +405,8 @@ export default function LayoutContent({ children, currentPageName }) {
             })}
           </nav>
 
-          {/* User Section */}
-          {user && (
+          {/* User Section - CRITICAL: Logout visible ONLY if user exists (logged in) */}
+          {user !== undefined && user !== null && (
             <div className="p-3 border-t border-border/40">
               <div className="flex items-center gap-3 px-3 py-2">
                 <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
