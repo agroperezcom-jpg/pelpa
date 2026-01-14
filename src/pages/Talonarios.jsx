@@ -46,10 +46,19 @@ export default function Talonarios() {
     nombre: "",
     tipo_comprobante: "X",
     prefijo: "",
+    punto_venta: "0001",
     numero_desde: 1,
     numero_hasta: "",
     permite_reutilizar: false,
     activo: true
+  });
+
+  const { data: company } = useQuery({
+    queryKey: ['company'],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      return user;
+    }
   });
 
   const queryClient = useQueryClient();
