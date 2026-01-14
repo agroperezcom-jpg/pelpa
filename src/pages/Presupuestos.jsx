@@ -301,6 +301,11 @@ export default function Presupuestos() {
       return;
     }
 
+    // Evitar múltiples clics
+    if (createPresupuestoMutation.isPending) {
+      return;
+    }
+
     // Validar plantilla antes de guardar
     const plantillaId = currentPresupuesto.plantilla_proyecto_id && 
                         currentPresupuesto.plantilla_proyecto_id !== "" && 
