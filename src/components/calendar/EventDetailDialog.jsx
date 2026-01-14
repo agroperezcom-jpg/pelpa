@@ -11,7 +11,6 @@ import { es } from "date-fns/locale";
 import { base44 } from "@/api/base44Client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createPageUrl } from "@/utils";
-import { useCompany } from "@/components/context/CompanyContext";
 
 export default function EventDetailDialog({ 
   isOpen, 
@@ -24,7 +23,6 @@ export default function EventDetailDialog({
 }) {
   const [projectData, setProjectData] = useState(null);
   const [isLoadingProject, setIsLoadingProject] = useState(false);
-  const { currentCompanyId } = useCompany();
 
   if (!event) return null;
 
@@ -40,21 +38,17 @@ export default function EventDetailDialog({
       try {
         const projects = await base44.entities.Project.filter({ id: event.project_id });
         if (projects.length > 0) {
-          const project = projects[0];
-          // Safety check: ensure company_id matches
-          if (project.company_id === currentCompanyId) {
-            setProjectData(project);
-          }
+          setProjectData(projects[0]);
         }
       } catch (error) {
         console.error("Error fetching project data:", error);
       } finally {
         setIsLoadingProject(false);
       }
-    };
+      };
 
-    fetchProjectData();
-  }, [event?.project_id, event?.type, isOpen, currentCompanyId]);
+      fetchProjectData();
+      }, [event?.project_id, event?.type, isOpen]);
 
   const eventColor = getEventColor ? getEventColor(event) : "#64748b";
 
