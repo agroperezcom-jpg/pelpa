@@ -23,17 +23,15 @@ import {
   AlertDialogTitle
 } from "@/components/ui/alert-dialog";
 import { AlertTriangle, Lock, Trash2 } from "lucide-react";
-import { useCompany } from "@/components/context/CompanyContext";
 
 /**
- * Company Master Reset Dialog
+ * System Master Reset Dialog (Single-Company)
  * Allows admins to:
  * 1. Set/update reset PIN
  * 2. Enable/disable reset capability
- * 3. Trigger company data reset with PIN confirmation
+ * 3. Trigger system data reset with PIN confirmation
  */
 export default function CompanyResetDialog({ isOpen, onClose }) {
-  const { currentCompanyId } = useCompany();
   const [tab, setTab] = useState("configure"); // configure | reset
   const [resetPin, setResetPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
@@ -41,29 +39,19 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
   const [resetConfirmPin, setResetConfirmPin] = useState("");
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
 
-  // Fetch current reset config and company mode
+  // Fetch current reset config
   const { data: resetConfig } = useQuery({
-    queryKey: ['resetConfig', currentCompanyId],
+    queryKey: ['resetConfig'],
     queryFn: async () => {
-      if (!currentCompanyId) return null;
       try {
         const configs = await base44.entities.CompanyResetConfig.list();
-        return configs.find(c => c.company_id === currentCompanyId);
+        return configs[0] || null;
       } catch (e) {
         return null;
       }
     },
-    enabled: isOpen && !!currentCompanyId
+    enabled: isOpen
   });
-
-  const { data: companies = [] } = useQuery({
-    queryKey: ['companies'],
-    queryFn: () => base44.entities.Company.list(),
-    enabled: isOpen && !!currentCompanyId
-  });
-
-  const company = companies.find(c => c.id === currentCompanyId);
-  const isProductionMode = company?.environment_mode === 'PRODUCCION';
 
   // Set PIN mutation
   const setResetPinMutation = useMutation({
@@ -76,7 +64,6 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
       }
 
       return await base44.functions.invoke('setCompanyResetPin', {
-        company_id: currentCompanyId,
         reset_pin: resetPin,
         enable_reset: enableReset
       });
@@ -100,7 +87,6 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
       }
 
       return await base44.functions.invoke('masterCompanyReset', {
-        company_id: currentCompanyId,
         reset_pin: resetConfirmPin
       });
     },
@@ -122,7 +108,7 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Lock className="h-5 w-5 text-red-600" />
-              Reseteo Maestro de Empresa
+              Reseteo de Sistema
             </DialogTitle>
           </DialogHeader>
 
@@ -197,7 +183,7 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
                     htmlFor="enableReset"
                     className="text-sm cursor-pointer flex-1"
                   >
-                    Habilitar capacidad de reseteo para esta empresa
+                    Habilitar capacidad de reseteo del sistema
                   </label>
                 </div>
 
@@ -211,43 +197,28 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
 
             {/* Reset Data Tab */}
             {tab === "reset" && (
-              <div className="space-y-4">
-                {isProductionMode && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                    <p className="text-sm font-semibold text-amber-900 flex items-center gap-2">
-                      🔒 Modo PRODUCCIÓN
-                    </p>
-                    <p className="text-xs text-amber-800 mt-2">
-                      El reseteo de datos está deshabilitado en modo PRODUCCIÓN para proteger tus datos reales. No se pueden eliminar datos de una empresa en producción.
-                    </p>
-                  </div>
-                )}
+             <div className="space-y-4">
+               <div className="bg-red-50 border border-red-200 rounded-lg p-3 space-y-2">
+                 <p className="text-sm font-semibold text-red-800 flex items-center gap-2">
+                   <AlertTriangle className="h-4 w-4" />
+                   ⚠️ ACCIÓN IRREVERSIBLE
+                 </p>
+                 <p className="text-xs text-red-700">
+                   Esta acción eliminará permanentemente TODOS los datos del sistema (incluyendo ventas, stock, calendario, tareas y proyectos).
+                 </p>
+                 <p className="text-xs font-medium text-red-800 mt-2">
+                   Esta acción no se puede deshacer.
+                 </p>
+               </div>
 
-                {!isProductionMode && (
-                  <>
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 space-y-2">
-                      <p className="text-sm font-semibold text-red-800 flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4" />
-                        ⚠️ ACCIÓN IRREVERSIBLE
-                      </p>
-                      <p className="text-xs text-red-700">
-                        Esta acción eliminará permanentemente TODOS los datos de la empresa (incluyendo ventas, stock, calendario, tareas y proyectos).
-                      </p>
-                      <p className="text-xs font-medium text-red-800 mt-2">
-                        Esta acción no se puede deshacer.
-                      </p>
-                    </div>
-
-                    <Button
-                      onClick={() => setShowResetConfirmDialog(true)}
-                      className="w-full bg-red-600 hover:bg-red-700 text-white gap-2"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Eliminar Todos los Datos
-                    </Button>
-                  </>
-                )}
-              </div>
+               <Button
+                 onClick={() => setShowResetConfirmDialog(true)}
+                 className="w-full bg-red-600 hover:bg-red-700 text-white gap-2"
+               >
+                 <Trash2 className="h-4 w-4" />
+                 Eliminar Todos los Datos
+               </Button>
+             </div>
             )}
           </div>
 
@@ -274,10 +245,10 @@ export default function CompanyResetDialog({ isOpen, onClose }) {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-red-600" />
-              Confirmar Reseteo de Empresa
+              Confirmar Reseteo de Sistema
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Ingresa tu PIN maestro de reseteo para confirmar la eliminación de todos los datos de la empresa.
+              Ingresa tu PIN maestro de reseteo para confirmar la eliminación de todos los datos del sistema.
               Esta acción es permanente y no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
