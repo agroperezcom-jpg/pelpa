@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCompany } from "@/components/context/CompanyContext";
 import toast from "react-hot-toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,6 @@ import CompanyModeSection from "./CompanyModeSection";
  * All UI labels are in Spanish
  */
 export default function CompanyConfiguration({ isAdmin = false }) {
-  const { currentCompanyId } = useCompany();
   const queryClient = useQueryClient();
   
   const [formData, setFormData] = useState({
@@ -38,35 +36,33 @@ export default function CompanyConfiguration({ isAdmin = false }) {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
 
-  // Fetch current company data
-  const { data: companies = [], isLoading } = useQuery({
-    queryKey: ['companies'],
-    queryFn: () => base44.entities.Company.list()
+  // Fetch current system configuration
+  const { data: configuracionEmpresa = [], isLoading } = useQuery({
+    queryKey: ['configuracionEmpresa'],
+    queryFn: () => base44.entities.ConfiguracionEmpresa.list()
   });
 
   useEffect(() => {
-    if (currentCompanyId && companies.length > 0) {
-      const company = companies.find(c => c.id === currentCompanyId);
-      if (company) {
-        setFormData({
-          name: company.name || "",
-          legal_name: company.legal_name || "",
-          tax_id: company.tax_id || "",
-          tipo_iva: company.tipo_iva || "RESP_INSCRIPTO",
-          address: company.address || "",
-          phone: company.phone || "",
-          email: company.email || "",
-          logo_url: company.logo_url || "",
-          is_active: company.is_active !== false
-        });
-        if (company.logo_url) {
-          setLogoPreview(company.logo_url);
-        }
+    if (configuracionEmpresa.length > 0) {
+      const config = configuracionEmpresa[0];
+      setFormData({
+        name: config.nombre_empresa || "",
+        legal_name: config.razon_social || "",
+        tax_id: config.cuit || "",
+        tipo_iva: config.tipo_iva || "RESP_INSCRIPTO",
+        address: config.domicilio || "",
+        phone: config.telefono || "",
+        email: config.email || "",
+        logo_url: config.logo_url || "",
+        is_active: true
+      });
+      if (config.logo_url) {
+        setLogoPreview(config.logo_url);
       }
     }
-  }, [currentCompanyId, companies]);
+  }, [configuracionEmpresa]);
 
-  // Save company mutation
+  // Save system configuration mutation
   const saveCompanyMutation = useMutation({
     mutationFn: async () => {
       if (!formData.name || !formData.tax_id) {
@@ -78,25 +74,24 @@ export default function CompanyConfiguration({ isAdmin = false }) {
         throw new Error("El CUIT debe contener 11 dígitos");
       }
 
-      const currentCompany = companies.find(c => c.id === currentCompanyId);
-      if (!currentCompany) {
-        throw new Error("Empresa no encontrada");
+      const config = configuracionEmpresa[0];
+      if (!config) {
+        throw new Error("Configuración del sistema no encontrada");
       }
 
-      return await base44.entities.Company.update(currentCompanyId, {
-        name: formData.name,
-        legal_name: formData.legal_name,
-        tax_id: formData.tax_id,
+      return await base44.entities.ConfiguracionEmpresa.update(config.id, {
+        nombre_empresa: formData.name,
+        razon_social: formData.legal_name,
+        cuit: formData.tax_id,
         tipo_iva: formData.tipo_iva,
-        address: formData.address,
-        phone: formData.phone,
+        domicilio: formData.address,
+        telefono: formData.phone,
         email: formData.email,
-        logo_url: formData.logo_url,
-        is_active: formData.is_active
+        logo_url: formData.logo_url
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      queryClient.invalidateQueries({ queryKey: ['configuracionEmpresa'] });
       toast.success("Datos de la empresa guardados correctamente");
     },
     onError: (error) => {
@@ -357,44 +352,36 @@ export default function CompanyConfiguration({ isAdmin = false }) {
               {/* Company Mode Section */}
               <CompanyModeSection isAdmin={isAdmin} />
 
-              {/* Reset Section (only in DEMO mode) */}
-              {companies[0]?.environment_mode === 'DEMO' && (
-                <div className="p-6 bg-red-50 border border-red-200 rounded-lg space-y-4">
-                  <div>
-                    <h3 className="text-sm font-semibold text-red-900 flex items-center gap-2">
-                      <Lock className="h-4 w-4" />
-                      Reseteo Maestro de Datos
-                    </h3>
-                    <p className="text-xs text-red-700 mt-2">
-                      Elimina permanentemente todos los datos operativos, financieros y de planificación de la empresa.
-                    </p>
-                  </div>
-                  <ul className="text-xs text-red-700 list-disc list-inside space-y-1 ml-2">
-                    <li>Todas las ventas e invoices</li>
-                    <li>Inventario y stock</li>
-                    <li>Cuentas y movimientos financieros</li>
-                    <li>Gastos y pagos</li>
-                    <li>Calendario, tareas y proyectos</li>
-                    <li>Clientes y proveedores</li>
-                  </ul>
-                  <p className="text-xs font-medium text-red-900">
-                    ⚠️ Esta acción es PERMANENTE y NO se puede deshacer
+              {/* Reset Section */}
+              <div className="p-6 bg-red-50 border border-red-200 rounded-lg space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-red-900 flex items-center gap-2">
+                    <Lock className="h-4 w-4" />
+                    Reseteo Maestro de Datos
+                  </h3>
+                  <p className="text-xs text-red-700 mt-2">
+                    Elimina permanentemente todos los datos operativos, financieros y de planificación del sistema.
                   </p>
-                  <Button
-                    onClick={() => setShowResetDialog(true)}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white mt-4"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Resetear Todos los Datos
-                  </Button>
                 </div>
-              )}
-
-              {companies[0]?.environment_mode === 'PRODUCCION' && (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
-                  ✓ Modo PRODUCCIÓN activado. El reseteo de datos está deshabilitado para proteger los datos reales.
-                </div>
-              )}
+                <ul className="text-xs text-red-700 list-disc list-inside space-y-1 ml-2">
+                  <li>Todas las ventas e invoices</li>
+                  <li>Inventario y stock</li>
+                  <li>Cuentas y movimientos financieros</li>
+                  <li>Gastos y pagos</li>
+                  <li>Calendario, tareas y proyectos</li>
+                  <li>Clientes y proveedores</li>
+                </ul>
+                <p className="text-xs font-medium text-red-900">
+                  ⚠️ Esta acción es PERMANENTE y NO se puede deshacer
+                </p>
+                <Button
+                  onClick={() => setShowResetDialog(true)}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white mt-4"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Resetear Todos los Datos
+                </Button>
+              </div>
             </div>
           )}
           </CardContent>
