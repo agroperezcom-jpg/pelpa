@@ -296,16 +296,24 @@ export default function ControlStockDialog({ isOpen, onClose, products, existing
     guardarParcialMutation.mutate();
   };
 
-  const handleGuardarConteo = async () => {
-    const detallesAGuardar = products
-      .filter(p => conteo[p.id] !== undefined && conteo[p.id] > 0)
-      .map(p => ({ 
-        product: p, 
-        cantidad: conteo[p.id]
-      }));
-    
-    await saveDetalles(detallesAGuardar);
-    setStep(3);
+  const guardarConteoMutation = useMutation({
+    mutationFn: async () => {
+      const detallesAGuardar = products
+        .filter(p => conteo[p.id] !== undefined && conteo[p.id] > 0)
+        .map(p => ({ 
+          product: p, 
+          cantidad: conteo[p.id]
+        }));
+      
+      await saveDetalles(detallesAGuardar);
+    },
+    onSuccess: () => {
+      setStep(3);
+    }
+  });
+
+  const handleGuardarConteo = () => {
+    guardarConteoMutation.mutate();
   };
 
   const { data: detalles = [] } = useQuery({
@@ -652,9 +660,10 @@ export default function ControlStockDialog({ isOpen, onClose, products, existing
                 <Button
                   onClick={handleGuardarConteo}
                   className="bg-blue-600 hover:bg-blue-700"
+                  disabled={guardarConteoMutation.isPending}
                 >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Finalizar Conteo ({productosContados} productos)
+                  {guardarConteoMutation.isPending ? "Guardando..." : `Finalizar Conteo (${productosContados} productos)`}
                 </Button>
               </DialogFooter>
             </div>
