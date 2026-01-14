@@ -1004,13 +1004,15 @@ export default function Presupuestos() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={handleCloseDialog}>Cancelar</Button>
-            <Button onClick={() => handleSubmit(false)} variant="outline">
-              Guardar Borrador
+            <Button variant="outline" onClick={handleCloseDialog} disabled={createPresupuestoMutation.isPending}>
+              Cancelar
             </Button>
-            <Button onClick={() => handleSubmit(true)} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={() => handleSubmit(false)} variant="outline" disabled={createPresupuestoMutation.isPending}>
+              {createPresupuestoMutation.isPending ? 'Guardando...' : 'Guardar Borrador'}
+            </Button>
+            <Button onClick={() => handleSubmit(true)} className="bg-blue-600 hover:bg-blue-700" disabled={createPresupuestoMutation.isPending}>
               <Send className="h-4 w-4 mr-2" />
-              Guardar y Enviar
+              {createPresupuestoMutation.isPending ? 'Enviando...' : 'Guardar y Enviar'}
             </Button>
           </DialogFooter>
         </DialogContent>
