@@ -28,7 +28,6 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Warehouse,
   Plus,
@@ -380,6 +379,7 @@ export default function Inventory() {
         </div>
 
         {activeView === "stock" && (
+          <>
           {/* Filters */}
           <Card className="border-0 shadow-sm">
             <CardContent className="p-4">
@@ -493,9 +493,10 @@ export default function Inventory() {
               </div>
             )}
           </Card>
-        )}
+          </>
+          )}
 
-        {activeView === "movements" && (
+          {activeView === "movements" && (
           <Card className="border-0 shadow-sm overflow-hidden">
             <Table>
               <TableHeader>
