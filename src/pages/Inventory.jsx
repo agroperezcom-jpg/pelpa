@@ -68,6 +68,7 @@ export default function Inventory() {
   const [csvDataForMapper, setCsvDataForMapper] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isControlStockDialogOpen, setIsControlStockDialogOpen] = useState(false);
+  const [selectedPendingControl, setSelectedPendingControl] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [activeView, setActiveView] = useState("stock");
   const itemsPerPage = 20;
@@ -82,6 +83,13 @@ export default function Inventory() {
   const { data: movements = [] } = useQuery({
     queryKey: ['movements'],
     queryFn: () => base44.entities.InventoryMovement.list('-created_date', 100)
+  });
+
+  const { data: pendingControls = [] } = useQuery({
+    queryKey: ['pendingControls'],
+    queryFn: () => base44.entities.ControlStock.filter({ 
+      status: { $ne: 'completado' }
+    }, '-created_date')
   });
 
 
@@ -373,6 +381,7 @@ export default function Inventory() {
             <SelectContent>
               <SelectItem value="stock">Stock Actual</SelectItem>
               <SelectItem value="movements">Movimientos</SelectItem>
+              <SelectItem value="pending">Controles Pendientes</SelectItem>
               <SelectItem value="analytics">Distribución</SelectItem>
             </SelectContent>
           </Select>
@@ -547,6 +556,89 @@ export default function Inventory() {
           </Card>
         )}
 
+        {activeView === "pending" && (
+          <>
+            {pendingControls.length === 0 ? (
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-12 text-center">
+                  <ClipboardList className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-500 font-medium">No hay controles pendientes</p>
+                  <p className="text-slate-400 text-sm mt-1">Inicia un nuevo control de stock para comenzar</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-0 shadow-sm overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50">
+                      <TableHead>Fecha Inicio</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="text-center">Productos Controlados</TableHead>
+                      <TableHead className="text-center">Total Productos</TableHead>
+                      <TableHead>Avance</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pendingControls.map((control) => {
+                      const detalles = control.detalles || [];
+                      const porcentaje = control.total_items > 0 
+                        ? Math.round((detalles.filter(d => d.counted_quantity !== null).length / control.total_items) * 100)
+                        : 0;
+                      
+                      return (
+                        <TableRow key={control.id} className="hover:bg-slate-50">
+                          <TableCell className="text-sm text-slate-600">
+                            {format(new Date(control.created_date), "d MMM yyyy HH:mm", { locale: es })}
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={
+                              control.status === 'en_progreso' 
+                                ? "bg-blue-100 text-blue-700" 
+                                : "bg-amber-100 text-amber-700"
+                            }>
+                              {control.status === 'en_progreso' ? 'En Progreso' : 'Pausado'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center font-medium">
+                            {detalles.filter(d => d.counted_quantity !== null).length}
+                          </TableCell>
+                          <TableCell className="text-center text-slate-600">
+                            {control.total_items}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="w-20 bg-slate-200 rounded-full h-2">
+                                <div 
+                                  className="bg-blue-600 h-2 rounded-full transition-all"
+                                  style={{ width: `${porcentaje}%` }}
+                                />
+                              </div>
+                              <span className="text-xs font-medium text-slate-600 w-8">{porcentaje}%</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedPendingControl(control);
+                                setIsControlStockDialogOpen(true);
+                              }}
+                            >
+                              Continuar
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </Card>
+            )}
+          </>
+        )}
+
         {activeView === "analytics" && (
           <Card className="border-0 shadow-sm">
             <CardHeader>
@@ -602,8 +694,13 @@ export default function Inventory() {
       {/* Control Stock Dialog */}
       <ControlStockDialog
         isOpen={isControlStockDialogOpen}
-        onClose={() => setIsControlStockDialogOpen(false)}
+        onClose={() => {
+          setIsControlStockDialogOpen(false);
+          setSelectedPendingControl(null);
+          queryClient.invalidateQueries({ queryKey: ['pendingControls'] });
+        }}
         products={products}
+        existingControl={selectedPendingControl}
       />
 
     </div>
