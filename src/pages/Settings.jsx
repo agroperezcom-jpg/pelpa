@@ -326,33 +326,15 @@ export default function Settings() {
     return logDate >= firstDayOfMonth;
   }).length;
 
-  // CRITICAL: Reject non-admin access to this page
-  if (user !== undefined && user !== null && user.role !== 'admin') {
-    return (
-      <div className="max-w-2xl">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Acceso Denegado</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            No tienes permisos para acceder a esta página
-          </p>
-        </div>
-        <Card className="mt-6 border-l-4 border-l-red-500 bg-red-50">
-          <CardContent className="p-6">
-            <p className="text-red-800">
-              ⛔ Solo los administradores pueden acceder a la Configuración del Sistema
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Configuración básica visible para todos
+  // Secciones administrativas protegidas por isAdmin dentro del render
 
   return (
     <div className="space-y-6">
       <div>
-         <h1 className="text-2xl font-bold text-foreground">Empresa</h1>
+         <h1 className="text-2xl font-bold text-foreground">Configuración</h1>
          <p className="text-muted-foreground text-sm mt-1">
-           Configuración de la empresa
+           Gestiona los ajustes de tu empresa
          </p>
        </div>
 
@@ -363,6 +345,7 @@ export default function Settings() {
              <SelectValue />
            </SelectTrigger>
            <SelectContent>
+             {/* NIVEL 1: Visible para TODOS */}
              <SelectItem value="empresa">Datos Empresa</SelectItem>
              <SelectItem value="identidad">Identidad</SelectItem>
              <SelectItem value="tema">Tema Visual</SelectItem>
@@ -370,73 +353,136 @@ export default function Settings() {
              <SelectItem value="proyectos">Proyectos</SelectItem>
              <SelectItem value="impresoras">Impresoras</SelectItem>
              <SelectItem value="plan_cuentas">Plan de Cuentas</SelectItem>
-             <SelectItem value="reset">Master Reset</SelectItem>
+
+             {/* NIVEL 2: Solo ADMIN */}
+             {user?.role === 'admin' && (
+               <>
+                 <SelectItem value="usuarios">👥 Usuarios</SelectItem>
+                 <SelectItem value="roles">🔐 Roles y Permisos</SelectItem>
+                 <SelectItem value="reset">⚠️ Master Reset</SelectItem>
+               </>
+             )}
            </SelectContent>
          </Select>
        </div>
 
-       {user?.role === 'admin' ? (
-        <div className="space-y-6">
-          {activeView === "empresa" && (
-            <CompanyConfiguration isAdmin={true} />
-          )}
+       {/* NIVEL 1: Configuración básica - VISIBLE PARA TODOS */}
+       <div className="space-y-6">
+         {activeView === "empresa" && (
+           <CompanyConfiguration isAdmin={user?.role === 'admin'} />
+         )}
 
+         {activeView === "identidad" && <IdentidadEmpresa />}
 
+         {activeView === "tema" && (
+           <Card className="border-0 shadow-sm">
+             <CardContent className="p-6">
+               <ThemeSelector />
+             </CardContent>
+           </Card>
+         )}
 
-          {activeView === "identidad" && <IdentidadEmpresa />}
+         {activeView === "regional" && <RegionalConfig />}
 
-          {activeView === "tema" && (
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-6">
-                <ThemeSelector />
-              </CardContent>
-            </Card>
-          )}
+         {activeView === "proyectos" && <ConfiguracionProyectos />}
 
-          {activeView === "regional" && <RegionalConfig />}
+         {activeView === "impresoras" && <ConfiguracionImpresoras />}
 
-          {activeView === "proyectos" && <ConfiguracionProyectos />}
+         {activeView === "plan_cuentas" && <PlanDeCuentas />}
 
-          {activeView === "impresoras" && <ConfiguracionImpresoras />}
+         {/* NIVEL 2: Solo ADMIN */}
+         {user?.role === 'admin' && (
+           <>
+             {activeView === "usuarios" && (
+               <Card className="border-0 shadow-sm">
+                 <CardHeader>
+                   <CardTitle className="flex items-center gap-2">
+                     <Users className="h-5 w-5" />
+                     Gestión de Usuarios
+                   </CardTitle>
+                   <CardDescription>
+                     Administra usuarios, roles y permisos del sistema
+                   </CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                   <p className="text-sm text-muted-foreground mb-4">
+                     La gestión de usuarios se realiza a través del sistema de administración externo.
+                   </p>
+                   <div className="space-y-4">
+                     <div className="grid grid-cols-3 gap-4">
+                       <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
+                         <p className="text-2xl font-bold text-blue-700">{totalUsers}</p>
+                         <p className="text-sm text-blue-600">Usuarios totales</p>
+                       </div>
+                       <div className="p-4 rounded-lg bg-purple-50 border border-purple-200">
+                         <p className="text-2xl font-bold text-purple-700">{admins}</p>
+                         <p className="text-sm text-purple-600">Administradores</p>
+                       </div>
+                       <div className="p-4 rounded-lg bg-green-50 border border-green-200">
+                         <p className="text-2xl font-bold text-green-700">{sessionsToday}</p>
+                         <p className="text-sm text-green-600">Sesiones hoy</p>
+                       </div>
+                     </div>
+                   </div>
+                 </CardContent>
+               </Card>
+             )}
 
-          {activeView === "plan_cuentas" && <PlanDeCuentas />}
+             {activeView === "roles" && (
+               <Card className="border-0 shadow-sm">
+                 <CardHeader>
+                   <CardTitle className="flex items-center gap-2">
+                     <Shield className="h-5 w-5" />
+                     Roles y Permisos
+                   </CardTitle>
+                   <CardDescription>
+                     Define roles personalizados y sus permisos
+                   </CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                   <p className="text-sm text-muted-foreground">Módulo de roles y permisos disponible aquí</p>
+                 </CardContent>
+               </Card>
+             )}
 
-          {activeView === "reset" && (
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Trash2 className="h-5 w-5 text-red-600" />
-                  Master Company Reset
-                </CardTitle>
-                <CardDescription>
-                  Configure PIN y delete todos los datos operativos de la empresa (solo para test)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                  <p className="text-sm text-red-800">
-                    <strong>⚠️ Precaución:</strong> Esta función es solo para ambiente de test. Permite eliminar TODOS los datos operativos de la empresa de forma permanente. No se puede deshacer.
-                  </p>
-                </div>
-                <Button onClick={() => setResetDialogOpen(true)} className="bg-red-600 hover:bg-red-700">
-                  <Lock className="h-4 w-4 mr-2" />
-                  Configure Reset PIN
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+             {activeView === "reset" && (
+               <Card className="border-0 shadow-sm">
+                 <CardHeader>
+                   <CardTitle className="flex items-center gap-2">
+                     <Trash2 className="h-5 w-5 text-red-600" />
+                     Master Company Reset
+                   </CardTitle>
+                   <CardDescription>
+                     Configure PIN y delete todos los datos operativos de la empresa (solo para test)
+                   </CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                   <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                     <p className="text-sm text-red-800">
+                       <strong>⚠️ Precaución:</strong> Esta función es solo para ambiente de test. Permite eliminar TODOS los datos operativos de la empresa de forma permanente. No se puede deshacer.
+                     </p>
+                   </div>
+                   <Button onClick={() => setResetDialogOpen(true)} className="bg-red-600 hover:bg-red-700">
+                     <Lock className="h-4 w-4 mr-2" />
+                     Configure Reset PIN
+                   </Button>
+                 </CardContent>
+               </Card>
+             )}
+           </>
+         )}
 
-
-        </div>
-      ) : (
-        <Card className="border-l-4 border-l-amber-500 bg-amber-50">
-          <CardContent className="p-6">
-            <p className="text-amber-800">
-              ⚠️ Solo los administradores pueden acceder a esta página
-            </p>
-          </CardContent>
-        </Card>
-      )}
+         {/* Mensaje si usuario no-admin intenta acceder a sección admin */}
+         {user?.role !== 'admin' && (activeView === "usuarios" || activeView === "roles" || activeView === "reset") && (
+           <Card className="border-l-4 border-l-amber-500 bg-amber-50">
+             <CardContent className="p-6">
+               <p className="text-amber-800">
+                 🔒 Esta sección solo está disponible para administradores
+               </p>
+             </CardContent>
+           </Card>
+         )}
+       </div>
 
       {/* Dialog Crear/Editar Rol */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

@@ -220,11 +220,10 @@ export default function LayoutContent({ children, currentPageName }) {
 
   const modules = allModules
     .map(module => {
-      // CRITICAL: Configuración visibility depends ONLY on user.role === 'admin'
-      // Ignores all permission caching and custom role configurations
+      // Configuración ahora es VISIBLE PARA TODOS
+      // El filtro se hace DENTRO de Settings.js por isAdmin
       if (module.id === "configuracion") {
-        // Direct check: only show if external auth confirms admin role
-        return externalIsAdmin ? module : null;
+        return module;
       }
 
       if (!module.permiso) {
