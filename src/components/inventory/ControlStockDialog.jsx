@@ -317,11 +317,13 @@ export default function ControlStockDialog({ isOpen, onClose, products, existing
   };
 
   const { data: detalles = [] } = useQuery({
-    queryKey: ['controlStockDetalle', currentControl?.id],
+    queryKey: ['controlStockDetalle', currentControl?.id, step],
     queryFn: () => base44.entities.ControlStockDetalle.filter({
       control_stock_id: currentControl.id
     }),
-    enabled: !!currentControl && step === 3
+    enabled: !!currentControl && step === 3,
+    staleTime: 0,
+    refetchInterval: false
   });
 
   const handleConfirmarAjustes = (observaciones) => {
@@ -330,6 +332,33 @@ export default function ControlStockDialog({ isOpen, onClose, products, existing
       ajustes: detalles,
       observaciones
     });
+  };
+
+  const deleteControlMutation = useMutation({
+    mutationFn: async (controlId) => {
+      // Eliminar detalles del control
+      const detalles = await base44.entities.ControlStockDetalle.filter({
+        control_stock_id: controlId
+      });
+      
+      for (const detalle of detalles) {
+        await base44.entities.ControlStockDetalle.delete(detalle.id);
+      }
+      
+      // Eliminar el control
+      await base44.entities.ControlStock.delete(controlId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['controlStock'] });
+      queryClient.invalidateQueries({ queryKey: ['pendingControls'] });
+      handleClose();
+    }
+  });
+
+  const handleDeleteControl = () => {
+    if (currentControl && confirm("¿Eliminar este control de stock? Esta acción no se puede deshacer.")) {
+      deleteControlMutation.mutate(currentControl.id);
+    }
   };
 
   const handleClose = () => {
