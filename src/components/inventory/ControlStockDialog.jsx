@@ -291,15 +291,12 @@ export default function ControlStockDialog({ isOpen, onClose, products, existing
   };
 
   const handleGuardarConteo = async () => {
-    if (productosContados === 0) {
-      alert("⚠️ Debe contar al menos 1 producto antes de continuar");
-      return;
-    }
-
-    const detallesAGuardar = products.map(p => ({ 
-      product: p, 
-      cantidad: conteo[p.id] || 0 
-    }));
+    const detallesAGuardar = products
+      .filter(p => conteo[p.id] !== undefined && conteo[p.id] > 0)
+      .map(p => ({ 
+        product: p, 
+        cantidad: conteo[p.id]
+      }));
     
     await saveDetalles(detallesAGuardar);
     setStep(3);
@@ -649,7 +646,6 @@ export default function ControlStockDialog({ isOpen, onClose, products, existing
                 <Button
                   onClick={handleGuardarConteo}
                   className="bg-blue-600 hover:bg-blue-700"
-                  disabled={productosContados === 0}
                 >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   Finalizar Conteo ({productosContados} productos)
