@@ -1374,7 +1374,7 @@ export default function Sales() {
                         <SelectValue placeholder="Sel." />
                       </SelectTrigger>
                       <SelectContent>
-                        {talonarios.filter(t => {if (!t.activo) return false; if (!currentSale.genera_iva) return t.tipo_comprobante === "X"; if (currentSale.client_tipo_iva === "RESP_INSCRIPTO") return t.tipo_comprobante === "A"; return t.tipo_comprobante === "B";}).map(t => (<SelectItem key={t.id} value={t.id} className="text-xs">{t.nombre}</SelectItem>))}
+                        {talonarios.filter(t => {if (!t.is_active) return false; if (!currentSale.genera_iva) return t.tipo_comprobante === "X"; if (currentSale.client_tipo_iva === "RESP_INSCRIPTO") return t.tipo_comprobante === "A"; return t.tipo_comprobante === "B";}).map(t => (<SelectItem key={t.id} value={t.id} className="text-xs">{t.name}</SelectItem>))}
                       </SelectContent>
                     </Select>
                   </div>
