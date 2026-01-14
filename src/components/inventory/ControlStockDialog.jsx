@@ -271,23 +271,29 @@ export default function ControlStockDialog({ isOpen, onClose, products, existing
     }
   };
 
-  const handleGuardarParcial = async () => {
-    const detallesAGuardar = products
-      .filter(p => conteo[p.id] !== undefined)
-      .map(p => ({ product: p, cantidad: conteo[p.id] }));
-    
-    await saveDetalles(detallesAGuardar);
-    
-    // Actualizar estado del control a "pausado" si no fue completado
-    if (currentControl) {
-      await base44.entities.ControlStock.update(currentControl.id, {
-        status: "pausado"
-      });
+  const guardarParcialMutation = useMutation({
+    mutationFn: async () => {
+      const detallesAGuardar = products
+        .filter(p => conteo[p.id] !== undefined && conteo[p.id] >= 0)
+        .map(p => ({ product: p, cantidad: conteo[p.id] }));
+      
+      await saveDetalles(detallesAGuardar);
+      
+      if (currentControl) {
+        await base44.entities.ControlStock.update(currentControl.id, {
+          status: "pausado"
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['controlStock'] });
+      queryClient.invalidateQueries({ queryKey: ['pendingControls'] });
+      handleClose();
     }
-    
-    queryClient.invalidateQueries({ queryKey: ['controlStock'] });
-    queryClient.invalidateQueries({ queryKey: ['pendingControls'] });
-    handleClose();
+  });
+
+  const handleGuardarParcial = () => {
+    guardarParcialMutation.mutate();
   };
 
   const handleGuardarConteo = async () => {
@@ -638,10 +644,10 @@ export default function ControlStockDialog({ isOpen, onClose, products, existing
                 <Button
                   variant="outline"
                   onClick={handleGuardarParcial}
-                  disabled={productosContados === 0}
+                  disabled={guardarParcialMutation.isPending}
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  Guardar Parcial
+                  {guardarParcialMutation.isPending ? "Guardando..." : "Guardar Parcial"}
                 </Button>
                 <Button
                   onClick={handleGuardarConteo}
