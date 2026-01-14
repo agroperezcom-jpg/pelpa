@@ -5,6 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { usePermissions } from "@/components/permissions/usePermissions";
 import { useExternalAuth } from "@/components/context/ExternalAuthContext";
+import CompanySelector from "@/components/multitenant/CompanySelector";
 import {
   LayoutDashboard, ShoppingCart, ShoppingBag, Package, Landmark, BarChart3,
   Calendar as CalendarIcon, Briefcase, Settings, Shield, LogOut, Search,
@@ -448,7 +449,8 @@ export default function LayoutContent({ children, currentPageName }) {
               </span>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              <CompanySelector />
               <button className="p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
                 <Bell className="h-4 w-4" />
               </button>

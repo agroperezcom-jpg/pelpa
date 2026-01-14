@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { useQueryClient } from "@tanstack/react-query";
 
 const CompanyContext = createContext();
 
@@ -7,26 +8,85 @@ export function CompanyProvider({ children }) {
   const [currentCompany, setCurrentCompany] = useState(null);
   const [defaultCompanyId, setDefaultCompanyId] = useState(null);
   const [companies, setCompanies] = useState([]);
+  const [assignedCompanies, setAssignedCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const initializeCompany = async () => {
       try {
+        // Get authenticated user
+        let authenticatedUser = null;
+        try {
+          authenticatedUser = await base44.auth.me();
+          setUser(authenticatedUser);
+        } catch (err) {
+          console.warn("User not authenticated, using default company");
+        }
+
         // Get all companies
         const allCompanies = await base44.entities.Company.list();
         setCompanies(allCompanies);
 
-        // Get or create default company
-        let defaultCompany = allCompanies.find(c => c.name === "Empresa Principal");
-        
-        if (!defaultCompany && allCompanies.length > 0) {
-          defaultCompany = allCompanies[0];
-        }
+        // Determine user's assigned companies
+        let userAssignedCompanies = [];
+        if (authenticatedUser) {
+          // Get user from DB to check assigned_companies
+          const usersInDB = await base44.entities.User.filter({ email: authenticatedUser.email });
+          const userInDB = usersInDB[0];
+          
+          if (userInDB?.assigned_companies && userInDB.assigned_companies.length > 0) {
+            // User has specific assigned companies
+            userAssignedCompanies = allCompanies.filter(c => userInDB.assigned_companies.includes(c.id));
+          } else if (authenticatedUser.role === 'admin') {
+            // Admins see all companies by default
+            userAssignedCompanies = allCompanies;
+          } else if (allCompanies.length > 0) {
+            // Default: assign first company
+            userAssignedCompanies = [allCompanies[0]];
+          }
+          
+          setAssignedCompanies(userAssignedCompanies);
 
-        if (defaultCompany) {
-          setDefaultCompanyId(defaultCompany.id);
-          setCurrentCompany(defaultCompany);
-          localStorage.setItem("currentCompanyId", defaultCompany.id);
+          // Set active company
+          let activeCompany = null;
+          
+          // Check if user has active_company_id stored
+          if (userInDB?.active_company_id) {
+            activeCompany = userAssignedCompanies.find(c => c.id === userInDB.active_company_id);
+          }
+          
+          // Fallback: localStorage
+          if (!activeCompany) {
+            const storedCompanyId = localStorage.getItem("currentCompanyId");
+            activeCompany = userAssignedCompanies.find(c => c.id === storedCompanyId);
+          }
+          
+          // Fallback: first assigned company
+          if (!activeCompany && userAssignedCompanies.length > 0) {
+            activeCompany = userAssignedCompanies[0];
+          }
+
+          if (activeCompany) {
+            setDefaultCompanyId(activeCompany.id);
+            setCurrentCompany(activeCompany);
+            localStorage.setItem("currentCompanyId", activeCompany.id);
+            
+            // Update user's active_company_id in DB
+            if (userInDB && userInDB.active_company_id !== activeCompany.id) {
+              await base44.auth.updateMe({ active_company_id: activeCompany.id });
+            }
+          }
+        } else {
+          // No user authenticated: default behavior
+          const defaultCompany = allCompanies.find(c => c.name === "Empresa Principal") || allCompanies[0];
+          if (defaultCompany) {
+            setDefaultCompanyId(defaultCompany.id);
+            setCurrentCompany(defaultCompany);
+            setAssignedCompanies(allCompanies);
+            localStorage.setItem("currentCompanyId", defaultCompany.id);
+          }
         }
       } catch (error) {
         console.error("Error initializing company context:", error);
@@ -38,12 +98,31 @@ export function CompanyProvider({ children }) {
     initializeCompany();
   }, []);
 
-  const switchCompany = (companyId) => {
-    const company = companies.find(c => c.id === companyId);
-    if (company) {
-      setCurrentCompany(company);
-      localStorage.setItem("currentCompanyId", companyId);
+  const switchCompany = async (companyId) => {
+    const company = assignedCompanies.find(c => c.id === companyId);
+    if (!company) {
+      console.error("Company not assigned to user");
+      return;
     }
+
+    // Update state
+    setCurrentCompany(company);
+    localStorage.setItem("currentCompanyId", companyId);
+
+    // Update user's active_company_id in DB
+    if (user) {
+      try {
+        await base44.auth.updateMe({ active_company_id: companyId });
+      } catch (err) {
+        console.error("Error updating active company:", err);
+      }
+    }
+
+    // Clear cached data (permissions, entities, etc.)
+    queryClient.clear();
+    
+    // Reload page to ensure clean state
+    window.location.reload();
   };
 
   const value = {
@@ -51,8 +130,10 @@ export function CompanyProvider({ children }) {
     currentCompanyId: currentCompany?.id,
     defaultCompanyId,
     companies,
+    assignedCompanies,
     loading,
-    switchCompany
+    switchCompany,
+    user
   };
 
   return (
