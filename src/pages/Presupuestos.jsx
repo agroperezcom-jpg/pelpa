@@ -157,6 +157,7 @@ export default function Presupuestos() {
 
       const presupuesto = await base44.entities.Presupuesto.create({
         ...presupuestoData,
+        company_id: user?.id,
         cliente_name: cliente?.name || "",
         cliente_tipo_iva: cliente?.tipo_iva || "",
         numero_presupuesto: numeroPresupuesto,
