@@ -5,7 +5,6 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { usePermissions } from "@/components/permissions/usePermissions";
 import { useExternalAuth } from "@/components/context/ExternalAuthContext";
-import CompanySelector from "@/components/multitenant/CompanySelector";
 import {
   LayoutDashboard, ShoppingCart, ShoppingBag, Package, Landmark, BarChart3,
   Calendar as CalendarIcon, Briefcase, Settings, Shield, LogOut, Search,
