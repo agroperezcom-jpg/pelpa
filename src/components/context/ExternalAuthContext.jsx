@@ -38,7 +38,7 @@ export function ExternalAuthProvider({ children }) {
           throw new Error(`Missing required context fields: ${missing.join(', ')}`);
         }
 
-        // Validate role
+        // Validate role - CRITICAL: admin check is done here
         if (!['admin', 'user'].includes(context.role)) {
           throw new Error('Invalid role in context');
         }
@@ -48,6 +48,9 @@ export function ExternalAuthProvider({ children }) {
           throw new Error('Invalid environment_mode in context');
         }
 
+        // Clear any cached permissions to force fresh evaluation
+        sessionStorage.removeItem('cached_permissions');
+        
         setAuthContext(context);
         setError(null);
       } catch (err) {
@@ -60,6 +63,12 @@ export function ExternalAuthProvider({ children }) {
     };
 
     initializeContext();
+    
+    // Re-evaluate context when window regains focus (login refresh)
+    const handleFocus = () => initializeContext();
+    window.addEventListener('focus', handleFocus);
+    
+    return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
   const value = {
