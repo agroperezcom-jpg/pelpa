@@ -9,7 +9,7 @@ import {
   LayoutDashboard, ShoppingCart, ShoppingBag, Package, Landmark, BarChart3,
   Calendar as CalendarIcon, Briefcase, Settings, Shield, LogOut, Search,
   ChevronRight, Menu, X, FileText, Bell, Users, Wrench, FileCheck, Building2,
-  CreditCard, Percent, TrendingUp, DollarSign, Check, Printer, Zap
+  CreditCard, Percent, TrendingUp, DollarSign, Check, Printer, Zap, ClipboardList
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -157,8 +157,8 @@ export default function LayoutContent({ children, currentPageName }) {
       permiso: "inventario",
       items: [
         { name: "Productos", page: "Products", icon: Package, permiso: "productos" },
-        { name: "Stock", page: "Inventory", icon: Check, permiso: "inventario" },
-        { name: "Control de Stock", page: "HistorialControlesStock", icon: BarChart3, permiso: "control_stock" },
+        { name: "Inventario", page: "Inventory", icon: Check, permiso: "inventario" },
+        { name: "Control de Stock", page: "HistorialControlesStock", icon: ClipboardList, permiso: "control_stock" },
       ]
     },
     {
