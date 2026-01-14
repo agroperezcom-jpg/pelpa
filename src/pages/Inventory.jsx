@@ -42,7 +42,10 @@ import {
   Upload,
   FileSpreadsheet,
   Trash2,
-  ClipboardList
+  ClipboardList,
+  CheckCircle2,
+  ChevronUp,
+  ChevronDown
 } from "lucide-react";
 import DeleteProductsDialog from "../components/inventory/DeleteProductsDialog";
 import CsvImportMapperDialog from "../components/inventory/CsvImportMapperDialog";
@@ -72,6 +75,7 @@ export default function Inventory() {
   const [currentPage, setCurrentPage] = useState(1);
   const [activeView, setActiveView] = useState("stock");
   const itemsPerPage = 20;
+  const [expandedControl, setExpandedControl] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -91,6 +95,30 @@ export default function Inventory() {
       status: { $ne: 'completado' }
     }, '-created_date')
   });
+
+  const { data: completedControls = [] } = useQuery({
+    queryKey: ['completedControls'],
+    queryFn: () => base44.entities.ControlStock.filter({ 
+      status: 'completado'
+    }, '-created_date')
+  });
+
+  const { data: controlDetails = {}, isLoading: loadingDetails } = useQuery({
+    queryKey: ['controlDetails', activeView],
+    queryFn: async () => {
+      const details = {};
+      for (const control of completedControls) {
+        const detalles = await base44.entities.ControlStockDetalle.filter({
+          control_stock_id: control.id
+        });
+        details[control.id] = detalles;
+      }
+      return details;
+    },
+    enabled: activeView === 'historial'
+  });
+
+  const [expandedControl, setExpandedControl] = useState(null);
 
 
 
@@ -382,6 +410,7 @@ export default function Inventory() {
               <SelectItem value="stock">Stock Actual</SelectItem>
               <SelectItem value="movements">Movimientos</SelectItem>
               <SelectItem value="pending">Controles Pendientes</SelectItem>
+              <SelectItem value="historial">Historial de Controles</SelectItem>
               <SelectItem value="analytics">Distribución</SelectItem>
             </SelectContent>
           </Select>
@@ -637,6 +666,128 @@ export default function Inventory() {
               </Card>
             )}
           </>
+        )}
+
+        {activeView === "historial" && (
+          <div className="space-y-4">
+            {completedControls.length === 0 ? (
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-12 text-center">
+                  <History className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-500 font-medium">No hay controles completados</p>
+                  <p className="text-slate-400 text-sm mt-1">Los controles finalizados aparecerán aquí</p>
+                </CardContent>
+              </Card>
+            ) : (
+              completedControls.map((control) => (
+                <Card key={control.id} className="border-0 shadow-sm overflow-hidden">
+                  {/* Header del control */}
+                  <div 
+                    className="p-4 bg-emerald-50 border-b border-emerald-200 cursor-pointer hover:bg-emerald-100 transition-colors"
+                    onClick={() => setExpandedControl(expandedControl === control.id ? null : control.id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-emerald-200 rounded-lg flex items-center justify-center">
+                            <CheckCircle2 className="h-5 w-5 text-emerald-700" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-slate-800">{control.nombre}</h3>
+                            <p className="text-xs text-slate-600 mt-1">
+                              {control.deposito && `${control.deposito} • `}
+                              {format(new Date(control.created_date), "d MMM yyyy HH:mm", { locale: es })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-slate-800">{control.usuario_nombre}</p>
+                        <p className="text-xs text-slate-500">{control.usuario_responsable}</p>
+                        {expandedControl === control.id && (
+                          <ChevronUp className="h-5 w-5 text-slate-600 mx-auto mt-1" />
+                        )}
+                        {expandedControl !== control.id && (
+                          <ChevronDown className="h-5 w-5 text-slate-600 mx-auto mt-1" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stats del control */}
+                  <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 border-b border-slate-200">
+                    <div>
+                      <p className="text-xs text-slate-500 uppercase font-medium">Productos Contados</p>
+                      <p className="text-xl font-bold text-slate-800 mt-1">{control.total_productos_contados}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 uppercase font-medium">Con Diferencias</p>
+                      <p className="text-xl font-bold text-amber-600 mt-1">{control.total_diferencias}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 uppercase font-medium">Valor Diferencias</p>
+                      <p className="text-xl font-bold text-red-600 mt-1">${control.valor_diferencias?.toLocaleString() || 0}</p>
+                    </div>
+                  </div>
+
+                  {/* Detalles expandibles */}
+                  {expandedControl === control.id && (
+                    <div className="p-4 border-t border-slate-200">
+                      {loadingDetails ? (
+                        <p className="text-center text-slate-500 py-4">Cargando detalles...</p>
+                      ) : controlDetails[control.id]?.length === 0 ? (
+                        <p className="text-center text-slate-500 py-4">No hay detalles registrados</p>
+                      ) : (
+                        <div className="border rounded-lg overflow-y-auto max-h-96">
+                          <Table>
+                            <TableHeader className="bg-slate-50 sticky top-0">
+                              <TableRow>
+                                <TableHead>Producto</TableHead>
+                                <TableHead className="text-center">Stock Teórico</TableHead>
+                                <TableHead className="text-center">Stock Contado</TableHead>
+                                <TableHead className="text-center">Diferencia</TableHead>
+                                <TableHead className="text-right">Valor Dif.</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {controlDetails[control.id]?.map((detalle) => (
+                                <TableRow key={detalle.id} className={
+                                  detalle.diferencia > 0 ? "bg-green-50" :
+                                  detalle.diferencia < 0 ? "bg-red-50" : ""
+                                }>
+                                  <TableCell className="font-medium">{detalle.product_name}</TableCell>
+                                  <TableCell className="text-center text-slate-600">{detalle.stock_teorico}</TableCell>
+                                  <TableCell className="text-center font-semibold">{detalle.stock_contado}</TableCell>
+                                  <TableCell className="text-center">
+                                    <Badge className={
+                                      detalle.diferencia > 0 ? "bg-green-100 text-green-700" :
+                                      detalle.diferencia < 0 ? "bg-red-100 text-red-700" :
+                                      "bg-slate-100 text-slate-700"
+                                    }>
+                                      {detalle.diferencia > 0 ? '+' : ''}{detalle.diferencia}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right font-medium">
+                                    ${Math.abs(detalle.valor_diferencia || 0).toLocaleString()}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                      {control.observaciones && (
+                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <p className="text-xs font-semibold text-blue-800 mb-1">Observaciones:</p>
+                          <p className="text-sm text-blue-700">{control.observaciones}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </Card>
+              ))
+            )}
+          </div>
         )}
 
         {activeView === "analytics" && (
