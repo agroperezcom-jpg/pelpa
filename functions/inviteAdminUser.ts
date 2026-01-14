@@ -16,8 +16,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    // Invite user as admin
-    const result = await base44.users.inviteUser(email, "admin");
+    // Invite user as regular user first
+    const result = await base44.users.inviteUser(email, "user");
 
     return Response.json({ 
       success: true,
