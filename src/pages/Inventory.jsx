@@ -75,7 +75,6 @@ export default function Inventory() {
   const [currentPage, setCurrentPage] = useState(1);
   const [activeView, setActiveView] = useState("stock");
   const itemsPerPage = 20;
-  const [expandedControl, setExpandedControl] = useState(null);
 
   const queryClient = useQueryClient();
 
