@@ -39,7 +39,7 @@ import {
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
-export default function ControlStockDialog({ isOpen, onClose, products, controlEnCurso = null }) {
+export default function ControlStockDialog({ isOpen, onClose, products, existingControl = null }) {
   const [step, setStep] = useState(1); // 1: Crear, 2: Contar, 3: Comparar, 4: Confirmar
   const [currentControl, setCurrentControl] = useState(null);
   const [conteo, setConteo] = useState({}); // { product_id: cantidad_contada }
@@ -84,16 +84,16 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
 
   // Cargar control en curso si existe
   const { data: detallesEnCurso = [] } = useQuery({
-    queryKey: ['controlStockDetalle', controlEnCurso?.id],
+    queryKey: ['controlStockDetalle', existingControl?.id],
     queryFn: () => base44.entities.ControlStockDetalle.filter({
-      control_stock_id: controlEnCurso.id
+      control_stock_id: existingControl.id
     }),
-    enabled: !!controlEnCurso && isOpen
+    enabled: !!existingControl && isOpen
   });
 
   useEffect(() => {
-    if (controlEnCurso && isOpen) {
-      setCurrentControl(controlEnCurso);
+    if (existingControl && isOpen) {
+      setCurrentControl(existingControl);
       setStep(2);
       
       // Cargar conteo previo
@@ -103,7 +103,7 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
       });
       setConteo(conteoInicial);
     }
-  }, [controlEnCurso, detallesEnCurso, isOpen]);
+  }, [existingControl, detallesEnCurso, isOpen]);
 
   // Auto-focus en input de código de barras
   useEffect(() => {
@@ -122,12 +122,15 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
       const control = await base44.entities.ControlStock.create({
         ...data,
         fecha_inicio: new Date().toISOString(),
+        status: "en_progreso",
         estado: "EN_CURSO",
         usuario_responsable: user.email,
         usuario_nombre: user.full_name,
+        total_items: products.length,
         total_productos_contados: 0,
         total_diferencias: 0,
-        valor_diferencias: 0
+        valor_diferencias: 0,
+        detalles: []
       });
       return control;
     },
@@ -174,6 +177,7 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
       const valorDiferencias = ajustes.reduce((acc, a) => acc + Math.abs(a.valor_diferencia), 0);
 
       await base44.entities.ControlStock.update(controlId, {
+        status: "completado",
         estado: "FINALIZADO",
         fecha_finalizacion: new Date().toISOString(),
         total_productos_contados: ajustes.length,
@@ -186,6 +190,7 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['movements'] });
       queryClient.invalidateQueries({ queryKey: ['controlStock'] });
+      queryClient.invalidateQueries({ queryKey: ['pendingControls'] });
       handleClose();
     }
   });
@@ -272,7 +277,16 @@ export default function ControlStockDialog({ isOpen, onClose, products, controlE
       .map(p => ({ product: p, cantidad: conteo[p.id] }));
     
     await saveDetalles(detallesAGuardar);
+    
+    // Actualizar estado del control a "pausado" si no fue completado
+    if (currentControl) {
+      await base44.entities.ControlStock.update(currentControl.id, {
+        status: "pausado"
+      });
+    }
+    
     queryClient.invalidateQueries({ queryKey: ['controlStock'] });
+    queryClient.invalidateQueries({ queryKey: ['pendingControls'] });
     handleClose();
   };
 
