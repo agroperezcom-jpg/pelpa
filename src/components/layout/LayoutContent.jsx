@@ -9,7 +9,7 @@ import {
   LayoutDashboard, ShoppingCart, ShoppingBag, Package, Landmark, BarChart3,
   Calendar as CalendarIcon, Briefcase, Settings, Shield, LogOut, Search,
   ChevronRight, Menu, X, FileText, Bell, Users, Wrench, FileCheck, Building2,
-  CreditCard, Percent, TrendingUp, DollarSign, Check
+  CreditCard, Percent, TrendingUp, DollarSign, Check, Printer, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -208,6 +208,9 @@ export default function LayoutContent({ children, currentPageName }) {
         { name: "Empresa", page: "Settings", icon: Building2, permiso: null },
         { name: "Usuarios", page: "SettingsUsers", icon: Users, permiso: null },
         { name: "Roles y Permisos", page: "SettingsRoles", icon: Shield, permiso: null },
+        { name: "Impresoras", page: "SettingsImpresoras", icon: Printer, permiso: null },
+        { name: "Proyectos", page: "SettingsProyectos", icon: Briefcase, permiso: null },
+        { name: "Automatizaciones", page: "SettingsAutomatizaciones", icon: Zap, permiso: null },
       ]
     }
   ];
