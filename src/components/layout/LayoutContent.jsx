@@ -214,9 +214,16 @@ export default function LayoutContent({ children, currentPageName }) {
 
   const modules = allModules
     .map(module => {
-      // Hide configuracion module for non-admins
+      // Hide configuracion module for non-admins (strict admin-only access)
       if (module.id === "configuracion" && !externalIsAdmin) {
+        console.log('[LayoutContent] Configuración hidden - externalIsAdmin:', externalIsAdmin);
         return null;
+      }
+
+      // Configuración module is always shown for admins (no permission checks)
+      if (module.id === "configuracion" && externalIsAdmin) {
+        console.log('[LayoutContent] Configuración shown - ADMIN ACCESS');
+        return module;
       }
 
       if (!module.permiso) {
