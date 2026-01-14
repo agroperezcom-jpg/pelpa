@@ -53,6 +53,7 @@ export default function ControlStockDialog({ isOpen, onClose, products, existing
   const barcodeInputRef = useRef(null);
   const inputsRef = useRef({});
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Reproducir sonido al escanear
   const audioContextRef = useRef(null);
