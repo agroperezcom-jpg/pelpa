@@ -329,18 +329,24 @@ export default function Expenses() {
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    const data = {
-      ...formData,
-      amount: parseFloat(formData.amount) || 0
-    };
+     e.preventDefault();
 
-    if (editingExpense) {
-      updateMutation.mutate({ id: editingExpense.id, data });
-    } else {
-      createMutation.mutate(data);
-    }
-  };
+     // Evitar múltiples clics
+     if (createMutation.isPending || updateMutation.isPending) {
+       return;
+     }
+
+     const data = {
+       ...formData,
+       amount: parseFloat(formData.amount) || 0
+     };
+
+     if (editingExpense) {
+       updateMutation.mutate({ id: editingExpense.id, data });
+     } else {
+       createMutation.mutate(data);
+     }
+   };
 
   const uploadReceipt = async (file) => {
     try {
