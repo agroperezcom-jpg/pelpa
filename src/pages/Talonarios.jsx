@@ -75,15 +75,21 @@ export default function Talonarios() {
 
   const createTalonarioMutation = useMutation({
     mutationFn: async (data) => {
-      if (!data.nombre || !data.prefijo || !data.numero_desde) {
+      if (!data.nombre || !data.punto_venta || !data.numero_desde) {
         throw new Error("Complete todos los campos obligatorios");
       }
 
       return await base44.entities.Talonario.create({
-        ...data,
-        numero_hasta: data.numero_hasta || null,
-        ultimo_numero_usado: data.numero_desde - 1,
-        numeros_liberados: []
+        company_id: company?.id || "",
+        name: data.nombre,
+        tipo_comprobante: data.tipo_comprobante,
+        punto_venta: data.punto_venta,
+        numero_desde: parseInt(data.numero_desde),
+        numero_hasta: data.numero_hasta ? parseInt(data.numero_hasta) : null,
+        ultimo_numero: parseInt(data.numero_desde) - 1,
+        numeros_liberados: [],
+        permite_reutilizar: data.permite_reutilizar,
+        is_active: data.activo
       });
     },
     onSuccess: () => {
