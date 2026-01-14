@@ -404,33 +404,33 @@ export default function LayoutContent({ children, currentPageName }) {
             })}
           </nav>
 
-          {/* User Section - CRITICAL: Logout visible ONLY if user exists (logged in) */}
-          {user !== undefined && user !== null && (
-            <div className="p-3 border-t border-border/40">
-              <div className="flex items-center gap-3 px-3 py-2">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                  <span className="text-sm font-medium text-slate-600">
-                    {getInitials(user.full_name)}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {user.full_name}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {user.email}
-                  </p>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-                  title="Cerrar sesión"
-                >
-                  <LogOut className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          )}
+          {/* User Section - ALWAYS show if externalUser exists */}
+           {externalUser && (
+             <div className="p-3 border-t border-border/40 bg-secondary/30">
+               <div className="flex items-center gap-3 px-3 py-2">
+                 <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                   <span className="text-sm font-medium text-slate-600">
+                     {getInitials(externalUser.full_name)}
+                   </span>
+                 </div>
+                 <div className="flex-1 min-w-0">
+                   <p className="text-sm font-medium text-foreground truncate">
+                     {externalUser.full_name}
+                   </p>
+                   <p className="text-xs text-muted-foreground truncate">
+                     {externalUser.email}
+                   </p>
+                 </div>
+                 <button
+                   onClick={handleLogout}
+                   className="p-2 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors flex-shrink-0"
+                   title="Cerrar sesión"
+                 >
+                   <LogOut className="h-5 w-5" />
+                 </button>
+               </div>
+             </div>
+           )}
         </div>
       </aside>
 
