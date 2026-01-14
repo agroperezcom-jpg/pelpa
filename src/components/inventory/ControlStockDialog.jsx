@@ -188,6 +188,11 @@ export default function ControlStockDialog({ isOpen, onClose, products, existing
         valor_diferencias: valorDiferencias,
         observaciones: observaciones || ""
       });
+
+      // 3. Si proviene de un control parcializado, eliminarlo
+      if (currentControl?.control_padre_id) {
+        await base44.entities.ControlStock.delete(currentControl.control_padre_id);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -195,6 +200,8 @@ export default function ControlStockDialog({ isOpen, onClose, products, existing
       queryClient.invalidateQueries({ queryKey: ['controlStock'] });
       queryClient.invalidateQueries({ queryKey: ['pendingControls'] });
       handleClose();
+      // Redirigir a historial de controles finalizados
+      navigate(createPageUrl('HistorialControlesStock'));
     }
   });
 
