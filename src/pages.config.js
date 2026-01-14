@@ -34,6 +34,7 @@ import WorkOrders from './pages/WorkOrders';
 import SettingsImpresoras from './pages/SettingsImpresoras';
 import SettingsProyectos from './pages/SettingsProyectos';
 import SettingsAutomatizaciones from './pages/SettingsAutomatizaciones';
+import AdminUserSetup from './pages/AdminUserSetup';
 import __Layout from './Layout.jsx';
 
 
@@ -74,6 +75,7 @@ export const PAGES = {
     "SettingsImpresoras": SettingsImpresoras,
     "SettingsProyectos": SettingsProyectos,
     "SettingsAutomatizaciones": SettingsAutomatizaciones,
+    "AdminUserSetup": AdminUserSetup,
 }
 
 export const pagesConfig = {
