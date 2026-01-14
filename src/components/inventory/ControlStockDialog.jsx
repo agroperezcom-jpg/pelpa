@@ -351,7 +351,15 @@ export default function ControlStockDialog({ isOpen, onClose, products, existing
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['controlStock'] });
       queryClient.invalidateQueries({ queryKey: ['pendingControls'] });
-      handleClose();
+      queryClient.invalidateQueries({ queryKey: ['controlStockDetalle'] });
+      setCurrentControl(null);
+      setConteo({});
+      setStep(1);
+      onClose();
+    },
+    onError: (error) => {
+      console.error("Error eliminando control:", error);
+      alert("Error al eliminar el control. Por favor intenta de nuevo.");
     }
   });
 
