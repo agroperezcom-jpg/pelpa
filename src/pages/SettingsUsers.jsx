@@ -6,10 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Clock, Power, Mail } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Users, Clock, Power, Mail, Building2 } from "lucide-react";
 
 export default function SettingsUsers() {
   const [user, setUser] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [companyDialogOpen, setCompanyDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: users = [] } = useQuery({
@@ -25,6 +29,16 @@ export default function SettingsUsers() {
   const { data: roles = [] } = useQuery({
     queryKey: ['roles'],
     queryFn: () => base44.entities.Rol.list()
+  });
+
+  const { data: companies = [] } = useQuery({
+    queryKey: ['companies'],
+    queryFn: () => base44.entities.Company.list()
+  });
+
+  const { data: userCompanies = [] } = useQuery({
+    queryKey: ['userCompanies'],
+    queryFn: () => base44.entities.UserCompany.list()
   });
 
   useEffect(() => {
@@ -62,6 +76,74 @@ export default function SettingsUsers() {
 
   const handleToggleUserStatus = (userId, currentStatus) => {
     toggleStatusMutation.mutate({ userId, currentStatus });
+  };
+
+  const assignCompanyMutation = useMutation({
+    mutationFn: async ({ userEmail, userName, companyId, companyName }) => {
+      return await base44.entities.UserCompany.create({
+        user_email: userEmail,
+        user_name: userName,
+        company_id: companyId,
+        company_name: companyName,
+        assigned_by: user.email,
+        assigned_at: new Date().toISOString()
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userCompanies'] });
+    }
+  });
+
+  const removeCompanyMutation = useMutation({
+    mutationFn: async ({ userEmail, companyId }) => {
+      const assignments = userCompanies.filter(
+        uc => uc.user_email === userEmail && uc.company_id === companyId
+      );
+      for (const assignment of assignments) {
+        await base44.entities.UserCompany.delete(assignment.id);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userCompanies'] });
+    }
+  });
+
+  const getUserAssignedCompanies = (userEmail) => {
+    return userCompanies
+      .filter(uc => uc.user_email === userEmail)
+      .map(uc => uc.company_id);
+  };
+
+  const handleOpenCompanyDialog = (userData) => {
+    setSelectedUser(userData);
+    setCompanyDialogOpen(true);
+  };
+
+  const handleToggleCompany = async (companyId, companyName) => {
+    if (!selectedUser) return;
+    
+    const assignedCompanyIds = getUserAssignedCompanies(selectedUser.email);
+    const isAssigned = assignedCompanyIds.includes(companyId);
+
+    if (isAssigned) {
+      // Remove assignment (but only if user has more than one company)
+      if (assignedCompanyIds.length > 1) {
+        await removeCompanyMutation.mutateAsync({
+          userEmail: selectedUser.email,
+          companyId
+        });
+      } else {
+        alert("El usuario debe tener al menos una empresa asignada");
+      }
+    } else {
+      // Add assignment
+      await assignCompanyMutation.mutateAsync({
+        userEmail: selectedUser.email,
+        userName: selectedUser.full_name,
+        companyId,
+        companyName
+      });
+    }
   };
 
   const admins = users.filter(u => u.role === 'admin').length;
@@ -140,57 +222,145 @@ export default function SettingsUsers() {
                 <TableHead>Email</TableHead>
                 <TableHead>Rol Sistema</TableHead>
                 <TableHead>Rol Personalizado</TableHead>
+                <TableHead>Empresas</TableHead>
                 <TableHead className="w-16">Estado</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map(u => (
-                <TableRow key={u.id}>
-                  <TableCell className="font-medium">{u.full_name}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Mail className="h-3.5 w-3.5" />
-                    {u.email}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={u.role === 'admin' ? 'bg-slate-800 text-white' : 'bg-blue-100 text-blue-700'}>
-                      {u.role === 'admin' ? 'Admin' : 'Usuario'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {u.role === 'admin' ? (
-                      <span className="text-sm text-muted-foreground italic">Acceso total</span>
-                    ) : (
-                      <Select value={u.rol_id || "none"} onValueChange={(v) => handleUserRoleChange(u.id, v)}>
-                        <SelectTrigger className="w-48">
-                          <SelectValue placeholder="Sin asignar" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Sin rol personalizado</SelectItem>
-                          {roles.filter(r => !r.es_sistema).map(rol => (
-                            <SelectItem key={rol.id} value={rol.id}>{rol.nombre}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {u.role !== 'admin' && (
+              {users.map(u => {
+                const assignedCompanyIds = getUserAssignedCompanies(u.email);
+                const assignedCompanyNames = companies
+                  .filter(c => assignedCompanyIds.includes(c.id))
+                  .map(c => c.name);
+                
+                return (
+                  <TableRow key={u.id}>
+                    <TableCell className="font-medium">{u.full_name}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Mail className="h-3.5 w-3.5" />
+                      {u.email}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={u.role === 'admin' ? 'bg-slate-800 text-white' : 'bg-blue-100 text-blue-700'}>
+                        {u.role === 'admin' ? 'Admin' : 'Usuario'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {u.role === 'admin' ? (
+                        <span className="text-sm text-muted-foreground italic">Acceso total</span>
+                      ) : (
+                        <Select value={u.rol_id || "none"} onValueChange={(v) => handleUserRoleChange(u.id, v)}>
+                          <SelectTrigger className="w-48">
+                            <SelectValue placeholder="Sin asignar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Sin rol personalizado</SelectItem>
+                            {roles.filter(r => !r.es_sistema).map(rol => (
+                              <SelectItem key={rol.id} value={rol.id}>{rol.nombre}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <Button
                         size="sm"
-                        variant="ghost"
-                        onClick={() => handleToggleUserStatus(u.id, u.activo !== false)}
-                        className={u.activo !== false ? "text-green-600" : "text-red-600"}
+                        variant="outline"
+                        onClick={() => handleOpenCompanyDialog(u)}
+                        className="gap-2"
                       >
-                        <Power className="h-4 w-4" />
+                        <Building2 className="h-4 w-4" />
+                        {u.role === 'admin' ? (
+                          <span className="text-xs">Todas</span>
+                        ) : assignedCompanyNames.length > 0 ? (
+                          <span className="text-xs">{assignedCompanyNames.length} empresa{assignedCompanyNames.length > 1 ? 's' : ''}</span>
+                        ) : (
+                          <span className="text-xs text-red-600">Sin asignar</span>
+                        )}
                       </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell>
+                      {u.role !== 'admin' && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleToggleUserStatus(u.id, u.activo !== false)}
+                          className={u.activo !== false ? "text-green-600" : "text-red-600"}
+                        >
+                          <Power className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* Company Assignment Dialog */}
+      <Dialog open={companyDialogOpen} onOpenChange={setCompanyDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Empresas asignadas
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedUser && (
+            <div className="space-y-4">
+              <div className="p-3 bg-secondary/30 rounded-lg">
+                <p className="text-sm font-medium">{selectedUser.full_name}</p>
+                <p className="text-xs text-muted-foreground">{selectedUser.email}</p>
+              </div>
+
+              {selectedUser.role === 'admin' ? (
+                <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    Este usuario es <strong>Administrador</strong> y tiene acceso a todas las empresas del sistema.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Selecciona las empresas a las que este usuario puede acceder:
+                  </p>
+                  
+                  {companies.map(company => {
+                    const assignedCompanyIds = getUserAssignedCompanies(selectedUser.email);
+                    const isAssigned = assignedCompanyIds.includes(company.id);
+                    
+                    return (
+                      <div key={company.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-secondary/20 transition-colors">
+                        <Checkbox
+                          checked={isAssigned}
+                          onCheckedChange={() => handleToggleCompany(company.id, company.name)}
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{company.name}</p>
+                          {company.legal_name && (
+                            <p className="text-xs text-muted-foreground">{company.legal_name}</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {getUserAssignedCompanies(selectedUser.email).length === 0 && (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-sm text-amber-800">
+                        ⚠️ Este usuario no tiene empresas asignadas y no podrá acceder al sistema.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Session Logs */}
       <Card className="border-0 shadow-sm">

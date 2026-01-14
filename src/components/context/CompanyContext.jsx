@@ -32,19 +32,22 @@ export function CompanyProvider({ children }) {
         // Determine user's assigned companies
         let userAssignedCompanies = [];
         if (authenticatedUser) {
-          // Get user from DB to check assigned_companies
-          const usersInDB = await base44.entities.User.filter({ email: authenticatedUser.email });
-          const userInDB = usersInDB[0];
-          
-          if (userInDB?.assigned_companies && userInDB.assigned_companies.length > 0) {
-            // User has specific assigned companies
-            userAssignedCompanies = allCompanies.filter(c => userInDB.assigned_companies.includes(c.id));
-          } else if (authenticatedUser.role === 'admin') {
-            // Admins see all companies by default
+          if (authenticatedUser.role === 'admin') {
+            // Admins see all companies
             userAssignedCompanies = allCompanies;
-          } else if (allCompanies.length > 0) {
-            // Default: assign first company
-            userAssignedCompanies = [allCompanies[0]];
+          } else {
+            // Get UserCompany assignments
+            const userCompanyAssignments = await base44.entities.UserCompany.filter({
+              user_email: authenticatedUser.email
+            });
+            
+            const assignedCompanyIds = userCompanyAssignments.map(uc => uc.company_id);
+            userAssignedCompanies = allCompanies.filter(c => assignedCompanyIds.includes(c.id));
+            
+            // Fallback: if no assignments, assign first company
+            if (userAssignedCompanies.length === 0 && allCompanies.length > 0) {
+              userAssignedCompanies = [allCompanies[0]];
+            }
           }
           
           setAssignedCompanies(userAssignedCompanies);
