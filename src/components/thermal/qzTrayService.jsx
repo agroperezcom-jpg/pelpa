@@ -1,4 +1,30 @@
-import qz from 'qz-tray';
+// QZ Tray - Importación comentada porque no está instalado como dependencia
+// Este archivo es para uso futuro con impresoras térmicas físicas
+// Si necesitas usarlo, instala: npm install qz-tray
+// y descomenta la línea siguiente:
+// import qz from 'qz-tray';
+
+// Mock para desarrollo sin QZ Tray instalado
+const qz = {
+  security: {
+    setCertificatePromise: () => {},
+    setSignaturePromise: () => {}
+  },
+  websocket: {
+    connect: async () => console.warn('QZ Tray no instalado'),
+    disconnect: async () => {}
+  },
+  printers: {
+    find: async () => []
+  },
+  api: {
+    getVersion: async () => 'N/A'
+  },
+  configs: {
+    create: () => ({})
+  },
+  print: async () => {}
+};
 
 // Certificado para firma digital (necesario para QZ Tray 2.x)
 // NOTA: Este es un certificado de desarrollo. Para producción, generá uno propio en:
