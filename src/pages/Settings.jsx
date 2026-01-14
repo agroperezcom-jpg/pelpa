@@ -38,7 +38,7 @@ import CompanyResetDialog from "../components/settings/CompanyResetDialog";
 import CompanyConfiguration from "../components/settings/CompanyConfiguration";
 
 export default function Settings() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(undefined); // undefined = loading
   const [activeView, setActiveView] = useState("empresa");
   
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -79,6 +79,7 @@ export default function Settings() {
     queryFn: () => base44.entities.RolPermiso.list()
   });
 
+  // Load current user from auth - CRITICAL: admin check
   useEffect(() => {
     const loadUser = async () => {
       const currentUser = await base44.auth.me();
@@ -325,6 +326,27 @@ export default function Settings() {
     return logDate >= firstDayOfMonth;
   }).length;
 
+  // CRITICAL: Reject non-admin access to this page
+  if (user !== undefined && user !== null && user.role !== 'admin') {
+    return (
+      <div className="max-w-2xl">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Acceso Denegado</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            No tienes permisos para acceder a esta página
+          </p>
+        </div>
+        <Card className="mt-6 border-l-4 border-l-red-500 bg-red-50">
+          <CardContent className="p-6">
+            <p className="text-red-800">
+              ⛔ Solo los administradores pueden acceder a la Configuración del Sistema
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -353,7 +375,7 @@ export default function Settings() {
          </Select>
        </div>
 
-      {user?.role === 'admin' ? (
+       {user?.role === 'admin' ? (
         <div className="space-y-6">
           {activeView === "empresa" && (
             <CompanyConfiguration isAdmin={true} />
