@@ -336,13 +336,13 @@ export default function ControlStockDialog({ isOpen, onClose, products, existing
 
   const deleteControlMutation = useMutation({
     mutationFn: async (controlId) => {
-      // Eliminar detalles del control
+      // Eliminar detalles en paralelo
       const detalles = await base44.entities.ControlStockDetalle.filter({
         control_stock_id: controlId
       });
       
-      for (const detalle of detalles) {
-        await base44.entities.ControlStockDetalle.delete(detalle.id);
+      if (detalles.length > 0) {
+        await Promise.all(detalles.map(d => base44.entities.ControlStockDetalle.delete(d.id)));
       }
       
       // Eliminar el control
