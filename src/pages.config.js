@@ -23,14 +23,17 @@ import RolesPermisos from './pages/RolesPermisos';
 import Sales from './pages/Sales';
 import Services from './pages/Services';
 import Settings from './pages/Settings';
+import SettingsRoles from './pages/SettingsRoles';
+import SettingsUsers from './pages/SettingsUsers';
 import TableroFiscal from './pages/TableroFiscal';
 import Talonarios from './pages/Talonarios';
 import TesoreriaV2 from './pages/TesoreriaV2';
 import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
 import WorkOrders from './pages/WorkOrders';
-import SettingsUsers from './pages/SettingsUsers';
-import SettingsRoles from './pages/SettingsRoles';
+import SettingsImpresoras from './pages/SettingsImpresoras';
+import SettingsProyectos from './pages/SettingsProyectos';
+import SettingsAutomatizaciones from './pages/SettingsAutomatizaciones';
 import __Layout from './Layout.jsx';
 
 
@@ -60,14 +63,17 @@ export const PAGES = {
     "Sales": Sales,
     "Services": Services,
     "Settings": Settings,
+    "SettingsRoles": SettingsRoles,
+    "SettingsUsers": SettingsUsers,
     "TableroFiscal": TableroFiscal,
     "Talonarios": Talonarios,
     "TesoreriaV2": TesoreriaV2,
     "TiposArticulo": TiposArticulo,
     "Treasury": Treasury,
     "WorkOrders": WorkOrders,
-    "SettingsUsers": SettingsUsers,
-    "SettingsRoles": SettingsRoles,
+    "SettingsImpresoras": SettingsImpresoras,
+    "SettingsProyectos": SettingsProyectos,
+    "SettingsAutomatizaciones": SettingsAutomatizaciones,
 }
 
 export const pagesConfig = {
