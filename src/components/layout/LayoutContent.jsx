@@ -454,6 +454,17 @@ export default function LayoutContent({ children, currentPageName }) {
               <button className="p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
                 <Bell className="h-4 w-4" />
               </button>
+              {externalUser && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="text-sm font-medium">Cerrar sesión</span>
+                </Button>
+              )}
             </div>
           </header>
 
