@@ -19,7 +19,9 @@ export default function AdminUserSetup() {
       const response = await base44.functions.invoke('setAdminRole', { email });
       return { email, success: true, data: response.data };
     } catch (error) {
-      return { email, success: false, error: error.message };
+      // Try to extract meaningful error message
+      const errorMsg = error.response?.data?.error || error.message;
+      return { email, success: false, error: errorMsg };
     }
   };
 

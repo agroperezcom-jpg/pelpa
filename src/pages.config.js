@@ -1,3 +1,4 @@
+import AdminUserSetup from './pages/AdminUserSetup';
 import Analytics from './pages/Analytics';
 import Calendar from './pages/Calendar';
 import Cheques from './pages/Cheques';
@@ -23,6 +24,9 @@ import RolesPermisos from './pages/RolesPermisos';
 import Sales from './pages/Sales';
 import Services from './pages/Services';
 import Settings from './pages/Settings';
+import SettingsAutomatizaciones from './pages/SettingsAutomatizaciones';
+import SettingsImpresoras from './pages/SettingsImpresoras';
+import SettingsProyectos from './pages/SettingsProyectos';
 import SettingsRoles from './pages/SettingsRoles';
 import SettingsUsers from './pages/SettingsUsers';
 import TableroFiscal from './pages/TableroFiscal';
@@ -31,14 +35,11 @@ import TesoreriaV2 from './pages/TesoreriaV2';
 import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
 import WorkOrders from './pages/WorkOrders';
-import SettingsImpresoras from './pages/SettingsImpresoras';
-import SettingsProyectos from './pages/SettingsProyectos';
-import SettingsAutomatizaciones from './pages/SettingsAutomatizaciones';
-import AdminUserSetup from './pages/AdminUserSetup';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "AdminUserSetup": AdminUserSetup,
     "Analytics": Analytics,
     "Calendar": Calendar,
     "Cheques": Cheques,
@@ -64,6 +65,9 @@ export const PAGES = {
     "Sales": Sales,
     "Services": Services,
     "Settings": Settings,
+    "SettingsAutomatizaciones": SettingsAutomatizaciones,
+    "SettingsImpresoras": SettingsImpresoras,
+    "SettingsProyectos": SettingsProyectos,
     "SettingsRoles": SettingsRoles,
     "SettingsUsers": SettingsUsers,
     "TableroFiscal": TableroFiscal,
@@ -72,10 +76,6 @@ export const PAGES = {
     "TiposArticulo": TiposArticulo,
     "Treasury": Treasury,
     "WorkOrders": WorkOrders,
-    "SettingsImpresoras": SettingsImpresoras,
-    "SettingsProyectos": SettingsProyectos,
-    "SettingsAutomatizaciones": SettingsAutomatizaciones,
-    "AdminUserSetup": AdminUserSetup,
 }
 
 export const pagesConfig = {
