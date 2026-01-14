@@ -932,32 +932,33 @@ export default function Sales() {
   };
 
   const handleConfirmarPagos = (pagos, tipoVenta) => {
-    const cliente = clients.find(c => c.id === currentSale.client_id);
-    const finalTotal = currentSale.total_manual !== null ? currentSale.total_manual : total_final;
+     const cliente = clients.find(c => c.id === currentSale.client_id);
+     const finalTotal = currentSale.total_manual !== null ? currentSale.total_manual : total_final;
 
-    createSaleMutation.mutate({
-      saleData: {
-        client_id: currentSale.client_id || null,
-        client_name: cliente?.name || "Consumidor Final",
-        client_tipo_iva: cliente?.tipo_iva || "CONSUMIDOR_FINAL",
-        employee_email: user?.email,
-        employee_name: user?.full_name,
-        tipo_lista: currentSale.tipo_lista,
-        items: cart,
-        subtotal: subtotal,
-        discount: currentSale.discount || 0,
-        genera_iva: currentSale.genera_iva,
-        genera_iibb: currentSale.genera_iibb,
-        neto_gravado: neto_gravado,
-        iva_21: iva_21,
-        total: finalTotal,
-        notes: currentSale.notes,
-        talonario_id: currentSale.talonario_id
-      },
-      pagos,
-      tipoVenta
-    });
-  };
+     createSaleMutation.mutate({
+       saleData: {
+         client_id: currentSale.client_id || null,
+         client_name: cliente?.name || "Consumidor Final",
+         client_tipo_iva: cliente?.tipo_iva || "CONSUMIDOR_FINAL",
+         employee_email: user?.email,
+         employee_name: user?.full_name,
+         company_id: user?.id,
+         tipo_lista: currentSale.tipo_lista,
+         items: cart,
+         subtotal: subtotal,
+         discount: currentSale.discount || 0,
+         genera_iva: currentSale.genera_iva,
+         genera_iibb: currentSale.genera_iibb,
+         neto_gravado: neto_gravado,
+         iva_21: iva_21,
+         total: finalTotal,
+         notes: currentSale.notes,
+         talonario_id: currentSale.talonario_id
+       },
+       pagos,
+       tipoVenta
+     });
+   };
 
   const filteredProducts = products.filter(p => 
     p.name?.toLowerCase().includes(productSearch.toLowerCase()) ||
