@@ -40,6 +40,7 @@ export default function ProjectCard({ project, onClick }) {
     <Card 
       className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer group"
       onClick={onClick}
+      data-project-id={project.id}
       style={{ borderLeft: `4px solid ${project.color || '#3b82f6'}` }}
     >
       <CardHeader className="pb-3">
