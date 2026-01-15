@@ -443,15 +443,25 @@ export default function EventDetailDialog({
                   {/* Ver proyecto button */}
                   <div className="pt-2">
                     <Button
-                      asChild
                       variant="outline"
                       size="sm"
                       className="w-full gap-2"
+                      onClick={() => {
+                        onClose();
+                        window.location.href = createPageUrl('Projects');
+                        setTimeout(() => {
+                          const projectCardElements = document.querySelectorAll('[data-project-id]');
+                          const targetCard = Array.from(projectCardElements).find(
+                            el => el.getAttribute('data-project-id') === event.project_id
+                          );
+                          if (targetCard) {
+                            targetCard.click();
+                          }
+                        }, 500);
+                      }}
                     >
-                      <a href={`/Projects?id=${event.project_id}`}>
-                        Ver proyecto
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
+                      Ver proyecto
+                      <ExternalLink className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
