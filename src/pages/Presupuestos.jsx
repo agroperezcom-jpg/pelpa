@@ -1310,28 +1310,9 @@ export default function Presupuestos() {
         </Dialog>
       )}
 
-      {/* Print View */}
+      {/* Print Preview */}
       {isPrintView && selectedPresupuesto && (
-        <div className="fixed inset-0 z-[9999] bg-white flex flex-col">
-          <div className="flex justify-end gap-2 p-4 bg-slate-100 border-b">
-            <Button 
-              onClick={() => window.print()}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Printer className="h-4 w-4 mr-2" />
-              Imprimir
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => setIsPrintView(false)}
-            >
-              Cerrar
-            </Button>
-          </div>
-          <div className="overflow-auto flex-1">
-            <PresupuestoImpresion presupuesto={selectedPresupuesto} />
-          </div>
-        </div>
+        <PrintPreview presupuesto={selectedPresupuesto} onClose={() => setIsPrintView(false)} />
       )}
 
       {/* Dialog Cobro de Presupuesto */}
