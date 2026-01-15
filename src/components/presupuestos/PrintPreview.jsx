@@ -122,6 +122,15 @@ export default function PrintPreview({ presupuesto, onClose }) {
           background: white !important;
         }
 
+        /* Select dropdown styles */
+        [role="listbox"] {
+          z-index: 100000 !important;
+        }
+
+        [role="option"] {
+          visibility: visible !important;
+        }
+
         @media print {
           .print-wrapper {
             position: static !important;
