@@ -37,32 +37,32 @@ export default function PrintPreview({ presupuesto, onClose }) {
   return (
     <>
       <div className="print-wrapper">
-        <div className="no-print flex items-center justify-between gap-6 px-6 py-4 bg-slate-100 border-b">
-          <div className="flex items-center gap-3 flex-1">
-            <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Formato:</label>
-            <Select value={format} onValueChange={setFormat}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="a4">A4 (Documento)</SelectItem>
-                <SelectItem value="mobile">Mobile (WhatsApp)</SelectItem>
-                <SelectItem value="80mm">80mm (Térmico)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() => window.print()}
-              className="no-print bg-blue-600 hover:bg-blue-700 whitespace-nowrap"
-            >
-              <Printer className="h-4 w-4 mr-2" />
-              Imprimir / PDF
-            </Button>
-            <Button variant="outline" onClick={onClose} className="no-print h-10 w-10 p-0">
+        <div className="print-header">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" onClick={onClose} className="h-10 w-10 p-0 flex-shrink-0">
               <X className="h-4 w-4" />
             </Button>
+            <div className="flex items-center gap-2 py-2">
+              <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Formato:</label>
+              <Select value={format} onValueChange={setFormat}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="a4">A4 (Documento)</SelectItem>
+                  <SelectItem value="mobile">Mobile (WhatsApp)</SelectItem>
+                  <SelectItem value="80mm">80mm (Térmico)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+          <Button
+            onClick={() => window.print()}
+            className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap flex-shrink-0"
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Imprimir / PDF
+          </Button>
         </div>
 
         <div className="flex-1 overflow-auto bg-slate-50 flex justify-center py-8">
