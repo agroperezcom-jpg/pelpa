@@ -74,6 +74,7 @@ export default function Presupuestos() {
   const [clientSearch, setClientSearch] = useState("");
   const [activeTab, setActiveTab] = useState("products");
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [isPrintView, setIsPrintView] = useState(false);
   const [isCobroDialogOpen, setIsCobroDialogOpen] = useState(false);
   const [isCancelacionDialogOpen, setIsCancelacionDialogOpen] = useState(false);
   const [isWhatsAppDialogOpen, setIsWhatsAppDialogOpen] = useState(false);
