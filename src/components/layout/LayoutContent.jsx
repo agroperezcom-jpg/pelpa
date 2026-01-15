@@ -71,10 +71,13 @@ export default function LayoutContent({ children, currentPageName }) {
   }, [sidebarExpanded]);
 
   const handleLogout = async () => {
-    if (window.__AUTH_GATEWAY_LOGOUT__) {
-      window.__AUTH_GATEWAY_LOGOUT__();
-    } else {
-      console.warn('No external logout handler configured');
+    try {
+      // Call base44 logout which handles session invalidation
+      await base44.auth.logout('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Fallback: redirect to login if logout fails
+      window.location.href = '/';
     }
   };
 
