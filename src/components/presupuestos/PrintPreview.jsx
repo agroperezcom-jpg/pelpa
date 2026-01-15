@@ -39,11 +39,11 @@ export default function PrintPreview({ presupuesto, onClose }) {
       {/* Print wrapper - fullscreen */}
       <div className="print-wrapper">
         {/* Header - no-print */}
-        <div className="no-print flex items-center justify-between gap-3 p-4 bg-slate-100 border-b">
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-slate-700">Formato:</label>
+        <div className="no-print flex items-center justify-between gap-6 px-6 py-4 bg-slate-100 border-b">
+          <div className="flex items-center gap-3 flex-1">
+            <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Formato:</label>
             <Select value={format} onValueChange={setFormat}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-48">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -56,12 +56,12 @@ export default function PrintPreview({ presupuesto, onClose }) {
           <div className="flex items-center gap-2">
             <Button
               onClick={() => window.print()}
-              className="no-print bg-blue-600 hover:bg-blue-700"
+              className="no-print bg-blue-600 hover:bg-blue-700 whitespace-nowrap"
             >
               <Printer className="h-4 w-4 mr-2" />
               Imprimir / PDF
             </Button>
-            <Button variant="outline" onClick={onClose} className="no-print">
+            <Button variant="outline" onClick={onClose} className="no-print h-10 w-10 p-0">
               <X className="h-4 w-4" />
             </Button>
           </div>
