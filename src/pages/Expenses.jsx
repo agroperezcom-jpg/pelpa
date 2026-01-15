@@ -233,15 +233,11 @@ export default function Expenses() {
         throw new Error("Gasto no encontrado");
       }
 
-      // CRÍTICO: Eliminar TODOS los movimientos vinculados al gasto (por ID o por referencia)
-      const todosMovimientos = await base44.entities.MovimientoTesoreria.list();
-      const movimientosVinculados = todosMovimientos.filter(m => 
-        m.id === gasto.movimiento_tesoreria_id || 
-        (m.referencia_tipo === "gasto" && m.referencia_id === id)
-      );
+      // ELIMINAR TODOS LOS MOVIMIENTOS DE TESORERÍA POR REFERENCIA_ID (100% CONECTADO)
+      const movimientosVinculados = await base44.entities.MovimientoTesoreria.filter({ referencia_id: id });
       
       for (const mov of movimientosVinculados) {
-        // Revertir saldo del banco
+        // Revertir saldo del banco (egreso -> devolver al banco)
         if (mov.banco_id) {
           const banco = bancos.find(b => b.id === mov.banco_id);
           if (banco) {
@@ -251,7 +247,7 @@ export default function Expenses() {
           }
         }
 
-        // Revertir saldo de la caja
+        // Revertir saldo de la caja (egreso -> devolver a la caja)
         if (mov.caja_id) {
           const caja = cajas.find(c => c.id === mov.caja_id);
           if (caja) {
@@ -261,7 +257,7 @@ export default function Expenses() {
           }
         }
 
-        // Eliminar movimiento
+        // ELIMINAR el movimiento
         await base44.entities.MovimientoTesoreria.delete(mov.id);
       }
       
