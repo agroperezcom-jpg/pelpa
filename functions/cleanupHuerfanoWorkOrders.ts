@@ -12,16 +12,15 @@ Deno.serve(async (req) => {
     // Obtener todas las órdenes de trabajo
     const allProjects = await base44.asServiceRole.entities.Project.list();
     const workOrders = allProjects.filter(p => p.is_work_order);
-    const validProjectIds = new Set(allProjects.filter(p => !p.is_work_order).map(p => p.id));
 
-    // Identificar órdenes huérfanas (cuyo proyecto no existe o fue eliminado)
-    const huerfanas = workOrders.filter(wo => !wo.project_id || !validProjectIds.has(wo.project_id));
-
+    // Eliminar TODAS las órdenes de trabajo
     let eliminadas = 0;
-    for (const wo of huerfanas) {
+    const detalles = [];
+    for (const wo of workOrders) {
       try {
         await base44.asServiceRole.entities.Project.delete(wo.id);
         eliminadas++;
+        detalles.push({ id: wo.id, nombre: wo.name });
       } catch (error) {
         console.error(`Error eliminando orden ${wo.id}:`, error.message);
       }
@@ -29,8 +28,8 @@ Deno.serve(async (req) => {
 
     return Response.json({
       status: 'success',
-      message: `${eliminadas} órdenes de trabajo huérfanas eliminadas`,
-      detalles: huerfanas.map(wo => ({ id: wo.id, nombre: wo.name }))
+      message: `${eliminadas} órdenes de trabajo eliminadas`,
+      detalles
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
