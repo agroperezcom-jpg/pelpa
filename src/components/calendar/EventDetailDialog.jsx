@@ -45,10 +45,10 @@ export default function EventDetailDialog({
       } finally {
         setIsLoadingProject(false);
       }
-      };
+    };
 
-      fetchProjectData();
-      }, [event?.project_id, event?.type, isOpen]);
+    fetchProjectData();
+  }, [event?.project_id, event?.type, isOpen]);
 
   const eventColor = getEventColor ? getEventColor(event) : "#64748b";
 
