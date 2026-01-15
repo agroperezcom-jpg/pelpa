@@ -462,15 +462,38 @@ export default function Calendar() {
       });
     }
 
-    // Gastos Recurrentes
+    // Gastos a Pagar (recurrentes y futuros)
     if (layers.expenses) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
       expenses.forEach(expense => {
-        if (expense.is_recurring && expense.date) {
+        if (!expense.date) return;
+
+        const expenseDate = new Date(expense.date);
+        expenseDate.setHours(0, 0, 0, 0);
+
+        // Mostrar gastos futuros (sin pagarse)
+        if (expenseDate >= today && !expense.movimiento_tesoreria_id) {
+          events.push({
+            id: `expense-${expense.id}`,
+            name: `💰 ${expense.description}`,
+            type: "expense",
+            date: expense.date,
+            start_date: expense.date,
+            estimated_end_date: expense.date,
+            status: "pending",
+            priority: "normal",
+            data: expense,
+            amount: expense.amount
+          });
+        }
+
+        // Generar instancias de gastos recurrentes
+        if (expense.is_recurring) {
           const baseDate = new Date(expense.date);
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
+          baseDate.setHours(0, 0, 0, 0);
           
-          // Generar instancias hasta 6 meses en el futuro
           const maxDate = new Date();
           maxDate.setMonth(maxDate.getMonth() + 6);
 
@@ -479,7 +502,7 @@ export default function Calendar() {
 
           let instanceCount = 0;
           while (currentDate <= maxDate && instanceCount < 12) {
-            if (currentDate >= baseDate) {
+            if (currentDate > baseDate) {
               let shouldInclude = false;
 
               if (expense.recurring_frequency === "mensual") {
@@ -519,7 +542,6 @@ export default function Calendar() {
               }
             }
 
-            // Avanzar al siguiente día
             currentDate.setDate(currentDate.getDate() + 1);
           }
         }
