@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/table";
 import {
   ShoppingBag, Plus, Search, Trash2, CheckCircle, AlertTriangle, 
-  DollarSign, Receipt, TrendingUp, FileText, BarChart3, Download
+  DollarSign, Receipt, TrendingUp, FileText, BarChart3, Download, X
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
@@ -73,6 +73,8 @@ export default function Purchases() {
   const [activeTab, setActiveTab] = useState("compras");
   const [fechaReporte, setFechaReporte] = useState(format(new Date(), 'yyyy-MM'));
   const [user, setUser] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [compraToDelete, setCompraToDelete] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -118,6 +120,118 @@ export default function Purchases() {
   const { data: cajas = [] } = useQuery({
     queryKey: ['cajas'],
     queryFn: () => base44.entities.Caja.list()
+  });
+
+  const deleteCompraMutation = useMutation({
+    mutationFn: async (compraId) => {
+      const compra = compras.find(c => c.id === compraId);
+      if (!compra) throw new Error("Compra no encontrada");
+
+      // 1. Eliminar detalles de compra y revertir inventario
+      const detalles = await base44.entities.CompraDetalle.filter({ compra_id: compraId });
+      for (const detalle of detalles) {
+        const producto = products.find(p => p.id === detalle.producto_id);
+        if (producto) {
+          await base44.entities.Product.update(producto.id, {
+            stock: producto.stock - detalle.cantidad
+          });
+
+          await base44.entities.InventoryMovement.create({
+            product_id: producto.id,
+            product_name: producto.name,
+            type: 'salida',
+            quantity: detalle.cantidad,
+            previous_stock: producto.stock,
+            new_stock: producto.stock - detalle.cantidad,
+            reason: 'Eliminación de compra',
+            reference: `Eliminación compra ${compra.numero_comprobante_proveedor}`
+          });
+        }
+        await base44.entities.CompraDetalle.delete(detalle.id);
+      }
+
+      // 2. Eliminar movimientos de tesorería
+      const movimientos = await base44.entities.MovimientoTesoreria.filter({
+        referencia_tipo: "compra",
+        referencia_id: compraId
+      });
+      for (const mov of movimientos) {
+        if (mov.banco_id) {
+          const banco = bancos.find(b => b.id === mov.banco_id);
+          if (banco) {
+            await base44.entities.Banco.update(mov.banco_id, {
+              saldo_actual: banco.saldo_actual + mov.importe
+            });
+          }
+        }
+        if (mov.caja_id) {
+          const caja = cajas.find(c => c.id === mov.caja_id);
+          if (caja) {
+            await base44.entities.Caja.update(mov.caja_id, {
+              saldo_actual: caja.saldo_actual + mov.importe
+            });
+          }
+        }
+        await base44.entities.MovimientoTesoreria.delete(mov.id);
+      }
+
+      // 3. Eliminar pagos de compra
+      const pagosCompra = await base44.entities.PagoCompra.filter({ compra_id: compraId });
+      for (const pago of pagosCompra) {
+        await base44.entities.PagoCompra.delete(pago.id);
+      }
+
+      // 4. Eliminar cheques relacionados
+      const cheques = await base44.entities.Check.filter({
+        referencia_origen_tipo: "COMPRA",
+        referencia_origen_id: compraId
+      });
+      for (const cheque of cheques) {
+        await base44.entities.Check.delete(cheque.id);
+      }
+
+      // 5. Eliminar movimientos de cuenta corriente y actualizar saldo del proveedor
+      const movimientosCC = await base44.entities.MovimientoCC.filter({
+        referencia_tipo: "compra",
+        referencia_id: compraId
+      });
+      for (const movCC of movimientosCC) {
+        await base44.entities.MovimientoCC.delete(movCC.id);
+      }
+
+      const proveedor = proveedores.find(p => p.id === compra.proveedor_id);
+      if (proveedor) {
+        const nuevoSaldo = proveedor.saldo_cc - (compra.saldo_pendiente || 0);
+        await base44.entities.Proveedor.update(proveedor.id, {
+          saldo_cc: Math.max(0, nuevoSaldo)
+        });
+      }
+
+      // 6. Eliminar retenciones IIBB
+      const retenciones = await base44.entities.RetencionIIBB.filter({ compra_id: compraId });
+      for (const retencion of retenciones) {
+        await base44.entities.RetencionIIBB.delete(retencion.id);
+      }
+
+      // 7. Eliminar la compra
+      await base44.entities.Compra.delete(compraId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['compras'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['proveedores'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosCC'] });
+      queryClient.invalidateQueries({ queryKey: ['bancos'] });
+      queryClient.invalidateQueries({ queryKey: ['cajas'] });
+      queryClient.invalidateQueries({ queryKey: ['retencionesIIBB'] });
+      queryClient.invalidateQueries({ queryKey: ['cheques'] });
+      setDeleteDialogOpen(false);
+      setCompraToDelete(null);
+    },
+    onError: (error) => {
+      alert("Error al eliminar la compra: " + error.message);
+    }
   });
 
   const createCompraMutation = useMutation({
@@ -624,6 +738,7 @@ export default function Purchases() {
                   <TableHead className="text-right">IVA</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead>Estado</TableHead>
+                  <TableHead className="w-16"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -662,11 +777,23 @@ export default function Purchases() {
                         {compra.estado}
                       </Badge>
                     </TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => {
+                          setCompraToDelete(compra);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
                 {filteredCompras.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-slate-500">
+                    <TableCell colSpan={9} className="text-center py-8 text-slate-500">
                       No hay compras registradas
                     </TableCell>
                   </TableRow>
@@ -1352,6 +1479,59 @@ export default function Purchases() {
             <Button onClick={handleConfirmarCompra} className="bg-blue-600 hover:bg-blue-700">
               <CheckCircle className="h-4 w-4 mr-2" />
               Confirmar Compra
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de confirmación de eliminación */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Eliminar Compra
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600">
+              ¿Está seguro que desea eliminar esta compra? Esta acción:
+            </p>
+            <ul className="text-sm text-slate-600 space-y-1 list-disc list-inside">
+              <li>Revertirá los movimientos de inventario</li>
+              <li>Eliminará los pagos y movimientos de tesorería</li>
+              <li>Actualizará el saldo del proveedor</li>
+              <li>Eliminará cheques asociados</li>
+              <li>No se puede deshacer</li>
+            </ul>
+            {compraToDelete && (
+              <div className="bg-slate-50 p-3 rounded-lg border">
+                <p className="text-sm font-medium">
+                  {compraToDelete.proveedor_nombre} - {compraToDelete.tipo_comprobante}-{compraToDelete.numero_comprobante_proveedor}
+                </p>
+                <p className="text-sm text-slate-600 mt-1">
+                  Total: ${compraToDelete.total_compra?.toLocaleString()}
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setCompraToDelete(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => deleteCompraMutation.mutate(compraToDelete?.id)}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteCompraMutation.isPending}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              {deleteCompraMutation.isPending ? "Eliminando..." : "Eliminar Compra"}
             </Button>
           </DialogFooter>
         </DialogContent>
