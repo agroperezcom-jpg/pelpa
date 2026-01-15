@@ -79,6 +79,9 @@ export default function Expenses() {
   const [monthFilter, setMonthFilter] = useState(format(new Date(), 'yyyy-MM'));
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
+  const [recurringDialogOpen, setRecurringDialogOpen] = useState(false);
+  const [recurringExpense, setRecurringExpense] = useState(null);
+  const [nextDate, setNextDate] = useState("");
   const [cuentaSearch, setCuentaSearch] = useState("");
   const [formData, setFormData] = useState({
     description: "",
@@ -324,6 +327,71 @@ export default function Expenses() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingExpense(null);
+  };
+
+  const calculateNextDate = (baseDate, frequency) => {
+    const date = new Date(baseDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (frequency === "mensual") {
+      const dayOfMonth = date.getDate();
+      let nextOccurrence = new Date(today);
+      nextOccurrence.setDate(dayOfMonth);
+      
+      if (nextOccurrence <= today) {
+        nextOccurrence.setMonth(nextOccurrence.getMonth() + 1);
+      }
+      return nextOccurrence.toISOString().split('T')[0];
+    } else if (frequency === "trimestral") {
+      const baseMonth = date.getMonth();
+      const dayOfMonth = date.getDate();
+      let nextOccurrence = new Date(today);
+      
+      const nextQuarterMonth = baseMonth + (Math.ceil((today.getMonth() - baseMonth) / 3) * 3);
+      nextOccurrence.setMonth(nextQuarterMonth);
+      nextOccurrence.setDate(dayOfMonth);
+      
+      if (nextOccurrence <= today) {
+        nextOccurrence.setMonth(nextOccurrence.getMonth() + 3);
+      }
+      return nextOccurrence.toISOString().split('T')[0];
+    } else if (frequency === "anual") {
+      const month = date.getMonth();
+      const dayOfMonth = date.getDate();
+      let nextOccurrence = new Date(today);
+      nextOccurrence.setMonth(month);
+      nextOccurrence.setDate(dayOfMonth);
+      
+      if (nextOccurrence <= today) {
+        nextOccurrence.setFullYear(nextOccurrence.getFullYear() + 1);
+      }
+      return nextOccurrence.toISOString().split('T')[0];
+    }
+    return baseDate;
+  };
+
+  const handleOpenRecurringDialog = (expense) => {
+    setRecurringExpense(expense);
+    const nextDateCalculated = calculateNextDate(expense.date, expense.recurring_frequency);
+    setNextDate(nextDateCalculated);
+    setRecurringDialogOpen(true);
+  };
+
+  const handleSaveNextDate = async () => {
+    if (!recurringExpense || !nextDate) return;
+    
+    try {
+      await updateMutation.mutateAsync({
+        id: recurringExpense.id,
+        data: { date: nextDate }
+      });
+      setRecurringDialogOpen(false);
+      setRecurringExpense(null);
+      setNextDate("");
+    } catch (error) {
+      console.error("Error updating date:", error);
+    }
   };
 
   const handleSubmit = (e) => {
@@ -655,10 +723,15 @@ export default function Expenses() {
                 </TableCell>
                 <TableCell className="text-center">
                   {expense.is_recurring && (
-                    <Badge variant="secondary" className="bg-violet-100 text-violet-700">
-                      <RefreshCw className="h-3 w-3 mr-1" />
-                      {expense.recurring_frequency}
-                    </Badge>
+                    <button
+                      onClick={() => handleOpenRecurringDialog(expense)}
+                      className="inline-block"
+                    >
+                      <Badge variant="secondary" className="bg-violet-100 text-violet-700 cursor-pointer hover:bg-violet-200 transition-colors">
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        {expense.recurring_frequency}
+                      </Badge>
+                    </button>
                   )}
                 </TableCell>
                 <TableCell className="text-right">
@@ -701,6 +774,47 @@ export default function Expenses() {
           </TableBody>
         </Table>
       </Card>
+
+      {/* Recurring Date Dialog */}
+      <Dialog open={recurringDialogOpen} onOpenChange={setRecurringDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Próxima fecha de repetición</DialogTitle>
+          </DialogHeader>
+          {recurringExpense && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium text-slate-600">Gasto</p>
+                <p className="text-base font-semibold">{recurringExpense.description}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-600">Frecuencia</p>
+                <p className="text-base capitalize">{recurringExpense.recurring_frequency}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-600">Monto</p>
+                <p className="text-base font-semibold text-red-600">{formatCurrency(recurringExpense.amount)}</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Próxima fecha a pagar</Label>
+                <Input
+                  type="date"
+                  value={nextDate}
+                  onChange={(e) => setNextDate(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setRecurringDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveNextDate} className="bg-violet-600 hover:bg-violet-700">
+              Guardar Fecha
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
