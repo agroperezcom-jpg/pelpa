@@ -14,13 +14,14 @@ import { Shield, Plus, Trash2, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
 
 const MODULES = [
-  "Ventas",
-  "Compras",
-  "Inventario",
-  "Tesorería",
-  "Proyectos",
-  "Calendario",
-  "Analytics",
+  { key: "sales", label: "Ventas" },
+  { key: "purchases", label: "Compras" },
+  { key: "inventory", label: "Inventario" },
+  { key: "finance", label: "Tesorería" },
+  { key: "projects", label: "Proyectos" },
+  { key: "calendar", label: "Calendario" },
+  { key: "analytics", label: "Analytics" },
+  { key: "settings", label: "Configuración" }
 ];
 
 const ACTIONS = ["view", "create", "edit", "delete"];
@@ -171,10 +172,6 @@ export default function SettingsRoles() {
     });
   };
 
-  const getRolePermissions = (roleId) => {
-    return permissions.filter(p => p.role_id === roleId);
-  };
-
   const isPermissionAllowed = (roleId, module, action) => {
     const perm = permissions.find(
       p => p.role_id === roleId && p.module === module && p.action === action
@@ -189,7 +186,7 @@ export default function SettingsRoles() {
           <div className="flex items-center gap-3">
             <AlertCircle className="h-5 w-5 text-amber-600" />
             <p className="text-amber-800">
-              Solo los administradores pueden acceder a esta página
+              Solo administradores pueden acceder aquí
             </p>
           </div>
         </CardContent>
@@ -215,13 +212,10 @@ export default function SettingsRoles() {
       {/* Roles Table */}
       <Card className="border-0 shadow-sm">
         <CardHeader>
-          <div className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            <CardTitle className="text-base">Roles Disponibles</CardTitle>
-          </div>
-          <CardDescription className="text-xs">
-            Total: {roles.length} rol{roles.length !== 1 ? 'es' : ''}
-          </CardDescription>
+            Roles Disponibles
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -334,7 +328,7 @@ export default function SettingsRoles() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSaveRole} disabled={createRoleMutation.isPending || updateRoleMutation.isPending}>
+            <Button onClick={handleSaveRole}>
               {editingRole ? "Guardar Cambios" : "Crear Rol"}
             </Button>
           </DialogFooter>
@@ -343,34 +337,32 @@ export default function SettingsRoles() {
 
       {/* Permissions Dialog */}
       <Dialog open={permDialogOpen} onOpenChange={setPermDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-96 overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              Permisos: {selectedRole?.name}
-            </DialogTitle>
+            <DialogTitle>Permisos: {selectedRole?.name}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-6 max-h-96 overflow-y-auto">
-            {selectedRole?.is_system && selectedRole?.name === "Admin" ? (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  Los administradores tienen acceso completo a todos los módulos y acciones.
-                </p>
-              </div>
-            ) : (
-              MODULES.map(module => (
-                <div key={module} className="border rounded-lg p-4">
-                  <h4 className="font-semibold text-sm mb-3">{module}</h4>
-                  <div className="grid grid-cols-2 gap-4">
+          {selectedRole?.is_system && selectedRole?.name === "admin" ? (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                Los administradores tienen acceso completo a todos los módulos.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {MODULES.map(module => (
+                <div key={module.key} className="border rounded-lg p-4">
+                  <h4 className="font-semibold text-sm mb-3">{module.label}</h4>
+                  <div className="grid grid-cols-4 gap-4">
                     {ACTIONS.map(action => (
                       <div key={action} className="flex items-center gap-2">
                         <Checkbox
-                          checked={isPermissionAllowed(selectedRole.id, module, action)}
+                          checked={isPermissionAllowed(selectedRole.id, module.key, action)}
                           onCheckedChange={() =>
                             handlePermissionToggle(
-                              module,
+                              module.key,
                               action,
-                              isPermissionAllowed(selectedRole.id, module, action)
+                              isPermissionAllowed(selectedRole.id, module.key, action)
                             )
                           }
                         />
@@ -381,9 +373,9 @@ export default function SettingsRoles() {
                     ))}
                   </div>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setPermDialogOpen(false)}>
@@ -393,13 +385,13 @@ export default function SettingsRoles() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar rol?</AlertDialogTitle>
             <AlertDialogDescription>
-              Se eliminará "{roleToDelete?.name}" y todos sus permisos asociados.
+              Se eliminará "{roleToDelete?.name}" y todos sus permisos. Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

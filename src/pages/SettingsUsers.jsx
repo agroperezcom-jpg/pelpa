@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, Plus, Power, Mail, AlertCircle } from "lucide-react";
+import { Users, Plus, Lock, Unlock, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function SettingsUsers() {
@@ -19,16 +19,18 @@ export default function SettingsUsers() {
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
-    role: "staff",
-    phone: "",
-    job_title: "",
-    notes: ""
+    role_id: ""
   });
   const queryClient = useQueryClient();
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
     queryFn: () => base44.entities.User.list()
+  });
+
+  const { data: roles = [] } = useQuery({
+    queryKey: ['roles'],
+    queryFn: () => base44.entities.Role.list()
   });
 
   useEffect(() => {
@@ -40,15 +42,15 @@ export default function SettingsUsers() {
   }, []);
 
   const createUserMutation = useMutation({
-    mutationFn: (userData) => base44.entities.User.create(userData),
+    mutationFn: (userData) => base44.entities.User.create({ ...userData, status: "active" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       setDialogOpen(false);
-      setFormData({ full_name: "", email: "", role: "staff", phone: "", job_title: "", notes: "" });
-      toast.success("Usuario creado exitosamente");
+      setFormData({ full_name: "", email: "", role_id: "" });
+      toast.success("Empleado creado exitosamente");
     },
     onError: (error) => {
-      toast.error(error.message || "Error al crear usuario");
+      toast.error(error.message || "Error al crear empleado");
     }
   });
 
@@ -58,11 +60,11 @@ export default function SettingsUsers() {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       setDialogOpen(false);
       setEditingUser(null);
-      setFormData({ full_name: "", email: "", role: "staff", phone: "", job_title: "", notes: "" });
-      toast.success("Usuario actualizado exitosamente");
+      setFormData({ full_name: "", email: "", role_id: "" });
+      toast.success("Empleado actualizado exitosamente");
     },
     onError: (error) => {
-      toast.error(error.message || "Error al actualizar usuario");
+      toast.error(error.message || "Error al actualizar empleado");
     }
   });
 
@@ -81,46 +83,39 @@ export default function SettingsUsers() {
       setFormData({
         full_name: user.full_name,
         email: user.email,
-        role: user.role,
-        phone: user.phone || "",
-        job_title: user.job_title || "",
-        notes: user.notes || ""
+        role_id: user.role_id
       });
     } else {
       setEditingUser(null);
-      setFormData({ full_name: "", email: "", role: "staff", phone: "", job_title: "", notes: "" });
+      setFormData({ full_name: "", email: "", role_id: "" });
     }
     setDialogOpen(true);
   };
 
   const handleSaveUser = () => {
-    if (!formData.full_name.trim() || !formData.email.trim()) {
-      toast.error("Nombre y email son requeridos");
+    if (!formData.full_name.trim() || !formData.email.trim() || !formData.role_id) {
+      toast.error("Nombre, email y rol son requeridos");
       return;
     }
 
     if (editingUser) {
       updateUserMutation.mutate({ id: editingUser.id, data: formData });
     } else {
-      createUserMutation.mutate({ ...formData, status: "active" });
+      createUserMutation.mutate(formData);
     }
   };
 
   const handleToggleStatus = (user) => {
-    const newStatus = user.status === "active" ? "disabled" : "active";
-    const adminCount = users.filter(u => u.role === "admin" && u.status === "active").length;
-    
-    if (user.role === "admin" && adminCount === 1 && newStatus === "disabled") {
-      toast.error("No puedes desactivar el último administrador");
-      return;
-    }
-
+    const newStatus = user.status === "active" ? "blocked" : "active";
     toggleStatusMutation.mutate({ userId: user.id, newStatus });
   };
 
+  const getRoleName = (roleId) => {
+    const role = roles.find(r => r.id === roleId);
+    return role ? role.name : "-";
+  };
+
   const activeUsers = users.filter(u => u.status === "active");
-  const adminCount = users.filter(u => u.role === "admin" && u.status === "active").length;
-  const staffCount = users.filter(u => u.role === "staff" && u.status === "active").length;
 
   if (currentUser?.role !== 'admin') {
     return (
@@ -129,7 +124,7 @@ export default function SettingsUsers() {
           <div className="flex items-center gap-3">
             <AlertCircle className="h-5 w-5 text-amber-600" />
             <p className="text-amber-800">
-              Solo los administradores pueden acceder a esta página
+              Solo administradores pueden acceder aquí
             </p>
           </div>
         </CardContent>
@@ -143,7 +138,7 @@ export default function SettingsUsers() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Empleados</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Gestiona los usuarios internos de la empresa
+            Gestiona empleados internos de la empresa
           </p>
         </div>
         <Button onClick={() => handleOpenDialog()} className="gap-2">
@@ -153,7 +148,7 @@ export default function SettingsUsers() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <Card className="border-0 shadow-sm">
           <CardContent className="p-6">
             <p className="text-sm text-muted-foreground">Empleados Activos</p>
@@ -162,14 +157,8 @@ export default function SettingsUsers() {
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Administradores</p>
-            <p className="text-3xl font-bold mt-2">{adminCount}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Personal</p>
-            <p className="text-3xl font-bold mt-2">{staffCount}</p>
+            <p className="text-sm text-muted-foreground">Total</p>
+            <p className="text-3xl font-bold mt-2">{users.length}</p>
           </CardContent>
         </Card>
       </div>
@@ -177,13 +166,10 @@ export default function SettingsUsers() {
       {/* Users Table */}
       <Card className="border-0 shadow-sm">
         <CardHeader>
-          <div className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
-            <CardTitle className="text-base">Lista de Empleados</CardTitle>
-          </div>
-          <CardDescription className="text-xs">
-            Total: {users.length} usuario{users.length !== 1 ? 's' : ''}
-          </CardDescription>
+            Listado de Empleados
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -192,16 +178,15 @@ export default function SettingsUsers() {
                 <TableRow className="bg-secondary/30">
                   <TableHead>Nombre</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Puesto</TableHead>
                   <TableHead>Rol</TableHead>
-                  <TableHead className="w-20">Estado</TableHead>
-                  <TableHead className="w-32">Acciones</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="w-40">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
                       No hay empleados registrados
                     </TableCell>
                   </TableRow>
@@ -209,31 +194,15 @@ export default function SettingsUsers() {
                   users.map(user => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.full_name}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground flex items-center gap-2">
-                        <Mail className="h-3.5 w-3.5" />
-                        {user.email}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {user.job_title || "-"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={
-                          user.role === "admin" ? "bg-slate-800" :
-                          user.role === "staff" ? "bg-blue-100 text-blue-700" :
-                          "bg-gray-100 text-gray-700"
-                        }>
-                          {user.role === "admin" ? "Admin" : 
-                           user.role === "staff" ? "Personal" : 
-                           "Visualizador"}
-                        </Badge>
-                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{user.email}</TableCell>
+                      <TableCell className="text-sm">{getRoleName(user.role_id)}</TableCell>
                       <TableCell>
                         <Badge className={
                           user.status === "active" 
                             ? "bg-green-100 text-green-700" 
                             : "bg-red-100 text-red-700"
                         }>
-                          {user.status === "active" ? "Activo" : "Desactivado"}
+                          {user.status === "active" ? "Activo" : "Bloqueado"}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -250,9 +219,13 @@ export default function SettingsUsers() {
                             variant="ghost"
                             onClick={() => handleToggleStatus(user)}
                             className={user.status === "active" ? "text-red-600" : "text-green-600"}
-                            title={user.status === "active" ? "Desactivar" : "Activar"}
+                            title={user.status === "active" ? "Bloquear" : "Desbloquear"}
                           >
-                            <Power className="h-4 w-4" />
+                            {user.status === "active" ? (
+                              <Lock className="h-4 w-4" />
+                            ) : (
+                              <Unlock className="h-4 w-4" />
+                            )}
                           </Button>
                         </div>
                       </TableCell>
@@ -298,47 +271,19 @@ export default function SettingsUsers() {
             </div>
 
             <div>
-              <Label className="text-sm font-medium">Rol</Label>
-              <Select value={formData.role} onValueChange={(v) => setFormData({ ...formData, role: v })}>
+              <Label className="text-sm font-medium">Rol *</Label>
+              <Select value={formData.role_id} onValueChange={(v) => setFormData({ ...formData, role_id: v })}>
                 <SelectTrigger className="mt-1">
-                  <SelectValue />
+                  <SelectValue placeholder="Selecciona un rol" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Administrador</SelectItem>
-                  <SelectItem value="staff">Personal</SelectItem>
-                  <SelectItem value="viewer">Visualizador (solo lectura)</SelectItem>
+                  {roles.map(role => (
+                    <SelectItem key={role.id} value={role.id}>
+                      {role.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-            </div>
-
-            <div>
-              <Label className="text-sm font-medium">Puesto</Label>
-              <Input
-                placeholder="Ej: Gerente de Ventas"
-                value={formData.job_title}
-                onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label className="text-sm font-medium">Teléfono</Label>
-              <Input
-                placeholder="11 2000-0000"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label className="text-sm font-medium">Notas</Label>
-              <Input
-                placeholder="Información adicional..."
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="mt-1"
-              />
             </div>
           </div>
 
