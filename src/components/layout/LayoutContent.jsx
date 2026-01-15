@@ -180,24 +180,20 @@ export default function LayoutContent({ children, currentPageName }) {
       ]
     },
     {
-      id: "tesoreria",
-      name: "Finanzas",
-      section: "tesoreria",
-      icon: DollarSign,
-      permiso: "tesoreria",
-      items: [
-        { name: "Tesorería", page: "TesoreriaV2", icon: Landmark, permiso: "tesoreria" },
-        { name: "Cheques", page: "Cheques", icon: CreditCard, permiso: "cheques" },
-        { name: "Gastos", page: "Expenses", icon: DollarSign, permiso: "gastos" },
-        { name: "Dashboard Ejecutivo", page: "DashboardEjecutivo", icon: BarChart3, permiso: "analytics" },
-        { name: "Estado de Resultados", page: "EstadoResultados", icon: FileText, permiso: "analytics" },
-        { name: "Analytics", page: "Analytics", icon: TrendingUp, permiso: "analytics" },
-        { name: "Tablero Fiscal", page: "TableroFiscal", icon: FileText, permiso: "tablero_fiscal" },
-        { name: "IVA Mensual", page: "IVAMensual", icon: Percent, permiso: "iva_mensual" },
-        { name: "Ingresos Brutos", page: "IngresosBrutos", icon: Percent, permiso: "ingresos_brutos" },
-        { name: "Finanzas", page: "Finance", icon: DollarSign, permiso: "analytics" },
-      ]
-    },
+       id: "tesoreria",
+       name: "Finanzas",
+       section: "tesoreria",
+       icon: DollarSign,
+       permiso: "tesoreria",
+       items: [
+         { name: "Tesorería", page: "TesoreriaV2", icon: Landmark, permiso: "tesoreria" },
+         { name: "Cheques", page: "Cheques", icon: CreditCard, permiso: "cheques" },
+         { name: "Gastos", page: "Expenses", icon: DollarSign, permiso: "gastos" },
+         { name: "Dashboard Ejecutivo", page: "FinanzasHub", icon: BarChart3, permiso: "analytics" },
+         { name: "Estado de Resultados", page: "EstadoResultados", icon: FileText, permiso: "analytics" },
+         { name: "Analytics", page: "Analytics", icon: TrendingUp, permiso: "analytics" },
+       ]
+     },
     {
       id: "ajustes",
       name: "Ajustes",
