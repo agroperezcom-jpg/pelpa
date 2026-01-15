@@ -345,6 +345,113 @@ export default function Presupuestos() {
     cambiarEstadoMutation.mutate({ presupuestoId, nuevoEstado });
   };
 
+  const eliminarPresupuestoMutation = useMutation({
+    mutationFn: async (presupuestoId) => {
+      const presupuesto = presupuestos.find(p => p.id === presupuestoId);
+      
+      if (!presupuesto) {
+        throw new Error("Presupuesto no encontrado");
+      }
+
+      // 1. Eliminar proyecto si existe
+      if (presupuesto.proyecto_id) {
+        const proyecto = await base44.entities.Project.list();
+        const proyectoEncontrado = proyecto.find(pr => pr.id === presupuesto.proyecto_id);
+        
+        if (proyectoEncontrado) {
+          // Eliminar usando la función backend que maneja toda la eliminación del proyecto
+          try {
+            await base44.functions.invoke('deleteProject', {
+              projectId: presupuesto.proyecto_id
+            });
+          } catch (error) {
+            console.error('Error eliminando proyecto:', error);
+          }
+        }
+      }
+
+      // 2. Eliminar venta si existe
+      if (presupuesto.venta_id) {
+        // La venta será eliminada por el proyecto si está conectada
+        // Si no, eliminar manualmente
+        try {
+          await base44.entities.Sale.delete(presupuesto.venta_id);
+        } catch (error) {
+          console.error('Error eliminando venta:', error);
+        }
+      }
+
+      // 3. Eliminar movimientos de tesorería vinculados al presupuesto
+      const movimientos = await base44.entities.MovimientoTesoreria.filter({ referencia_id: presupuestoId });
+      for (const mov of movimientos) {
+        // Revertir saldos
+        if (mov.tipo === "INGRESO") {
+          if (mov.banco_id) {
+            const banco = bancos.find(b => b.id === mov.banco_id);
+            if (banco) {
+              await base44.entities.Banco.update(mov.banco_id, {
+                saldo_actual: banco.saldo_actual - mov.importe
+              });
+            }
+          }
+          if (mov.caja_id) {
+            const caja = cajas.find(c => c.id === mov.caja_id);
+            if (caja) {
+              await base44.entities.Caja.update(mov.caja_id, {
+                saldo_actual: caja.saldo_actual - mov.importe
+              });
+            }
+          }
+        }
+        await base44.entities.MovimientoTesoreria.delete(mov.id);
+      }
+
+      // 4. Eliminar registros de IVA vinculados
+      if (presupuesto.venta_id) {
+        const ivaVentas = await base44.entities.IVAVenta.filter({ venta_id: presupuesto.venta_id });
+        for (const iva of ivaVentas) {
+          await base44.entities.IVAVenta.delete(iva.id);
+        }
+      }
+
+      // 5. Eliminar registros de IIBB vinculados
+      if (presupuesto.venta_id) {
+        const iibbVentas = await base44.entities.IIBBVenta.filter({ venta_id: presupuesto.venta_id });
+        for (const iibb of iibbVentas) {
+          await base44.entities.IIBBVenta.delete(iibb.id);
+        }
+      }
+
+      // 6. Eliminar cancelaciones y devoluciones vinculadas
+      const cancelaciones = await base44.entities.CancelacionPresupuesto.filter({ presupuesto_id: presupuestoId });
+      for (const cancel of cancelaciones) {
+        const devoluciones = await base44.entities.DevolucionCobro.filter({ cancelacion_id: cancel.id });
+        for (const dev of devoluciones) {
+          await base44.entities.DevolucionCobro.delete(dev.id);
+        }
+        await base44.entities.CancelacionPresupuesto.delete(cancel.id);
+      }
+
+      // 7. Eliminar presupuesto
+      await base44.entities.Presupuesto.delete(presupuestoId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['presupuestos'] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['sales'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
+      queryClient.invalidateQueries({ queryKey: ['bancos'] });
+      queryClient.invalidateQueries({ queryKey: ['cajas'] });
+      queryClient.invalidateQueries({ queryKey: ['ivaVentas'] });
+      queryClient.invalidateQueries({ queryKey: ['iibbVentas'] });
+      setSelectedPresupuesto(null);
+      setIsDetailDialogOpen(false);
+    },
+    onError: (error) => {
+      alert(error.message);
+    }
+  });
+
   const cancelarPresupuestoMutation = useMutation({
     mutationFn: async ({ presupuestoId, tipoCancelacion, motivo, devoluciones }) => {
       const presupuesto = presupuestos.find(p => p.id === presupuestoId);
@@ -1185,6 +1292,18 @@ export default function Presupuestos() {
                   Cancelar Presupuesto
                 </Button>
               )}
+              <Button
+                variant="outline"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={() => {
+                  if (window.confirm(`¿ELIMINAR este presupuesto?\n\nEsto eliminará:\n- El presupuesto\n- El proyecto asociado (si existe)\n- La venta vinculada (si existe)\n- Todos los movimientos de tesorería\n\nEsta acción no se puede deshacer.`)) {
+                    eliminarPresupuestoMutation.mutate(selectedPresupuesto.id);
+                  }
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Eliminar
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
