@@ -132,82 +132,31 @@ export default function PrintPreview({ presupuesto, onClose }) {
         }
 
         @media print {
-          /* Hide everything by default */
-          body * {
+          .print-header {
             display: none !important;
-            visibility: hidden !important;
-          }
-
-          /* Show only the print wrapper and its contents */
-          .print-wrapper,
-          .print-wrapper * {
-            display: block !important;
-            visibility: visible !important;
           }
 
           .print-wrapper {
             position: static !important;
-            top: auto !important;
-            left: auto !important;
-            right: auto !important;
-            bottom: auto !important;
-            width: 100% !important;
-            height: auto !important;
-            background: white !important;
-            z-index: auto !important;
             overflow: visible !important;
+            background: white !important;
             margin: 0 !important;
             padding: 0 !important;
-            flex-direction: column !important;
-          }
-
-          .print-header {
-            display: none !important;
-            visibility: hidden !important;
-            height: 0 !important;
-            overflow: hidden !important;
-            margin: 0 !important;
           }
 
           .print-container {
-            flex: none !important;
-            overflow: visible !important;
-            background: white !important;
             padding: 0 !important;
-            display: block !important;
-            position: static !important;
-            width: 100% !important;
-            height: auto !important;
+            background: white !important;
+            overflow: visible !important;
           }
 
           .print-area {
-            position: static !important;
-            top: auto !important;
-            left: auto !important;
-            width: 100% !important;
-            height: auto !important;
             background: white !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            box-shadow: none !important;
-            border: none !important;
-            visibility: visible !important;
-            display: block !important;
           }
 
           @page {
             margin: 0 !important;
-            padding: 0 !important;
             size: A4 !important;
-          }
-
-          html,
-          body {
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 100% !important;
-            height: auto !important;
-            background: white !important;
           }
         }
       `}</style>
