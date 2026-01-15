@@ -285,12 +285,8 @@ export default function Sales() {
         }
       }
 
-      // 2. Eliminar TODOS los movimientos de tesorería relacionados con esta venta
-      // Buscar por referencia_id === ventaId (sin importar el tipo de referencia)
-      const todosMovimientos = await base44.entities.MovimientoTesoreria.list();
-      const movimientosVenta = todosMovimientos.filter(m => String(m.referencia_id) === String(ventaId));
-      
-      console.log(`Eliminando ${movimientosVenta.length} movimientos de tesorería de la venta ${ventaId}`);
+      // 2. ELIMINAR TODOS LOS MOVIMIENTOS DE TESORERÍA RELACIONADOS (BUSCAR POR referencia_id)
+      const movimientosVenta = await base44.entities.MovimientoTesoreria.filter({ referencia_id: ventaId });
       
       for (const mov of movimientosVenta) {
         // Revertir saldos según tipo de movimiento
@@ -331,6 +327,7 @@ export default function Sales() {
             }
           }
         }
+        // ELIMINAR el movimiento
         await base44.entities.MovimientoTesoreria.delete(mov.id);
       }
 
