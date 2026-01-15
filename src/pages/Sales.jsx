@@ -1809,6 +1809,15 @@ export default function Sales() {
         venta={ventaParaCuenta}
       />
 
+      {/* Print Preview */}
+      {isPrintPreviewOpen && ventaConfirmada && (
+        <PrintPreviewSales 
+          venta={ventaConfirmada} 
+          pagos={pagosConfirmados}
+          onClose={() => setIsPrintPreviewOpen(false)} 
+        />
+      )}
+
     </div>
   );
 }
