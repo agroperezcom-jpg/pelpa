@@ -240,9 +240,14 @@ export default function DashboardEjecutivo() {
   );
   const promedioVentasMes = (totalVentasMes + ventasMesAnterior.reduce((acc, s) => acc + s.total, 0)) / 2;
   const ventasProyectadas = promedioVentasMes;
+  
+  // Incluir gastos futuros (recurrentes) en proyecciones
+  const gastosFuturos = expenses.filter(e => !e.movimiento_tesoreria_id && e.is_recurring);
+  const totalGastosFuturos = gastosFuturos.reduce((acc, e) => acc + (e.amount || 0), 0);
+  
   const comprasProyectadas = totalComprasMes * 1.1; // 10% buffer
   const ivaProyectadoProximo = (ventasProyectadas / 1.21) * 0.21 * 0.7; // Estimado 70% con IVA
-  const flujoProyectado = ventasProyectadas * 0.8 - comprasProyectadas;
+  const flujoProyectado = (ventasProyectadas * 0.8 - comprasProyectadas) - totalGastosFuturos;
 
   // 7️⃣ ALERTAS
   const alertas = [];
