@@ -1310,18 +1310,29 @@ export default function Presupuestos() {
         </Dialog>
       )}
 
-      {/* Dialog Imprimir PDF */}
-      <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Printer className="h-5 w-5 text-blue-600" />
-              Imprimir Presupuesto
-            </DialogTitle>
-          </DialogHeader>
-          <PresupuestoPDF presupuesto={selectedPresupuesto} />
-        </DialogContent>
-      </Dialog>
+      {/* Print View */}
+      {isPrintDialogOpen && selectedPresupuesto && (
+        <div className="fixed inset-0 z-50 bg-white">
+          <div className="flex justify-end gap-2 p-4 bg-slate-100 border-b">
+            <Button 
+              onClick={() => window.print()}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Imprimir
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => setIsPrintDialogOpen(false)}
+            >
+              Cerrar
+            </Button>
+          </div>
+          <div className="overflow-auto h-[calc(100vh-60px)]">
+            <PresupuestoImpresion presupuesto={selectedPresupuesto} />
+          </div>
+        </div>
+      )}
 
       {/* Dialog Cobro de Presupuesto */}
       <CobroPresupuestoDialog
