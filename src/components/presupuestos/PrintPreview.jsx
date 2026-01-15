@@ -65,7 +65,7 @@ export default function PrintPreview({ presupuesto, onClose }) {
           </Button>
         </div>
 
-        <div className="flex-1 overflow-auto bg-slate-50 flex justify-center py-8">
+        <div className="print-container">
           <div className="print-area">
             {getFormatComponent()}
           </div>
