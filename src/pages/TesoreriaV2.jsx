@@ -36,7 +36,7 @@ export default function TesoreriaV2() {
 
   const { data: movimientos = [] } = useQuery({
     queryKey: ['movimientosTesoreria'],
-    queryFn: () => base44.entities.MovimientoTesoreria.list('-created_date', 50)
+    queryFn: () => base44.entities.MovimientoTesoreria.list('-created_date', 1000)
   });
 
   const { data: clientes = [] } = useQuery({

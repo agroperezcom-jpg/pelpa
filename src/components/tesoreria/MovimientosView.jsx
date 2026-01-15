@@ -60,7 +60,7 @@ export default function MovimientosView() {
 
   const { data: movimientos = [] } = useQuery({
     queryKey: ['movimientosTesoreria'],
-    queryFn: () => base44.entities.MovimientoTesoreria.list('-created_date', 100)
+    queryFn: () => base44.entities.MovimientoTesoreria.list('-created_date', 1000)
   });
 
   const { data: mediosPago = [] } = useQuery({
