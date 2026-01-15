@@ -158,7 +158,7 @@ export default function Purchases() {
         iva_21,
         total_compra,
         saldo_pendiente: saldoPendiente,
-        estado: "CONFIRMADA"
+        estado: saldoPendiente > 0.01 ? "PENDIENTE" : "PAGADA"
       });
 
       for (const detalle of detallesData) {
