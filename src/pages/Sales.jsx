@@ -285,15 +285,14 @@ export default function Sales() {
         }
       }
 
-      // 2. Eliminar movimientos de tesorería y revertir saldos
+      // 2. Eliminar TODOS los movimientos de tesorería relacionados con esta venta
       const todosMovimientos = await base44.entities.MovimientoTesoreria.list();
-      const movimientosVenta = todosMovimientos.filter(m => 
-        m.referencia_tipo === "venta" && m.referencia_id === ventaId
-      );
+      const movimientosVenta = todosMovimientos.filter(m => m.referencia_id === ventaId);
       
       for (const mov of movimientosVenta) {
+        // Revertir saldos según tipo de movimiento
         if (mov.tipo === "INGRESO") {
-          // Revertir ingreso
+          // Revertir ingreso (restar del saldo)
           if (mov.banco_id) {
             const banco = bancos.find(b => b.id === mov.banco_id);
             if (banco) {
@@ -307,6 +306,24 @@ export default function Sales() {
             if (caja) {
               await base44.entities.Caja.update(mov.caja_id, {
                 saldo_actual: caja.saldo_actual - mov.importe
+              });
+            }
+          }
+        } else if (mov.tipo === "EGRESO") {
+          // Revertir egreso (sumar al saldo)
+          if (mov.banco_id) {
+            const banco = bancos.find(b => b.id === mov.banco_id);
+            if (banco) {
+              await base44.entities.Banco.update(mov.banco_id, {
+                saldo_actual: banco.saldo_actual + mov.importe
+              });
+            }
+          }
+          if (mov.caja_id) {
+            const caja = cajas.find(c => c.id === mov.caja_id);
+            if (caja) {
+              await base44.entities.Caja.update(mov.caja_id, {
+                saldo_actual: caja.saldo_actual + mov.importe
               });
             }
           }
