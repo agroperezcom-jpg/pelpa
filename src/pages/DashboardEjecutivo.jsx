@@ -834,6 +834,16 @@ export default function DashboardEjecutivo() {
                 </div>
               </div>
 
+              <div className="p-4 bg-gradient-to-r from-violet-50 to-violet-100 rounded-lg border border-violet-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-violet-700 font-medium uppercase">Gastos Recurrentes Futuros</p>
+                    <p className="text-2xl font-bold text-violet-600 mt-1">${totalGastosFuturos.toLocaleString()}</p>
+                  </div>
+                  <Badge className="bg-violet-600">Sin pagar</Badge>
+                </div>
+              </div>
+
               <div className={`p-4 rounded-lg border-2 ${
                 flujoProyectado > 0 ? 'bg-emerald-50 border-emerald-300' : 'bg-red-50 border-red-300'
               }`}>
