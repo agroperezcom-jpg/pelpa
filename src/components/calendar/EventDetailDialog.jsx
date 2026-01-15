@@ -490,6 +490,7 @@ export default function EventDetailDialog({
 
         <div className="flex justify-between mt-6 pt-4 border-t">
           <div>
+            {/* Solo tareas libres pueden eliminarse desde el calendario */}
             {event.type === "freeTask" && onDelete && (
               <Button 
                 variant="destructive" 
@@ -499,6 +500,12 @@ export default function EventDetailDialog({
                 <Trash2 className="h-4 w-4" />
                 Eliminar
               </Button>
+            )}
+            {/* Tareas de proyecto solo se eliminan desde el módulo de proyectos */}
+            {event.type === "task" && (
+              <p className="text-xs text-muted-foreground py-2">
+                Esta tarea debe eliminarse desde Proyectos
+              </p>
             )}
           </div>
           <div className="flex gap-2">
