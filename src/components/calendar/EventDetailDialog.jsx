@@ -24,8 +24,6 @@ export default function EventDetailDialog({
   const [projectData, setProjectData] = useState(null);
   const [isLoadingProject, setIsLoadingProject] = useState(false);
 
-  if (!event) return null;
-
   // Fetch full project data when modal opens and event has project_id
   useEffect(() => {
     const fetchProjectData = async () => {
