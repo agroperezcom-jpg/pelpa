@@ -353,7 +353,7 @@ export default function LayoutContent({ children, currentPageName }) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto px-3 scrollbar-thin">
+          <nav className="flex-1 overflow-y-auto px-3 scrollbar-thin pb-4">
             {modules.map((module) => {
               const SectionIcon = sectionIcons[module.section];
               return (
