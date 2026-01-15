@@ -304,56 +304,56 @@ export default function LayoutContent({ children, currentPageName }) {
         sidebarOpen || sidebarPinned ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="h-14 flex items-center justify-between px-5 border-b border-slate-200/40 bg-white/50">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center">
-                <span className="text-white text-sm font-semibold">
-                  {nombreEmpresa.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <span 
-                className="font-semibold text-foreground tracking-tight"
-                style={{ fontFamily: fontFamilyMap[tipografiaLogo] }}
-              >
-                {nombreEmpresa}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => setSidebarPinned(!sidebarPinned)}
-                className="hidden sm:flex p-1.5 rounded-lg hover:bg-secondary transition-colors"
-                title={sidebarPinned ? "Desfijar" : "Fijar"}
-              >
-                {sidebarPinned ? (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
-                )}
-              </button>
-              <button 
-                onClick={() => setSidebarOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
-              >
-                <ChevronRight className="h-4 w-4 text-muted-foreground rotate-180" />
-              </button>
-            </div>
-          </div>
+           {/* Logo */}
+           <div className="h-14 flex items-center justify-between px-5 border-b border-slate-200/40 bg-white/50 shrink-0">
+             <div className="flex items-center gap-2.5">
+               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center">
+                 <span className="text-white text-sm font-semibold">
+                   {nombreEmpresa.charAt(0).toUpperCase()}
+                 </span>
+               </div>
+               <span 
+                 className="font-semibold text-foreground tracking-tight"
+                 style={{ fontFamily: fontFamilyMap[tipografiaLogo] }}
+               >
+                 {nombreEmpresa}
+               </span>
+             </div>
+             <div className="flex items-center gap-2">
+               <button 
+                 onClick={() => setSidebarPinned(!sidebarPinned)}
+                 className="hidden sm:flex p-1.5 rounded-lg hover:bg-secondary transition-colors"
+                 title={sidebarPinned ? "Desfijar" : "Fijar"}
+               >
+                 {sidebarPinned ? (
+                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                 ) : (
+                   <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
+                 )}
+               </button>
+               <button 
+                 onClick={() => setSidebarOpen(false)}
+                 className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
+               >
+                 <ChevronRight className="h-4 w-4 text-muted-foreground rotate-180" />
+               </button>
+             </div>
+           </div>
 
-          {/* Search */}
-          <div className="px-4 py-3">
-            <button
-              onClick={() => setCommandOpen(true)}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground bg-secondary/60 rounded-lg hover:bg-secondary transition-colors"
-            >
-              <Search className="h-4 w-4" />
-              <span className="flex-1 text-left">Buscar...</span>
-              <kbd className="hidden sm:inline-flex text-xs px-1.5 py-0.5 bg-background rounded border border-border/60">⌘K</kbd>
-            </button>
-          </div>
+           {/* Search */}
+           <div className="px-4 py-3 shrink-0">
+             <button
+               onClick={() => setCommandOpen(true)}
+               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground bg-secondary/60 rounded-lg hover:bg-secondary transition-colors"
+             >
+               <Search className="h-4 w-4" />
+               <span className="flex-1 text-left">Buscar...</span>
+               <kbd className="hidden sm:inline-flex text-xs px-1.5 py-0.5 bg-background rounded border border-border/60">⌘K</kbd>
+             </button>
+           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto px-3 scrollbar-thin pb-4">
+           {/* Navigation */}
+           <nav className="flex-1 overflow-y-auto px-3 scrollbar-thin">
             {modules.map((module) => {
               const SectionIcon = sectionIcons[module.section];
               return (
