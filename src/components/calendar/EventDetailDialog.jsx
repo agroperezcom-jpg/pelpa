@@ -48,6 +48,8 @@ export default function EventDetailDialog({
     fetchProjectData();
   }, [event?.project_id, event?.type, isOpen]);
 
+  if (!event) return null;
+
   const eventColor = getEventColor ? getEventColor(event) : "#64748b";
 
   const getStatusBadge = (status) => {
