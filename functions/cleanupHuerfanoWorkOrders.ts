@@ -9,26 +9,25 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    // Obtener todas las órdenes de trabajo
-    const allProjects = await base44.asServiceRole.entities.Project.list();
-    const workOrders = allProjects.filter(p => p.is_work_order);
+    // Obtener TODAS las tareas (ProjectTask)
+    const allTasks = await base44.asServiceRole.entities.ProjectTask.list('-created_date', 1000);
 
-    // Eliminar TODAS las órdenes de trabajo
+    // Eliminar TODAS las tareas
     let eliminadas = 0;
     const detalles = [];
-    for (const wo of workOrders) {
+    for (const task of allTasks) {
       try {
-        await base44.asServiceRole.entities.Project.delete(wo.id);
+        await base44.asServiceRole.entities.ProjectTask.delete(task.id);
         eliminadas++;
-        detalles.push({ id: wo.id, nombre: wo.name });
+        detalles.push({ id: task.id, nombre: task.name });
       } catch (error) {
-        console.error(`Error eliminando orden ${wo.id}:`, error.message);
+        console.error(`Error eliminando tarea ${task.id}:`, error.message);
       }
     }
 
     return Response.json({
       status: 'success',
-      message: `${eliminadas} órdenes de trabajo eliminadas`,
+      message: `${eliminadas} tareas eliminadas`,
       detalles
     });
   } catch (error) {
