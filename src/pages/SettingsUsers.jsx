@@ -6,14 +6,24 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Users, Clock, Power, Mail, Building2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Users, Plus, Power, Mail, AlertCircle } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function SettingsUsers() {
-  const [user, setUser] = useState(null);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [companyDialogOpen, setCompanyDialogOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [formData, setFormData] = useState({
+    full_name: "",
+    email: "",
+    role: "staff",
+    phone: "",
+    job_title: "",
+    notes: ""
+  });
   const queryClient = useQueryClient();
 
   const { data: users = [] } = useQuery({
@@ -21,152 +31,107 @@ export default function SettingsUsers() {
     queryFn: () => base44.entities.User.list()
   });
 
-  const { data: sessionLogs = [] } = useQuery({
-    queryKey: ['sessionLogs'],
-    queryFn: () => base44.entities.SessionLog.list('-login_time', 100)
-  });
-
-  const { data: roles = [] } = useQuery({
-    queryKey: ['roles'],
-    queryFn: () => base44.entities.Rol.list()
-  });
-
-  const { data: companies = [] } = useQuery({
-    queryKey: ['companies'],
-    queryFn: () => base44.entities.Company.list()
-  });
-
-  const { data: userCompanies = [] } = useQuery({
-    queryKey: ['userCompanies'],
-    queryFn: () => base44.entities.UserCompany.list()
-  });
-
   useEffect(() => {
     const loadUser = async () => {
-      const currentUser = await base44.auth.me();
-      setUser(currentUser);
+      const me = await base44.auth.me();
+      setCurrentUser(me);
     };
     loadUser();
   }, []);
 
-  const updateUserRolMutation = useMutation({
-    mutationFn: ({ userId, rolId, rolNombre }) => 
-      base44.entities.User.update(userId, { rol_id: rolId, rol_nombre: rolNombre }),
+  const createUserMutation = useMutation({
+    mutationFn: (userData) => base44.entities.User.create(userData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      setDialogOpen(false);
+      setFormData({ full_name: "", email: "", role: "staff", phone: "", job_title: "", notes: "" });
+      toast.success("Usuario creado exitosamente");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Error al crear usuario");
+    }
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.User.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setDialogOpen(false);
+      setEditingUser(null);
+      setFormData({ full_name: "", email: "", role: "staff", phone: "", job_title: "", notes: "" });
+      toast.success("Usuario actualizado exitosamente");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Error al actualizar usuario");
     }
   });
 
   const toggleStatusMutation = useMutation({
-    mutationFn: ({ userId, currentStatus }) => 
-      base44.entities.User.update(userId, { activo: !currentStatus }),
+    mutationFn: ({ userId, newStatus }) =>
+      base44.entities.User.update(userId, { status: newStatus }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success("Estado actualizado");
     }
   });
 
-  const handleUserRoleChange = (userId, value) => {
-    if (value === "none") {
-      updateUserRolMutation.mutate({ userId, rolId: null, rolNombre: null });
-    } else {
-      const rol = roles.find(r => r.id === value);
-      updateUserRolMutation.mutate({ userId, rolId: value, rolNombre: rol?.nombre });
-    }
-  };
-
-  const handleToggleUserStatus = (userId, currentStatus) => {
-    toggleStatusMutation.mutate({ userId, currentStatus });
-  };
-
-  const assignCompanyMutation = useMutation({
-    mutationFn: async ({ userEmail, userName, companyId, companyName }) => {
-      return await base44.entities.UserCompany.create({
-        user_email: userEmail,
-        user_name: userName,
-        company_id: companyId,
-        company_name: companyName,
-        assigned_by: user.email,
-        assigned_at: new Date().toISOString()
+  const handleOpenDialog = (user = null) => {
+    if (user) {
+      setEditingUser(user);
+      setFormData({
+        full_name: user.full_name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone || "",
+        job_title: user.job_title || "",
+        notes: user.notes || ""
       });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['userCompanies'] });
+    } else {
+      setEditingUser(null);
+      setFormData({ full_name: "", email: "", role: "staff", phone: "", job_title: "", notes: "" });
     }
-  });
-
-  const removeCompanyMutation = useMutation({
-    mutationFn: async ({ userEmail, companyId }) => {
-      const assignments = userCompanies.filter(
-        uc => uc.user_email === userEmail && uc.company_id === companyId
-      );
-      for (const assignment of assignments) {
-        await base44.entities.UserCompany.delete(assignment.id);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['userCompanies'] });
-    }
-  });
-
-  const getUserAssignedCompanies = (userEmail) => {
-    return userCompanies
-      .filter(uc => uc.user_email === userEmail)
-      .map(uc => uc.company_id);
+    setDialogOpen(true);
   };
 
-  const handleOpenCompanyDialog = (userData) => {
-    setSelectedUser(userData);
-    setCompanyDialogOpen(true);
+  const handleSaveUser = () => {
+    if (!formData.full_name.trim() || !formData.email.trim()) {
+      toast.error("Nombre y email son requeridos");
+      return;
+    }
+
+    if (editingUser) {
+      updateUserMutation.mutate({ id: editingUser.id, data: formData });
+    } else {
+      createUserMutation.mutate({ ...formData, status: "active" });
+    }
   };
 
-  const handleToggleCompany = async (companyId, companyName) => {
-    if (!selectedUser) return;
+  const handleToggleStatus = (user) => {
+    const newStatus = user.status === "active" ? "disabled" : "active";
+    const adminCount = users.filter(u => u.role === "admin" && u.status === "active").length;
     
-    const assignedCompanyIds = getUserAssignedCompanies(selectedUser.email);
-    const isAssigned = assignedCompanyIds.includes(companyId);
-
-    if (isAssigned) {
-      // Remove assignment (but only if user has more than one company)
-      if (assignedCompanyIds.length > 1) {
-        await removeCompanyMutation.mutateAsync({
-          userEmail: selectedUser.email,
-          companyId
-        });
-      } else {
-        alert("El usuario debe tener al menos una empresa asignada");
-      }
-    } else {
-      // Add assignment
-      await assignCompanyMutation.mutateAsync({
-        userEmail: selectedUser.email,
-        userName: selectedUser.full_name,
-        companyId,
-        companyName
-      });
+    if (user.role === "admin" && adminCount === 1 && newStatus === "disabled") {
+      toast.error("No puedes desactivar el último administrador");
+      return;
     }
+
+    toggleStatusMutation.mutate({ userId: user.id, newStatus });
   };
 
-  const admins = users.filter(u => u.role === 'admin').length;
-  const totalUsers = users.length;
+  const activeUsers = users.filter(u => u.status === "active");
+  const adminCount = users.filter(u => u.role === "admin" && u.status === "active").length;
+  const staffCount = users.filter(u => u.role === "staff" && u.status === "active").length;
 
-  const today = new Date().toISOString().split('T')[0];
-  const sessionsToday = sessionLogs.filter(log => log.login_time?.startsWith(today)).length;
-
-  const now = new Date();
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const sessionsThisMonth = sessionLogs.filter(log => {
-    if (!log.login_time) return false;
-    const logDate = new Date(log.login_time);
-    return logDate >= firstDayOfMonth;
-  }).length;
-
-  if (user?.role !== 'admin') {
+  if (currentUser?.role !== 'admin') {
     return (
       <Card className="border-l-4 border-l-amber-500 bg-amber-50">
         <CardContent className="p-6">
-          <p className="text-amber-800">
-            ⚠️ Solo los administradores pueden acceder a esta página
-          </p>
+          <div className="flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-amber-600" />
+            <p className="text-amber-800">
+              Solo los administradores pueden acceder a esta página
+            </p>
+          </div>
         </CardContent>
       </Card>
     );
@@ -174,31 +139,37 @@ export default function SettingsUsers() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Usuarios</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Gestiona usuarios, roles y asignaciones
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Empleados</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Gestiona los usuarios internos de la empresa
+          </p>
+        </div>
+        <Button onClick={() => handleOpenDialog()} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Nuevo Empleado
+        </Button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <Card className="border-0 shadow-sm">
           <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Total Usuarios</p>
-            <p className="text-3xl font-bold mt-2">{totalUsers}</p>
+            <p className="text-sm text-muted-foreground">Empleados Activos</p>
+            <p className="text-3xl font-bold mt-2">{activeUsers.length}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-6">
             <p className="text-sm text-muted-foreground">Administradores</p>
-            <p className="text-3xl font-bold mt-2">{admins}</p>
+            <p className="text-3xl font-bold mt-2">{adminCount}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Sesiones Hoy</p>
-            <p className="text-3xl font-bold mt-2">{sessionsToday}</p>
+            <p className="text-sm text-muted-foreground">Personal</p>
+            <p className="text-3xl font-bold mt-2">{staffCount}</p>
           </CardContent>
         </Card>
       </div>
@@ -208,211 +179,179 @@ export default function SettingsUsers() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
-            <CardTitle className="text-base">Usuarios del Sistema</CardTitle>
+            <CardTitle className="text-base">Lista de Empleados</CardTitle>
           </div>
           <CardDescription className="text-xs">
-            Gestión de usuarios y asignación de roles
+            Total: {users.length} usuario{users.length !== 1 ? 's' : ''}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-secondary/30">
-                <TableHead>Nombre</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Rol Sistema</TableHead>
-                <TableHead>Rol Personalizado</TableHead>
-                <TableHead>Empresas</TableHead>
-                <TableHead className="w-16">Estado</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map(u => {
-                const assignedCompanyIds = getUserAssignedCompanies(u.email);
-                const assignedCompanyNames = companies
-                  .filter(c => assignedCompanyIds.includes(c.id))
-                  .map(c => c.name);
-                
-                return (
-                  <TableRow key={u.id}>
-                    <TableCell className="font-medium">{u.full_name}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground flex items-center gap-2">
-                      <Mail className="h-3.5 w-3.5" />
-                      {u.email}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={u.role === 'admin' ? 'bg-slate-800 text-white' : 'bg-blue-100 text-blue-700'}>
-                        {u.role === 'admin' ? 'Admin' : 'Usuario'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {u.role === 'admin' ? (
-                        <span className="text-sm text-muted-foreground italic">Acceso total</span>
-                      ) : (
-                        <Select value={u.rol_id || "none"} onValueChange={(v) => handleUserRoleChange(u.id, v)}>
-                          <SelectTrigger className="w-48">
-                            <SelectValue placeholder="Sin asignar" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Sin rol personalizado</SelectItem>
-                            {roles.filter(r => !r.es_sistema).map(rol => (
-                              <SelectItem key={rol.id} value={rol.id}>{rol.nombre}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleOpenCompanyDialog(u)}
-                        className="gap-2"
-                      >
-                        <Building2 className="h-4 w-4" />
-                        {u.role === 'admin' ? (
-                          <span className="text-xs">Todas</span>
-                        ) : assignedCompanyNames.length > 0 ? (
-                          <span className="text-xs">{assignedCompanyNames.length} empresa{assignedCompanyNames.length > 1 ? 's' : ''}</span>
-                        ) : (
-                          <span className="text-xs text-red-600">Sin asignar</span>
-                        )}
-                      </Button>
-                    </TableCell>
-                    <TableCell>
-                      {u.role !== 'admin' && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleToggleUserStatus(u.id, u.activo !== false)}
-                          className={u.activo !== false ? "text-green-600" : "text-red-600"}
-                        >
-                          <Power className="h-4 w-4" />
-                        </Button>
-                      )}
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary/30">
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Puesto</TableHead>
+                  <TableHead>Rol</TableHead>
+                  <TableHead className="w-20">Estado</TableHead>
+                  <TableHead className="w-32">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                      No hay empleados registrados
                     </TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                ) : (
+                  users.map(user => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.full_name}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground flex items-center gap-2">
+                        <Mail className="h-3.5 w-3.5" />
+                        {user.email}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {user.job_title || "-"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={
+                          user.role === "admin" ? "bg-slate-800" :
+                          user.role === "staff" ? "bg-blue-100 text-blue-700" :
+                          "bg-gray-100 text-gray-700"
+                        }>
+                          {user.role === "admin" ? "Admin" : 
+                           user.role === "staff" ? "Personal" : 
+                           "Visualizador"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={
+                          user.status === "active" 
+                            ? "bg-green-100 text-green-700" 
+                            : "bg-red-100 text-red-700"
+                        }>
+                          {user.status === "active" ? "Activo" : "Desactivado"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleOpenDialog(user)}
+                          >
+                            Editar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleToggleStatus(user)}
+                            className={user.status === "active" ? "text-red-600" : "text-green-600"}
+                            title={user.status === "active" ? "Desactivar" : "Activar"}
+                          >
+                            <Power className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Company Assignment Dialog */}
-      <Dialog open={companyDialogOpen} onOpenChange={setCompanyDialogOpen}>
+      {/* User Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              Empresas asignadas
+            <DialogTitle>
+              {editingUser ? "Editar Empleado" : "Nuevo Empleado"}
             </DialogTitle>
           </DialogHeader>
-          
-          {selectedUser && (
-            <div className="space-y-4">
-              <div className="p-3 bg-secondary/30 rounded-lg">
-                <p className="text-sm font-medium">{selectedUser.full_name}</p>
-                <p className="text-xs text-muted-foreground">{selectedUser.email}</p>
-              </div>
 
-              {selectedUser.role === 'admin' ? (
-                <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    Este usuario es <strong>Administrador</strong> y tiene acceso a todas las empresas del sistema.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Selecciona las empresas a las que este usuario puede acceder:
-                  </p>
-                  
-                  {companies.map(company => {
-                    const assignedCompanyIds = getUserAssignedCompanies(selectedUser.email);
-                    const isAssigned = assignedCompanyIds.includes(company.id);
-                    
-                    return (
-                      <div key={company.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-secondary/20 transition-colors">
-                        <Checkbox
-                          checked={isAssigned}
-                          onCheckedChange={() => handleToggleCompany(company.id, company.name)}
-                        />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{company.name}</p>
-                          {company.legal_name && (
-                            <p className="text-xs text-muted-foreground">{company.legal_name}</p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {getUserAssignedCompanies(selectedUser.email).length === 0 && (
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                      <p className="text-sm text-amber-800">
-                        ⚠️ Este usuario no tiene empresas asignadas y no podrá acceder al sistema.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium">Nombre Completo *</Label>
+              <Input
+                placeholder="Juan García"
+                value={formData.full_name}
+                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                className="mt-1"
+              />
             </div>
-          )}
+
+            <div>
+              <Label className="text-sm font-medium">Email *</Label>
+              <Input
+                type="email"
+                placeholder="juan@empresa.com"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                disabled={editingUser ? true : false}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Rol</Label>
+              <Select value={formData.role} onValueChange={(v) => setFormData({ ...formData, role: v })}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Administrador</SelectItem>
+                  <SelectItem value="staff">Personal</SelectItem>
+                  <SelectItem value="viewer">Visualizador (solo lectura)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Puesto</Label>
+              <Input
+                placeholder="Ej: Gerente de Ventas"
+                value={formData.job_title}
+                onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Teléfono</Label>
+              <Input
+                placeholder="11 2000-0000"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Notas</Label>
+              <Input
+                placeholder="Información adicional..."
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveUser} disabled={createUserMutation.isPending || updateUserMutation.isPending}>
+              {editingUser ? "Guardar Cambios" : "Crear Empleado"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Session Logs */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-primary" />
-            <CardTitle className="text-base">Registro de Sesiones</CardTitle>
-          </div>
-          <CardDescription className="text-xs">
-            Últimas 50 sesiones de usuarios
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="p-4 bg-green-50 rounded-lg border border-green-100">
-              <p className="text-sm text-green-700">Sesiones Hoy</p>
-              <p className="text-2xl font-bold text-green-900 mt-1">{sessionsToday}</p>
-            </div>
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-              <p className="text-sm text-blue-700">Sesiones Este Mes</p>
-              <p className="text-2xl font-bold text-blue-900 mt-1">{sessionsThisMonth}</p>
-            </div>
-          </div>
-
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-secondary/30">
-                <TableHead>Usuario</TableHead>
-                <TableHead>Inicio</TableHead>
-                <TableHead>Fin</TableHead>
-                <TableHead>Duración</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sessionLogs.slice(0, 50).map(log => (
-                <TableRow key={log.id}>
-                  <TableCell className="font-medium">{log.user_name}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {log.login_time ? new Date(log.login_time).toLocaleString('es-AR') : '-'}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {log.logout_time ? new Date(log.logout_time).toLocaleString('es-AR') : 'En sesión'}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {log.duration_minutes ? `${log.duration_minutes} min` : '-'}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
     </div>
   );
 }
