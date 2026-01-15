@@ -423,7 +423,18 @@ export default function LayoutContent({ children, currentPageName }) {
       )}>
         <div className="pt-14 lg:pt-0">
           <header className="hidden lg:flex h-14 items-center justify-between px-6 border-b border-border/40 bg-card/60 backdrop-blur-sm sticky top-0 z-30 transition-theme">
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-4 text-sm">
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                title={sidebarCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
+              >
+                {sidebarCollapsed ? (
+                  <Menu className="h-5 w-5" />
+                ) : (
+                  <ChevronRight className="h-5 w-5 rotate-180" />
+                )}
+              </button>
               <span className="text-muted-foreground">
                 {modules.find(m => m.items.some(i => i.page === currentPageName))?.name}
               </span>
@@ -431,8 +442,7 @@ export default function LayoutContent({ children, currentPageName }) {
               <span className="font-medium text-foreground">
                 {allPages.find(p => p.page === currentPageName)?.name || "Dashboard"}
               </span>
-              </div>
-              </div>
+            </div>
             
             <div className="flex items-center gap-3">
               <button className="p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
