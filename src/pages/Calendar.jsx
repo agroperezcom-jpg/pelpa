@@ -3,8 +3,12 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Clock, TrendingUp, ShieldAlert } from "lucide-react";
+import { format } from "date-fns";
 
 import CalendarHeader from "@/components/calendar/CalendarHeader";
 import CalendarFilters from "@/components/calendar/CalendarFilters";
