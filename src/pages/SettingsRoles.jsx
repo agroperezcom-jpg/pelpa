@@ -203,13 +203,14 @@ export default function SettingsRoles() {
   };
 
   const handleSavePermissions = async () => {
-    setIsSaving(true);
-    await Promise.all([
-      ...Array.from(addPermissionMutation.variables || []),
-      ...Array.from(removePermissionMutation.variables || [])
-    ]);
-    setPendingChanges(false);
-    setIsSaving(false);
+   setIsSaving(true);
+   // Wait for mutations to complete
+   await Promise.all([
+     addPermissionMutation.isLoading ? new Promise(resolve => setTimeout(resolve, 500)) : Promise.resolve(),
+     removePermissionMutation.isLoading ? new Promise(resolve => setTimeout(resolve, 500)) : Promise.resolve()
+   ]);
+   setPendingChanges(false);
+   setIsSaving(false);
   };
 
   const getRolePermissionCount = (roleId) =>
