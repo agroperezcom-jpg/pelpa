@@ -27,6 +27,21 @@ export default function Projects() {
 
   const queryClient = useQueryClient();
 
+  // Leer el ID del proyecto de la URL
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectId = urlParams.get('id');
+    
+    if (projectId && projects.length > 0) {
+      const project = projects.find(p => p.id === projectId);
+      if (project) {
+        setSelectedProject(project);
+        // Limpiar el parámetro de la URL
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+  }, [projects]);
+
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
     queryFn: () => base44.entities.Project.list('-created_date', 200)
