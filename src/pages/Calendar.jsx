@@ -54,6 +54,8 @@ export default function Calendar() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState(null);
+  const [payExpenseDialog, setPayExpenseDialog] = useState(false);
+  const [expenseToPay, setExpenseToPay] = useState(null);
 
   const queryClient = useQueryClient();
   const { hasPermission, isAdmin, loading: permissionsLoading } = usePermissions();
@@ -151,6 +153,21 @@ export default function Calendar() {
   const { data: expenses = [] } = useQuery({
     queryKey: ['expenses'],
     queryFn: () => base44.entities.Expense.list('-created_date', 1000)
+  });
+
+  const { data: mediosPago = [] } = useQuery({
+    queryKey: ['mediosPago'],
+    queryFn: () => base44.entities.MedioPago.list()
+  });
+
+  const { data: bancos = [] } = useQuery({
+    queryKey: ['bancos'],
+    queryFn: () => base44.entities.Banco.list()
+  });
+
+  const { data: cajas = [] } = useQuery({
+    queryKey: ['cajas'],
+    queryFn: () => base44.entities.Caja.list()
   });
 
   const { data: calendarConfigs = [] } = useQuery({
@@ -536,7 +553,13 @@ export default function Calendar() {
   });
 
   const handleEventClick = (event) => {
-    // Abrir diálogo de detalles para todos los eventos
+    // Si es un gasto futuro, ir directamente a pagar
+    if (event.type === "expense" && !event.data?.movimiento_tesoreria_id) {
+      setExpenseToPay(event.data);
+      setPayExpenseDialog(true);
+      return;
+    }
+    // Abrir diálogo de detalles para otros eventos
     setSelectedEvent(event);
     setDetailDialogOpen(true);
   };
@@ -698,6 +721,104 @@ export default function Calendar() {
       console.error(error);
     }
   });
+
+  const payExpenseMutation = useMutation({
+    mutationFn: async ({ expenseId, payData }) => {
+      const expense = expenses.find(e => e.id === expenseId);
+      if (!expense) throw new Error("Gasto no encontrado");
+
+      const medio = mediosPago.find(m => m.id === payData.medio_pago_id);
+      if (!medio) throw new Error("Debe seleccionar un medio de pago");
+
+      const banco = bancos.find(b => b.id === payData.banco_id);
+      const caja = cajas.find(c => c.id === payData.caja_id);
+
+      // Crear movimiento de tesorería
+      const movimiento = await base44.entities.MovimientoTesoreria.create({
+        fecha: payData.fecha,
+        tipo: "EGRESO",
+        medio_pago_id: medio.id,
+        medio_pago_nombre: medio.nombre,
+        banco_id: payData.banco_id || null,
+        banco_nombre: banco?.nombre || "",
+        caja_id: payData.caja_id || null,
+        caja_nombre: caja?.nombre || "",
+        importe: expense.amount,
+        referencia_tipo: "gasto",
+        referencia_id: expenseId,
+        observaciones: `Gasto: ${expense.description}`
+      });
+
+      // Actualizar expense con movimiento
+      await base44.entities.Expense.update(expenseId, {
+        movimiento_tesoreria_id: movimiento.id
+      });
+
+      // Actualizar saldos
+      if (payData.banco_id && banco) {
+        await base44.entities.Banco.update(payData.banco_id, {
+          saldo_actual: banco.saldo_actual - expense.amount
+        });
+      }
+      if (payData.caja_id && caja) {
+        await base44.entities.Caja.update(payData.caja_id, {
+          saldo_actual: caja.saldo_actual - expense.amount
+        });
+      }
+
+      // Calcular y actualizar próxima fecha si es recurrente
+      if (expense.is_recurring && expense.recurring_frequency) {
+        const nextDate = calculateNextExpenseDate(expense.date, expense.recurring_frequency);
+        await base44.entities.Expense.update(expenseId, {
+          date: nextDate
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
+      queryClient.invalidateQueries({ queryKey: ['bancos'] });
+      queryClient.invalidateQueries({ queryKey: ['cajas'] });
+      setPayExpenseDialog(false);
+      setExpenseToPay(null);
+      toast.success('Gasto pagado correctamente');
+    },
+    onError: (error) => {
+      toast.error('Error: ' + error.message);
+    }
+  });
+
+  const calculateNextExpenseDate = (baseDate, frequency) => {
+    const date = new Date(baseDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (frequency === "mensual") {
+      const dayOfMonth = date.getDate();
+      let next = new Date(today);
+      next.setDate(dayOfMonth);
+      if (next <= today) next.setMonth(next.getMonth() + 1);
+      return next.toISOString().split('T')[0];
+    } else if (frequency === "trimestral") {
+      const baseMonth = date.getMonth();
+      const dayOfMonth = date.getDate();
+      let next = new Date(today);
+      const nextQuarterMonth = baseMonth + (Math.ceil((today.getMonth() - baseMonth) / 3) * 3);
+      next.setMonth(nextQuarterMonth);
+      next.setDate(dayOfMonth);
+      if (next <= today) next.setMonth(next.getMonth() + 3);
+      return next.toISOString().split('T')[0];
+    } else if (frequency === "anual") {
+      const month = date.getMonth();
+      const dayOfMonth = date.getDate();
+      let next = new Date(today);
+      next.setMonth(month);
+      next.setDate(dayOfMonth);
+      if (next <= today) next.setFullYear(next.getFullYear() + 1);
+      return next.toISOString().split('T')[0];
+    }
+    return baseDate;
+  };
 
   const saveConfigMutation = useMutation({
     mutationFn: async (configData) => {
@@ -1325,6 +1446,93 @@ export default function Calendar() {
         taskName={eventToDelete?.name}
         isRecurrenceInstance={eventToDelete?.is_recurrence_instance}
       />
+
+      {/* Pay Expense Dialog */}
+      <Dialog open={payExpenseDialog} onOpenChange={setPayExpenseDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Pagar Gasto</DialogTitle>
+          </DialogHeader>
+          {expenseToPay && (
+            <div className="space-y-4">
+              <div className="bg-blue-50 p-4 rounded-lg space-y-2">
+                <p className="text-xs text-blue-600 font-medium">DESCRIPCIÓN</p>
+                <p className="font-semibold text-lg">{expenseToPay.description}</p>
+                <p className="text-sm text-blue-600 font-bold">${expenseToPay.amount?.toLocaleString('es-AR')}</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Medio de Pago *</Label>
+                <select 
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                  onChange={(e) => setExpenseToPay({...expenseToPay, medio_pago_id: e.target.value, banco_id: "", caja_id: ""})}
+                  defaultValue={expenseToPay.medio_pago_id || ""}
+                >
+                  <option value="">Seleccionar</option>
+                  {mediosPago.map(m => (
+                    <option key={m.id} value={m.id}>{m.nombre}</option>
+                  ))}
+                </select>
+              </div>
+
+              {mediosPago.find(m => m.id === expenseToPay.medio_pago_id)?.requiere_banco && (
+                <div className="space-y-2">
+                  <Label>Banco *</Label>
+                  <select 
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                    onChange={(e) => setExpenseToPay({...expenseToPay, banco_id: e.target.value})}
+                    defaultValue={expenseToPay.banco_id || ""}
+                  >
+                    <option value="">Seleccionar</option>
+                    {bancos.map(b => (
+                      <option key={b.id} value={b.id}>{b.nombre} (${b.saldo_actual?.toLocaleString('es-AR')})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {mediosPago.find(m => m.id === expenseToPay.medio_pago_id)?.requiere_caja && (
+                <div className="space-y-2">
+                  <Label>Caja *</Label>
+                  <select 
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                    onChange={(e) => setExpenseToPay({...expenseToPay, caja_id: e.target.value})}
+                    defaultValue={expenseToPay.caja_id || ""}
+                  >
+                    <option value="">Seleccionar</option>
+                    {cajas.map(c => (
+                      <option key={c.id} value={c.id}>{c.nombre} (${c.saldo_actual?.toLocaleString('es-AR')})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPayExpenseDialog(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => {
+                if (expenseToPay?.medio_pago_id) {
+                  payExpenseMutation.mutate({
+                    expenseId: expenseToPay.id,
+                    payData: {
+                      medio_pago_id: expenseToPay.medio_pago_id,
+                      banco_id: expenseToPay.banco_id || null,
+                      caja_id: expenseToPay.caja_id || null,
+                      fecha: format(new Date(), 'yyyy-MM-dd')
+                    }
+                  });
+                }
+              }}
+              disabled={payExpenseMutation.isPending}
+            >
+              {payExpenseMutation.isPending ? 'Pagando...' : 'Pagar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Loading overlay during sync */}
       {isSyncing && (
