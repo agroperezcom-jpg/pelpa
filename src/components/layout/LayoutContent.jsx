@@ -412,7 +412,7 @@ export default function LayoutContent({ children, currentPageName }) {
 
           {/* User Section - ALWAYS show if externalUser exists */}
            {externalUser && (
-             <div className="p-3 border-t border-border/40 bg-secondary/30">
+             <div className="p-3 border-t border-border/40 space-y-3">
                <div className="flex items-center gap-3 px-3 py-2">
                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
                    <span className="text-sm font-medium text-slate-600">
@@ -427,14 +427,15 @@ export default function LayoutContent({ children, currentPageName }) {
                      {externalUser.email}
                    </p>
                  </div>
-                 <button
-                   onClick={handleLogout}
-                   className="p-2 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors flex-shrink-0"
-                   title="Cerrar sesión"
-                 >
-                   <LogOut className="h-5 w-5" />
-                 </button>
                </div>
+               <button
+                 onClick={handleLogout}
+                 className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-colors font-medium text-sm"
+                 title="Cerrar sesión"
+               >
+                 <LogOut className="h-4 w-4" />
+                 Cerrar sesión
+               </button>
              </div>
            )}
         </div>
