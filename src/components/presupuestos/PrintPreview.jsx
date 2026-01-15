@@ -36,9 +36,7 @@ export default function PrintPreview({ presupuesto, onClose }) {
 
   return (
     <>
-      {/* Print wrapper - fullscreen */}
       <div className="print-wrapper">
-        {/* Header - no-print */}
         <div className="no-print flex items-center justify-between gap-6 px-6 py-4 bg-slate-100 border-b">
           <div className="flex items-center gap-3 flex-1">
             <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Formato:</label>
@@ -67,7 +65,6 @@ export default function PrintPreview({ presupuesto, onClose }) {
           </div>
         </div>
 
-        {/* Content - always in DOM */}
         <div className="flex-1 overflow-auto bg-slate-50 flex justify-center py-8">
           <div className="print-area">
             {getFormatComponent()}
@@ -75,64 +72,94 @@ export default function PrintPreview({ presupuesto, onClose }) {
         </div>
       </div>
 
-      {/* Print styles */}
       <style>{`
+        * {
+          box-sizing: border-box;
+        }
+
         .print-wrapper {
-          position: fixed;
-          inset: 0;
-          background: #fff;
-          z-index: 9999;
-          padding: 0;
-          margin: 0;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          background: #f9fafb !important;
+          z-index: 99999 !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          display: flex !important;
+          flex-direction: column !important;
+          overflow: hidden !important;
+        }
+
+        .print-area {
+          visibility: visible !important;
+          position: relative !important;
+          margin: 0 !important;
+          padding: 0 !important;
         }
 
         .no-print {
           display: block !important;
+          visibility: visible !important;
         }
 
         @media print {
-          /* Hide everything */
-          body * {
-            visibility: hidden;
+          *,
+          *::before,
+          *::after {
+            visibility: hidden !important;
+            display: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
 
-          /* Show print area */
           .print-area,
-          .print-area * {
-            visibility: visible;
+          .print-area *,
+          .print-area *::before,
+          .print-area *::after {
+            visibility: visible !important;
+            display: block !important;
           }
 
-          /* Position print area */
           .print-area {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            background: white;
-            margin: 0;
-            padding: 0;
+            position: static !important;
+            top: auto !important;
+            left: auto !important;
+            width: 100% !important;
+            height: auto !important;
+            background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
           }
 
-          /* Hide no-print elements */
-          .no-print {
+          .no-print,
+          .no-print * {
             display: none !important;
             visibility: hidden !important;
           }
 
-          /* Page styles */
           @page {
-            margin: 0;
-            padding: 0;
+            margin: 0 !important;
+            padding: 0 !important;
+            size: auto !important;
           }
 
-          html, body {
-            width: 100%;
-            margin: 0;
-            padding: 0;
-            background: white;
+          html {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+          }
+
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            background: white !important;
           }
         }
       `}</style>
