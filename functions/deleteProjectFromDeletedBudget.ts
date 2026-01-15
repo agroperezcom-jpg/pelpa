@@ -3,15 +3,21 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { event, data } = await req.json();
+    const { event, data, old_data } = await req.json();
 
-    // Solo procesar eventos de eliminación
-    if (event.type !== 'delete') {
-      return Response.json({ status: 'ignored' });
+    let shouldDelete = false;
+
+    // Eliminar si se borra el presupuesto
+    if (event.type === 'delete' && data?.proyecto_id) {
+      shouldDelete = true;
     }
 
-    // Si el presupuesto tenía un proyecto asociado, eliminarlo
-    if (data?.proyecto_id) {
+    // Eliminar si el presupuesto es cancelado
+    if (event.type === 'update' && old_data?.estado !== 'CANCELADO' && data?.estado === 'CANCELADO' && data?.proyecto_id) {
+      shouldDelete = true;
+    }
+
+    if (shouldDelete) {
       try {
         await base44.asServiceRole.entities.Project.delete(data.proyecto_id);
       } catch (error) {
@@ -19,9 +25,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    return Response.json({ status: 'success', message: 'Proyecto eliminado si existía' });
+    return Response.json({ status: 'success' });
   } catch (error) {
-    console.error('Error en deleteProjectFromDeletedBudget:', error);
+    console.error('Error:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
