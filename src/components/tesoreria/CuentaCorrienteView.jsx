@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import { Users, Package, TrendingUp, TrendingDown, DollarSign, HandCoins } from "lucide-react";
+import { Users, Package, TrendingUp, TrendingDown, DollarSign, HandCoins, Trash2, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -159,6 +159,71 @@ export default function CuentaCorrienteView() {
       queryClient.invalidateQueries({ queryKey: ['cajas'] });
       setIsCobroDialogOpen(false);
       setFormData({ monto: "", medio_pago_id: "", banco_id: "", caja_id: "" });
+    }
+  });
+
+  const deleteMovimientoCCMutation = useMutation({
+    mutationFn: async (movimientoId) => {
+      const movimiento = movimientosCC.find(m => m.id === movimientoId);
+      if (!movimiento) throw new Error("Movimiento no encontrado");
+
+      // Revertir saldo de la entidad
+      if (movimiento.tipo_entidad === "PROVEEDOR") {
+        const proveedor = proveedores.find(p => p.id === movimiento.entidad_id);
+        if (proveedor) {
+          const ajusteSaldo = movimiento.haber - movimiento.debe;
+          await base44.entities.Proveedor.update(proveedor.id, {
+            saldo_cc: proveedor.saldo_cc + ajusteSaldo
+          });
+        }
+      } else if (movimiento.tipo_entidad === "CLIENTE") {
+        const cliente = clientes.find(c => c.id === movimiento.entidad_id);
+        if (cliente) {
+          const ajusteSaldo = movimiento.haber - movimiento.debe;
+          await base44.entities.Client.update(cliente.id, {
+            saldo_cc: cliente.saldo_cc + ajusteSaldo
+          });
+        }
+      }
+
+      // Buscar y revertir movimiento de tesorería relacionado si existe
+      const movimientosTesoreria = await base44.entities.MovimientoTesoreria.filter({
+        referencia_tipo: movimiento.referencia_tipo,
+        referencia_id: movimiento.referencia_id || ""
+      });
+
+      for (const movTes of movimientosTesoreria) {
+        if (movTes.banco_id) {
+          const banco = bancos.find(b => b.id === movTes.banco_id);
+          if (banco) {
+            const ajuste = movTes.tipo === "INGRESO" ? -movTes.importe : movTes.importe;
+            await base44.entities.Banco.update(movTes.banco_id, {
+              saldo_actual: banco.saldo_actual + ajuste
+            });
+          }
+        }
+        if (movTes.caja_id) {
+          const caja = cajas.find(c => c.id === movTes.caja_id);
+          if (caja) {
+            const ajuste = movTes.tipo === "INGRESO" ? -movTes.importe : movTes.importe;
+            await base44.entities.Caja.update(movTes.caja_id, {
+              saldo_actual: caja.saldo_actual + ajuste
+            });
+          }
+        }
+        await base44.entities.MovimientoTesoreria.delete(movTes.id);
+      }
+
+      // Eliminar el movimiento CC
+      await base44.entities.MovimientoCC.delete(movimientoId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['proveedores'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosCC'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
+      queryClient.invalidateQueries({ queryKey: ['bancos'] });
+      queryClient.invalidateQueries({ queryKey: ['cajas'] });
     }
   });
 
@@ -500,6 +565,7 @@ export default function CuentaCorrienteView() {
                   <TableHead className="text-right">Debe</TableHead>
                   <TableHead className="text-right">Haber</TableHead>
                   <TableHead className="text-right">Saldo</TableHead>
+                  <TableHead className="w-16"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -527,11 +593,24 @@ export default function CuentaCorrienteView() {
                       )}
                     </TableCell>
                     <TableCell className="text-right font-bold">${mov.saldo?.toLocaleString() || 0}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          if (window.confirm("¿Está seguro de eliminar este movimiento? Esta acción revertirá el saldo del proveedor y no se puede deshacer.")) {
+                            deleteMovimientoCCMutation.mutate(mov.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
                 {movimientosProveedores.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                    <TableCell colSpan={7} className="text-center py-8 text-slate-500">
                       No hay movimientos de cuenta corriente
                     </TableCell>
                   </TableRow>
