@@ -15,7 +15,6 @@ import PrintFormat80mm from "./PrintFormat80mm";
 export default function PrintPreview({ presupuesto, onClose }) {
   const [format, setFormat] = useState("a4");
 
-  // Bloquear scroll del body cuando esté abierto
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => {
@@ -37,107 +36,106 @@ export default function PrintPreview({ presupuesto, onClose }) {
 
   return (
     <>
-      {/* Overlay fullscreen */}
-      <div className="fixed inset-0 z-[9999] bg-white flex flex-col">
-        {/* Header - Solo en pantalla, nunca imprime */}
-        <div className="flex items-center justify-between gap-3 p-4 bg-slate-100 border-b no-print">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-slate-700">Formato:</label>
-              <Select value={format} onValueChange={setFormat}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="a4">A4 (Documento)</SelectItem>
-                  <SelectItem value="mobile">Mobile (WhatsApp)</SelectItem>
-                  <SelectItem value="80mm">80mm (Térmico)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      {/* Print wrapper - fullscreen */}
+      <div className="print-wrapper">
+        {/* Header - no-print */}
+        <div className="no-print flex items-center justify-between gap-3 p-4 bg-slate-100 border-b">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-slate-700">Formato:</label>
+            <Select value={format} onValueChange={setFormat}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="a4">A4 (Documento)</SelectItem>
+                <SelectItem value="mobile">Mobile (WhatsApp)</SelectItem>
+                <SelectItem value="80mm">80mm (Térmico)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex items-center gap-2">
             <Button
               onClick={() => window.print()}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="no-print bg-blue-600 hover:bg-blue-700"
             >
               <Printer className="h-4 w-4 mr-2" />
               Imprimir / PDF
             </Button>
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="outline" onClick={onClose} className="no-print">
               <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        {/* Contenido - Siempre renderizado en DOM */}
+        {/* Content - always in DOM */}
         <div className="flex-1 overflow-auto bg-slate-50 flex justify-center py-8">
-          <div className="print-container bg-white shadow-lg">
+          <div className="print-area">
             {getFormatComponent()}
           </div>
         </div>
       </div>
 
-      {/* CSS de impresión global */}
-      <style>
-        {`
-          @media print {
-            /* Paso 1: Ocultar todo */
-            * {
-              visibility: hidden;
-            }
+      {/* Print styles */}
+      <style>{`
+        .print-wrapper {
+          position: fixed;
+          inset: 0;
+          background: #fff;
+          z-index: 9999;
+          padding: 0;
+          margin: 0;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
 
-            /* Paso 2: Mostrar solo el contenedor de impresión */
-            .print-container,
-            .print-container * {
-              visibility: visible;
-            }
+        .no-print {
+          display: block !important;
+        }
 
-            /* Paso 3: Posicionar correctamente */
-            .print-container {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
-              margin: 0;
-              padding: 0;
-              box-shadow: none;
-              background: white;
-            }
-
-            /* Paso 4: Estilos de página */
-            @page {
-              size: auto;
-              margin: 0;
-            }
-
-            html, body {
-              width: 100%;
-              height: 100%;
-              margin: 0;
-              padding: 0;
-              background: white;
-            }
-
-            /* Paso 5: Evitar saltos de página innecesarios */
-            .print-container > * {
-              page-break-inside: avoid;
-            }
+        @media print {
+          /* Hide everything */
+          body * {
+            visibility: hidden;
           }
 
-          /* En pantalla: ocultar elementos no imprimibles */
+          /* Show print area */
+          .print-area,
+          .print-area * {
+            visibility: visible;
+          }
+
+          /* Position print area */
+          .print-area {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            margin: 0;
+            padding: 0;
+          }
+
+          /* Hide no-print elements */
           .no-print {
             display: none !important;
+            visibility: hidden !important;
           }
 
-          @media print {
-            .no-print {
-              display: none !important;
-              visibility: hidden !important;
-            }
+          /* Page styles */
+          @page {
+            margin: 0;
+            padding: 0;
           }
-        `}
-      </style>
+
+          html, body {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            background: white;
+          }
+        }
+      `}</style>
     </>
   );
 }
