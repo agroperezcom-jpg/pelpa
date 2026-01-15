@@ -109,7 +109,7 @@ export default function PrintPreview({ presupuesto, onClose }) {
             </div>
           </div>
           <Button
-            onClick={() => window.print()}
+            onClick={handlePrint}
             className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap flex-shrink-0"
           >
             <Printer className="h-4 w-4 mr-2" />
