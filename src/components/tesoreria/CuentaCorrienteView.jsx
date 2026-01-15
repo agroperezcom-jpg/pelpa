@@ -466,7 +466,7 @@ export default function CuentaCorrienteView() {
                       {mov.debe > 0 && (
                         <span className="text-red-600 font-medium flex items-center justify-end gap-1">
                           <TrendingUp className="h-3 w-3" />
-                          ${mov.debe.toLocaleString()}
+                          {formatCurrency(mov.debe, false)}
                         </span>
                       )}
                     </TableCell>
@@ -474,14 +474,14 @@ export default function CuentaCorrienteView() {
                       {mov.haber > 0 && (
                         <span className="text-green-600 font-medium flex items-center justify-end gap-1">
                           <TrendingDown className="h-3 w-3" />
-                          ${mov.haber.toLocaleString()}
+                          {formatCurrency(mov.haber, false)}
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right font-bold">${mov.saldo?.toLocaleString() || 0}</TableCell>
-                  </TableRow>
-                ))}
-                {movimientosClientes.length === 0 && (
+                    <TableCell className="text-right font-bold">{formatCurrency(mov.saldo || 0)}</TableCell>
+                    </TableRow>
+                    ))}
+                    {movimientosClientes.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-slate-500">
                       No hay movimientos de cuenta corriente
@@ -581,7 +581,7 @@ export default function CuentaCorrienteView() {
                       {mov.debe > 0 && (
                         <span className="text-red-600 font-medium flex items-center justify-end gap-1">
                           <TrendingUp className="h-3 w-3" />
-                          ${mov.debe.toLocaleString()}
+                          {formatCurrency(mov.debe, false)}
                         </span>
                       )}
                     </TableCell>
@@ -589,11 +589,11 @@ export default function CuentaCorrienteView() {
                       {mov.haber > 0 && (
                         <span className="text-green-600 font-medium flex items-center justify-end gap-1">
                           <TrendingDown className="h-3 w-3" />
-                          ${mov.haber.toLocaleString()}
+                          {formatCurrency(mov.haber, false)}
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right font-bold">${mov.saldo?.toLocaleString() || 0}</TableCell>
+                    <TableCell className="text-right font-bold">{formatCurrency(mov.saldo || 0)}</TableCell>
                     <TableCell>
                       <Button
                         variant="ghost"
@@ -639,10 +639,10 @@ export default function CuentaCorrienteView() {
                 placeholder="0.00"
                 required
               />
-              <p className="text-xs text-slate-500">Saldo actual: ${selectedEntity?.saldo_cc?.toLocaleString()}</p>
-            </div>
+              <p className="text-xs text-slate-500">Saldo actual: {formatCurrency(selectedEntity?.saldo_cc || 0)}</p>
+              </div>
 
-            <div className="space-y-2">
+              <div className="space-y-2">
               <Label>Medio de Pago *</Label>
               <Select value={formData.medio_pago_id} onValueChange={(v) => setFormData({ ...formData, medio_pago_id: v, banco_id: "", caja_id: "" })}>
                 <SelectTrigger>
@@ -654,9 +654,9 @@ export default function CuentaCorrienteView() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+              </div>
 
-            {medioSeleccionado?.requiere_banco && (
+              {medioSeleccionado?.requiere_banco && (
               <div className="space-y-2">
                 <Label>Banco *</Label>
                 <Select value={formData.banco_id} onValueChange={(v) => setFormData({ ...formData, banco_id: v })}>
@@ -670,9 +670,9 @@ export default function CuentaCorrienteView() {
                   </SelectContent>
                 </Select>
               </div>
-            )}
+              )}
 
-            {medioSeleccionado?.requiere_caja && (
+              {medioSeleccionado?.requiere_caja && (
               <div className="space-y-2">
                 <Label>Caja *</Label>
                 <Select value={formData.caja_id} onValueChange={(v) => setFormData({ ...formData, caja_id: v })}>
@@ -686,28 +686,28 @@ export default function CuentaCorrienteView() {
                   </SelectContent>
                 </Select>
               </div>
-            )}
+              )}
 
-            <DialogFooter>
+              <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsCobroDialogOpen(false)}>
                 Cancelar
               </Button>
               <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
                 Registrar Cobro
               </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+              </DialogFooter>
+              </form>
+              </DialogContent>
+              </Dialog>
 
-      {/* Dialog Pagar Proveedor */}
-      <Dialog open={isPagoDialogOpen} onOpenChange={setIsPagoDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Pagar a {selectedEntity?.nombre}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={(e) => { e.preventDefault(); pagarProveedorMutation.mutate(formData); }} className="space-y-4">
-            <div className="space-y-2">
+              {/* Dialog Pagar Proveedor */}
+              <Dialog open={isPagoDialogOpen} onOpenChange={setIsPagoDialogOpen}>
+              <DialogContent className="max-w-md">
+              <DialogHeader>
+              <DialogTitle>Pagar a {selectedEntity?.nombre}</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={(e) => { e.preventDefault(); pagarProveedorMutation.mutate(formData); }} className="space-y-4">
+              <div className="space-y-2">
               <Label>Monto a Pagar *</Label>
               <Input
                 type="number"
@@ -717,7 +717,7 @@ export default function CuentaCorrienteView() {
                 placeholder="0.00"
                 required
               />
-              <p className="text-xs text-slate-500">Saldo actual: ${selectedEntity?.saldo_cc?.toLocaleString()}</p>
+              <p className="text-xs text-slate-500">Saldo actual: {formatCurrency(selectedEntity?.saldo_cc || 0)}</p>
             </div>
 
             <div className="space-y-2">
