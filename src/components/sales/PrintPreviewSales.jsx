@@ -94,6 +94,26 @@ export default function PrintPreviewSales({ venta, pagos, onClose }) {
           overflow: hidden !important;
         }
 
+        .print-header {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          gap: 1.5rem !important;
+          padding: 1rem 1.5rem !important;
+          background: #f3f4f6 !important;
+          border-bottom: 1px solid #e5e7eb !important;
+          flex-shrink: 0 !important;
+        }
+
+        .print-container {
+          flex: 1 !important;
+          overflow: auto !important;
+          background: #f9fafb !important;
+          display: flex !important;
+          justify-content: center !important;
+          padding: 2rem !important;
+        }
+
         .print-area {
           visibility: visible !important;
           position: relative !important;
@@ -101,12 +121,24 @@ export default function PrintPreviewSales({ venta, pagos, onClose }) {
           padding: 0 !important;
         }
 
-        .no-print {
-          display: block !important;
-          visibility: visible !important;
-        }
-
         @media print {
+          .print-header {
+            display: none !important;
+            visibility: hidden !important;
+            position: absolute !important;
+            top: -10000px !important;
+            left: -10000px !important;
+            height: 0 !important;
+            width: 0 !important;
+            overflow: hidden !important;
+          }
+
+          .print-container {
+            padding: 0 !important;
+            background: white !important;
+            position: static !important;
+          }
+
           *,
           *::before,
           *::after {
@@ -135,12 +167,6 @@ export default function PrintPreviewSales({ venta, pagos, onClose }) {
             padding: 0 !important;
             box-shadow: none !important;
             border: none !important;
-          }
-
-          .no-print,
-          .no-print * {
-            display: none !important;
-            visibility: hidden !important;
           }
 
           @page {
