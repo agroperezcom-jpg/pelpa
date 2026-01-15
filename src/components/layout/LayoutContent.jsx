@@ -274,12 +274,23 @@ export default function LayoutContent({ children, currentPageName }) {
           {allPages.find(p => p.page === currentPageName)?.name || "Dashboard"}
         </span>
         
-        <button 
-          onClick={() => setCommandOpen(true)}
-          className="p-2 -mr-2 rounded-lg hover:bg-secondary transition-colors"
-        >
-          <Search className="h-5 w-5 text-muted-foreground" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setCommandOpen(true)}
+            className="p-2 rounded-lg hover:bg-secondary transition-colors"
+          >
+            <Search className="h-5 w-5 text-muted-foreground" />
+          </button>
+          {externalUser && (
+            <button 
+              onClick={handleLogout}
+              className="p-2 rounded-lg hover:bg-red-50 text-red-500 hover:text-red-700 transition-colors"
+              title="Cerrar sesión"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Mobile Sidebar Overlay */}
