@@ -9,6 +9,7 @@ import ConfiguracionImpresoras from "../components/settings/ConfiguracionImpreso
 import PlanDeCuentas from "../components/settings/PlanDeCuentas";
 import CompanyConfiguration from "../components/settings/CompanyConfiguration";
 import SettingsUsers from "./SettingsUsers";
+import SettingsRoles from "./SettingsRoles";
 
 export default function Settings() {
   const [activeView, setActiveView] = useState("empresa");
@@ -34,6 +35,7 @@ export default function Settings() {
              <SelectItem value="tema">Tema Visual</SelectItem>
              <SelectItem value="regional">Configuración Regional</SelectItem>
              <SelectItem value="usuarios">Empleados</SelectItem>
+             <SelectItem value="roles">Roles y Permisos</SelectItem>
              <SelectItem value="proyectos">Proyectos</SelectItem>
              <SelectItem value="impresoras">Impresoras</SelectItem>
              <SelectItem value="plan_cuentas">Plan de Cuentas</SelectItem>
@@ -60,6 +62,8 @@ export default function Settings() {
          {activeView === "regional" && <RegionalConfig />}
 
          {activeView === "usuarios" && <SettingsUsers />}
+
+         {activeView === "roles" && <SettingsRoles />}
 
          {activeView === "proyectos" && <ConfiguracionProyectos />}
 
