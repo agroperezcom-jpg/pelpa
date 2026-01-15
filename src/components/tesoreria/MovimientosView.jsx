@@ -42,6 +42,8 @@ import { formatCurrency } from "@/components/utils/formatCurrency";
 
 export default function MovimientosView() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedMovimiento, setSelectedMovimiento] = useState(null);
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
   const [tipoFiltro, setTipoFiltro] = useState("todos");
