@@ -10,12 +10,12 @@ Deno.serve(async (req) => {
     }
 
     // Obtener todas las órdenes de trabajo
-    const workOrders = await base44.asServiceRole.entities.Project.list();
-    const projects = await base44.asServiceRole.entities.Project.list();
-    const projectIds = new Set(projects.map(p => p.id));
+    const allProjects = await base44.asServiceRole.entities.Project.list();
+    const workOrders = allProjects.filter(p => p.is_work_order);
+    const validProjectIds = new Set(allProjects.filter(p => !p.is_work_order).map(p => p.id));
 
-    // Identificar órdenes huérfanas (sin proyecto válido)
-    const huerfanas = workOrders.filter(wo => wo.is_work_order && (!wo.project_id || !projectIds.has(wo.project_id)));
+    // Identificar órdenes huérfanas (cuyo proyecto no existe o fue eliminado)
+    const huerfanas = workOrders.filter(wo => !wo.project_id || !validProjectIds.has(wo.project_id));
 
     let eliminadas = 0;
     for (const wo of huerfanas) {
