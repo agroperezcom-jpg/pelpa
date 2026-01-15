@@ -23,16 +23,18 @@ export default function PresupuestoPDF({ presupuesto, onPrint }) {
       <style>
         {`
           @media print {
-            body {
+            * {
               margin: 0 !important;
               padding: 0 !important;
+            }
+            body {
               background: white !important;
             }
-            html, body {
+            html, body, main, [role="presentation"] {
               width: 100% !important;
-              height: 100% !important;
+              height: auto !important;
             }
-            .no-print {
+            .no-print, [role="dialog"], [role="dialog"] ~ *, button[aria-label*="Close"], button[aria-label*="close"], .fixed, .absolute {
               display: none !important;
             }
             .presupuesto-print {
@@ -41,7 +43,13 @@ export default function PresupuestoPDF({ presupuesto, onPrint }) {
               box-shadow: none !important;
               border: none !important;
               width: 100% !important;
+              max-width: 210mm !important;
               page-break-after: avoid;
+              background: white !important;
+            }
+            .presupuesto-print, .presupuesto-print * {
+              box-shadow: none !important;
+              border-radius: 0 !important;
             }
           }
         `}
