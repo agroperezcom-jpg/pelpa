@@ -53,6 +53,8 @@ export default function SettingsRoles() {
   const [formData, setFormData] = useState({ name: "", description: "" });
   const [confirmDialog, setConfirmDialog] = useState({ open: false, role: null });
   const [selectedPermissions, setSelectedPermissions] = useState(new Set());
+  const [pendingChanges, setPendingChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -178,40 +180,36 @@ export default function SettingsRoles() {
   const handleTogglePermission = (permissionId) => {
     if (!selectedRole) return;
 
+    setPendingChanges(true);
+
     const rolePermission = rolePermissions.find(
       (rp) => rp.role_id === selectedRole.id && rp.permission_id === permissionId
     );
 
     if (rolePermission) {
-      // Optimistic update
+      removePermissionMutation.mutate(rolePermission.id);
       setSelectedPermissions(prev => {
         const next = new Set(prev);
         next.delete(permissionId);
         return next;
       });
-      removePermissionMutation.mutate(rolePermissionId, {
-        onError: () => {
-          // Revertir en caso de error
-          setSelectedPermissions(prev => new Set(prev).add(permissionId));
-        },
-      });
     } else {
-      // Optimistic update
+      addPermissionMutation.mutate({
+        role_id: selectedRole.id,
+        permission_id: permissionId,
+      });
       setSelectedPermissions(prev => new Set(prev).add(permissionId));
-      addPermissionMutation.mutate(
-        { role_id: selectedRole.id, permission_id: permissionId },
-        {
-          onError: () => {
-            // Revertir en caso de error
-            setSelectedPermissions(prev => {
-              const next = new Set(prev);
-              next.delete(permissionId);
-              return next;
-            });
-          },
-        }
-      );
     }
+  };
+
+  const handleSavePermissions = async () => {
+    setIsSaving(true);
+    await Promise.all([
+      ...Array.from(addPermissionMutation.variables || []),
+      ...Array.from(removePermissionMutation.variables || [])
+    ]);
+    setPendingChanges(false);
+    setIsSaving(false);
   };
 
   const getRolePermissionCount = (roleId) =>
@@ -291,6 +289,17 @@ export default function SettingsRoles() {
                     )}
                   </div>
                   <div className="flex gap-2">
+                    {pendingChanges && (
+                      <Button
+                        size="sm"
+                        onClick={handleSavePermissions}
+                        disabled={isSaving}
+                        className="gap-1 bg-green-600 hover:bg-green-700"
+                      >
+                        <Check className="h-4 w-4" />
+                        Guardar
+                      </Button>
+                    )}
                     {!selectedRole.is_system_role && (
                       <>
                         <Button
