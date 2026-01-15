@@ -8,6 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -29,7 +36,7 @@ import { Users, Plus, Edit2, Lock, Unlock, Trash2 } from "lucide-react";
 export default function SettingsUsers() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [formData, setFormData] = useState({ full_name: "", email: "" });
+  const [formData, setFormData] = useState({ full_name: "", email: "", role_id: "" });
   const [confirmDialog, setConfirmDialog] = useState({ open: false, user: null, action: null });
 
   const queryClient = useQueryClient();
@@ -37,6 +44,11 @@ export default function SettingsUsers() {
   const { data: employees = [] } = useQuery({
     queryKey: ["employees"],
     queryFn: () => base44.entities.User.list("-created_date"),
+  });
+
+  const { data: roles = [] } = useQuery({
+    queryKey: ["roles"],
+    queryFn: () => base44.entities.Role.list("-created_date"),
   });
 
   const createMutation = useMutation({
@@ -79,10 +91,10 @@ export default function SettingsUsers() {
   const handleOpenDialog = (user = null) => {
     if (user) {
       setEditingUser(user);
-      setFormData({ full_name: user.full_name, email: user.email });
+      setFormData({ full_name: user.full_name, email: user.email, role_id: user.role_id || "" });
     } else {
       setEditingUser(null);
-      setFormData({ full_name: "", email: "" });
+      setFormData({ full_name: "", email: "", role_id: "" });
     }
     setDialogOpen(true);
   };
@@ -192,8 +204,14 @@ export default function SettingsUsers() {
                       {employee.status === "active" ? "Activo" : "Bloqueado"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {employee.role_id ? employee.role_id : "—"}
+                  <TableCell className="text-sm">
+                    {employee.role_id ? (
+                      <Badge variant="secondary">
+                        {roles.find((r) => r.id === employee.role_id)?.name || "—"}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
