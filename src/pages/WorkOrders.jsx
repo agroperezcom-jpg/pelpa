@@ -56,7 +56,7 @@ export default function WorkOrders() {
     total: allTasks.length,
     inProgress: allTasks.filter(task => task.status === 'en_progreso').length,
     pending: allTasks.filter(task => task.status === 'pendiente').length,
-    completed: allTasks.filter(task => task.status === 'completada').length
+    completed: allTasks.filter(task => task.status === 'finalizada').length
   };
 
   if (selectedTask) {
@@ -132,7 +132,7 @@ export default function WorkOrders() {
                 <SelectItem value="all">Todos los estados</SelectItem>
                 <SelectItem value="pendiente">Pendiente</SelectItem>
                 <SelectItem value="en_progreso">En progreso</SelectItem>
-                <SelectItem value="completada">Completada</SelectItem>
+                <SelectItem value="finalizada">Completada</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -178,12 +178,14 @@ export default function WorkOrders() {
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         <span className={`px-2.5 py-1 text-xs font-medium rounded-md ${
-                          task.status === 'completada' ? 'bg-green-100 text-green-700' :
+                          task.status === 'finalizada' ? 'bg-green-100 text-green-700' :
                           task.status === 'en_progreso' ? 'bg-orange-100 text-orange-700' :
+                          task.status === 'bloqueada' ? 'bg-red-100 text-red-700' :
                           'bg-amber-100 text-amber-700'
                         }`}>
-                          {task.status === 'completada' ? 'Completada' :
+                          {task.status === 'finalizada' ? 'Completada' :
                            task.status === 'en_progreso' ? 'En progreso' :
+                           task.status === 'bloqueada' ? 'Bloqueada' :
                            'Pendiente'}
                         </span>
                         {task.due_date && (
