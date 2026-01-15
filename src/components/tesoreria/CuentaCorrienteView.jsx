@@ -162,6 +162,11 @@ export default function CuentaCorrienteView() {
     }
   });
 
+  const { data: compras = [] } = useQuery({
+    queryKey: ['compras'],
+    queryFn: () => base44.entities.Compra.list('-fecha', 500)
+  });
+
   const pagarProveedorMutation = useMutation({
     mutationFn: async (data) => {
       const medio = mediosPago.find(m => m.id === data.medio_pago_id);
@@ -175,7 +180,7 @@ export default function CuentaCorrienteView() {
         entidad_id: proveedor.id,
         entidad_nombre: proveedor.nombre,
         fecha: new Date().toISOString().split('T')[0],
-        concepto: `Pago - ${medio.nombre}`,
+        concepto: `Pago - Efectivo`,
         debe: 0,
         haber: monto,
         saldo: nuevoSaldo,
@@ -185,6 +190,21 @@ export default function CuentaCorrienteView() {
 
       // Actualizar saldo del proveedor
       await base44.entities.Proveedor.update(proveedor.id, { saldo_cc: nuevoSaldo });
+
+      // Actualizar estados de compras del proveedor si el saldo llega a cero
+      if (Math.abs(nuevoSaldo) < 0.01) {
+        const comprasProveedor = compras.filter(c => 
+          c.proveedor_id === proveedor.id && 
+          (c.estado === "PENDIENTE" || c.estado === "PARCIAL")
+        );
+        
+        for (const compra of comprasProveedor) {
+          await base44.entities.Compra.update(compra.id, {
+            saldo_pendiente: 0,
+            estado: "PAGADA"
+          });
+        }
+      }
 
       // Crear MovimientoTesoreria (EGRESO)
       const banco = bancos.find(b => b.id === data.banco_id);
@@ -222,6 +242,7 @@ export default function CuentaCorrienteView() {
       queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
       queryClient.invalidateQueries({ queryKey: ['bancos'] });
       queryClient.invalidateQueries({ queryKey: ['cajas'] });
+      queryClient.invalidateQueries({ queryKey: ['compras'] });
       setIsPagoDialogOpen(false);
       setFormData({ monto: "", medio_pago_id: "", banco_id: "", caja_id: "" });
     }
