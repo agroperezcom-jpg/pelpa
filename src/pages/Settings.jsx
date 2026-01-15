@@ -34,7 +34,6 @@ import ThemeSelector from "../components/theme/ThemeSelector";
 import RegionalConfig from "../components/settings/RegionalConfig";
 import ConfiguracionImpresoras from "../components/settings/ConfiguracionImpresoras";
 import PlanDeCuentas from "../components/settings/PlanDeCuentas";
-import CompanyResetDialog from "../components/settings/CompanyResetDialog";
 import CompanyConfiguration from "../components/settings/CompanyConfiguration";
 
 export default function Settings() {
@@ -50,7 +49,6 @@ export default function Settings() {
   const [formRol, setFormRol] = useState({ nombre: "", descripcion: "" });
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [rolToDelete, setRolToDelete] = useState(null);
-  const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -359,7 +357,6 @@ export default function Settings() {
                <>
                  <SelectItem value="usuarios">👥 Usuarios</SelectItem>
                  <SelectItem value="roles">🔐 Roles y Permisos</SelectItem>
-                 <SelectItem value="reset">⚠️ Master Reset</SelectItem>
                </>
              )}
            </SelectContent>
@@ -444,36 +441,11 @@ export default function Settings() {
                  </CardContent>
                </Card>
              )}
-
-             {activeView === "reset" && (
-               <Card className="border-0 shadow-sm">
-                 <CardHeader>
-                   <CardTitle className="flex items-center gap-2">
-                     <Trash2 className="h-5 w-5 text-red-600" />
-                     Master Company Reset
-                   </CardTitle>
-                   <CardDescription>
-                     Configure PIN y delete todos los datos operativos de la empresa (solo para test)
-                   </CardDescription>
-                 </CardHeader>
-                 <CardContent>
-                   <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                     <p className="text-sm text-red-800">
-                       <strong>⚠️ Precaución:</strong> Esta función es solo para ambiente de test. Permite eliminar TODOS los datos operativos de la empresa de forma permanente. No se puede deshacer.
-                     </p>
-                   </div>
-                   <Button onClick={() => setResetDialogOpen(true)} className="bg-red-600 hover:bg-red-700">
-                     <Lock className="h-4 w-4 mr-2" />
-                     Configure Reset PIN
-                   </Button>
-                 </CardContent>
-               </Card>
-             )}
            </>
          )}
 
          {/* Mensaje si usuario no-admin intenta acceder a sección admin */}
-         {user?.role !== 'admin' && (activeView === "usuarios" || activeView === "roles" || activeView === "reset") && (
+         {user?.role !== 'admin' && (activeView === "usuarios" || activeView === "roles") && (
            <Card className="border-l-4 border-l-amber-500 bg-amber-50">
              <CardContent className="p-6">
                <p className="text-amber-800">
@@ -634,8 +606,6 @@ export default function Settings() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Company Reset Dialog */}
-      <CompanyResetDialog isOpen={resetDialogOpen} onClose={() => setResetDialogOpen(false)} />
       </div>
       );
       }
