@@ -109,7 +109,7 @@ export default function LayoutContent({ children, currentPageName }) {
     tesoreria: DollarSign,
     proyectos: Briefcase,
     calendario: CalendarIcon,
-    configuracion: Settings
+    ajustes: Settings
   };
 
   const allModules = [
@@ -202,27 +202,22 @@ export default function LayoutContent({ children, currentPageName }) {
       ]
     },
     {
-      id: "configuracion",
-      name: "Configuración",
-      section: "configuracion",
+      id: "ajustes",
+      name: "Ajustes",
+      section: "ajustes",
       icon: Settings,
       permiso: null,
       items: [
-        { name: "Empresa", page: "Settings", icon: Building2, permiso: null },
-        { name: "Usuarios", page: "SettingsUsers", icon: Users, permiso: null },
-        { name: "Roles y Permisos", page: "SettingsRoles", icon: Shield, permiso: null },
-        { name: "Impresoras", page: "SettingsImpresoras", icon: Printer, permiso: null },
-        { name: "Proyectos", page: "SettingsProyectos", icon: Briefcase, permiso: null },
-        { name: "Automatizaciones", page: "SettingsAutomatizaciones", icon: Zap, permiso: null },
+        { name: "Sistema", page: "Settings", icon: Settings, permiso: null },
       ]
     }
   ];
 
   const modules = allModules
     .map(module => {
-      // Configuración ahora es VISIBLE PARA TODOS
+      // Ajustes ahora es VISIBLE PARA TODOS
       // El filtro se hace DENTRO de Settings.js por isAdmin
-      if (module.id === "configuracion") {
+      if (module.id === "ajustes") {
         return module;
       }
 
