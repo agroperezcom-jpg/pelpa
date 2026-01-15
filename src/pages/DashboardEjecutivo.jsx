@@ -325,6 +325,15 @@ export default function DashboardEjecutivo() {
     });
   }
 
+  if (totalGastosFuturos > 0) {
+    alertas.push({
+      tipo: 'info',
+      titulo: '💰 Gastos Futuros Proyectados',
+      mensaje: `$${totalGastosFuturos.toLocaleString()} en gastos recurrentes sin pagar`,
+      accion: 'Expenses'
+    });
+  }
+
   // Tendencia tesorería últimos 30 días
   const ultimos30Dias = Array.from({ length: 30 }, (_, i) => {
     const fecha = format(new Date(new Date().setDate(new Date().getDate() - (29 - i))), 'yyyy-MM-dd');
