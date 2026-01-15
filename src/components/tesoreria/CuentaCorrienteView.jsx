@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { formatCurrency } from "@/utils/currency";
+import { formatCurrency } from "@/components/utils/formatCurrency";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -338,7 +338,7 @@ export default function CuentaCorrienteView() {
               <div>
                 <p className="text-xs font-medium text-slate-500 uppercase">Deuda Clientes</p>
                 <p className="text-3xl font-bold text-blue-600 mt-2">
-                  ${totalDeudaClientes.toLocaleString()}
+                  {formatCurrency(totalDeudaClientes)}
                 </p>
                 <p className="text-xs text-slate-500 mt-1">{clientes.length} clientes</p>
               </div>
@@ -355,7 +355,7 @@ export default function CuentaCorrienteView() {
               <div>
                 <p className="text-xs font-medium text-slate-500 uppercase">Deuda Proveedores</p>
                 <p className="text-3xl font-bold text-amber-600 mt-2">
-                  ${totalDeudaProveedores.toLocaleString()}
+                  {formatCurrency(totalDeudaProveedores)}
                 </p>
                 <p className="text-xs text-slate-500 mt-1">{proveedores.length} proveedores</p>
               </div>
@@ -394,7 +394,7 @@ export default function CuentaCorrienteView() {
                     <TableCell className="font-medium">{cliente.name}</TableCell>
                     <TableCell className="text-right flex items-center justify-end gap-2">
                       <span className="font-bold text-blue-600">
-                        ${cliente.saldo_cc?.toLocaleString() || 0}
+                        {formatCurrency(cliente.saldo_cc || 0)}
                       </span>
                       <Button size="sm" variant="outline" onClick={() => handleCobrarCliente(cliente)}>
                         <DollarSign className="h-3 w-3 mr-1" />
@@ -508,7 +508,7 @@ export default function CuentaCorrienteView() {
                     <TableCell className="font-medium">{proveedor.nombre}</TableCell>
                     <TableCell className="text-right flex items-center justify-end gap-2">
                       <span className="font-bold text-amber-600">
-                        ${proveedor.saldo_cc?.toLocaleString() || 0}
+                        {formatCurrency(proveedor.saldo_cc || 0)}
                       </span>
                       <Button size="sm" variant="outline" onClick={() => handlePagarProveedor(proveedor)}>
                         <HandCoins className="h-3 w-3 mr-1" />
