@@ -394,9 +394,9 @@ export default function LayoutContent({ children, currentPageName }) {
             })}
           </nav>
 
-          {/* Logout Button - Siempre visible al final */}
+          {/* Logout Button - Always visible at bottom */}
           {externalUser && (
-            <div className="border-t border-slate-200/40 bg-white/50 p-4">
+            <div className="border-t border-slate-200/40 bg-white/50 p-4 shrink-0">
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
