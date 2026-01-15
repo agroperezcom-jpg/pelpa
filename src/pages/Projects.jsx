@@ -27,6 +27,11 @@ export default function Projects() {
 
   const queryClient = useQueryClient();
 
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: () => base44.entities.Project.list('-created_date', 200)
+  });
+
   // Leer el ID del proyecto de la URL
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -41,11 +46,6 @@ export default function Projects() {
       }
     }
   }, [projects]);
-
-  const { data: projects = [] } = useQuery({
-    queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list('-created_date', 200)
-  });
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['allProjectTasks'],
