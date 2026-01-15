@@ -1313,14 +1313,9 @@ export default function Presupuestos() {
       <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Printer className="h-5 w-5 text-blue-600" />
-                Imprimir Presupuesto
-              </span>
-              <Button variant="ghost" size="icon" onClick={() => setIsPrintDialogOpen(false)}>
-                <X className="h-4 w-4" />
-              </Button>
+            <DialogTitle className="flex items-center gap-2">
+              <Printer className="h-5 w-5 text-blue-600" />
+              Imprimir Presupuesto
             </DialogTitle>
           </DialogHeader>
           <PresupuestoPDF presupuesto={selectedPresupuesto} />
