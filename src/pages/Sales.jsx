@@ -80,6 +80,7 @@ export default function Sales() {
   const [emailTicketRecipient, setEmailTicketRecipient] = useState("");
   const [emailTicketType, setEmailTicketType] = useState("a4");
   const [sendingTicketEmail, setSendingTicketEmail] = useState(false);
+  const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [cart, setCart] = useState([]);
   const [currentSale, setCurrentSale] = useState({
