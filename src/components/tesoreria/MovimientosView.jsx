@@ -361,6 +361,73 @@ export default function MovimientosView() {
         </Table>
       </Card>
 
+      {/* Detail Dialog */}
+      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Detalle del Movimiento</DialogTitle>
+          </DialogHeader>
+          {selectedMovimiento && (
+            <div className="space-y-4">
+              <div className={`p-4 rounded-lg ${selectedMovimiento.tipo === "INGRESO" ? "bg-green-50" : "bg-red-50"}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-slate-600">Tipo</p>
+                  <Badge className={selectedMovimiento.tipo === "INGRESO" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}>
+                    {selectedMovimiento.tipo === "INGRESO" ? (
+                      <ArrowDownCircle className="h-3 w-3 mr-1" />
+                    ) : (
+                      <ArrowUpCircle className="h-3 w-3 mr-1" />
+                    )}
+                    {selectedMovimiento.tipo}
+                  </Badge>
+                </div>
+                <p className="text-2xl font-bold">{formatCurrency(selectedMovimiento.importe)}</p>
+              </div>
+
+              <div className="space-y-3 border-t pt-4">
+                <div>
+                  <p className="text-xs text-slate-500 uppercase">Fecha</p>
+                  <p className="font-medium">{format(new Date(selectedMovimiento.fecha), "d MMMM yyyy", { locale: es })}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-slate-500 uppercase">Medio de Pago</p>
+                  <p className="font-medium">{selectedMovimiento.medio_pago_nombre}</p>
+                </div>
+
+                {(selectedMovimiento.banco_nombre || selectedMovimiento.caja_nombre) && (
+                  <div>
+                    <p className="text-xs text-slate-500 uppercase">Destino</p>
+                    {selectedMovimiento.banco_nombre && <p className="font-medium">🏦 {selectedMovimiento.banco_nombre}</p>}
+                    {selectedMovimiento.caja_nombre && <p className="font-medium">💵 {selectedMovimiento.caja_nombre}</p>}
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-xs text-slate-500 uppercase">Origen/Referencia</p>
+                  <p className="font-medium capitalize">{selectedMovimiento.referencia_tipo}</p>
+                  {selectedMovimiento.referencia_id && (
+                    <p className="text-xs text-slate-400 mt-1">ID: {selectedMovimiento.referencia_id}</p>
+                  )}
+                </div>
+
+                {selectedMovimiento.observaciones && (
+                  <div>
+                    <p className="text-xs text-slate-500 uppercase">Observaciones</p>
+                    <p className="text-sm text-slate-700 bg-slate-50 p-2 rounded">{selectedMovimiento.observaciones}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setDetailDialogOpen(false)}>
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
