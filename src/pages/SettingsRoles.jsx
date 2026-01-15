@@ -33,6 +33,8 @@ const MODULES = [
   { key: "finance", name: "Finanzas" },
   { key: "sales", name: "Ventas" },
   { key: "projects", name: "Proyectos" },
+  { key: "calendar", name: "Agenda" },
+  { key: "dashboard", name: "Dashboard" },
   { key: "settings", name: "Configuración" },
 ];
 
