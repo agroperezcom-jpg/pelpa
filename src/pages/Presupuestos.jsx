@@ -1253,7 +1253,7 @@ export default function Presupuestos() {
               <Button 
                 variant="outline" 
                 onClick={() => {
-                  setIsPrintDialogOpen(true);
+                  setIsPrintView(true);
                 }}
               >
                 <Printer className="h-4 w-4 mr-2" />
