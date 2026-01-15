@@ -146,10 +146,6 @@ export default function WorkOrders() {
             <Briefcase className="h-4 w-4" />
             Lista
           </TabsTrigger>
-          <TabsTrigger value="calendar" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Calendario
-          </TabsTrigger>
         </TabsList>
 
         {/* List View */}
@@ -215,15 +211,7 @@ export default function WorkOrders() {
           )}
         </TabsContent>
 
-        {/* Calendar View */}
-        <TabsContent value="calendar" className="mt-6">
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-12 text-center">
-              <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-              <p className="text-muted-foreground">Vista de calendario disponible próximamente</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
+
       </Tabs>
     </div>
   );
