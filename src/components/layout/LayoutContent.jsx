@@ -349,59 +349,59 @@ export default function LayoutContent({ children, currentPageName }) {
            </div>
 
            {/* Navigation */}
-           <nav className="flex-1 overflow-y-auto px-3 scrollbar-thin">
-            {modules.map((module) => {
-              const SectionIcon = sectionIcons[module.section];
-              return (
-                <div key={module.id} className="mb-6 last:mb-0">
-                  <div className="flex items-center gap-2 px-3 py-2.5 mb-3">
-                    <div className="flex items-center justify-center h-6 w-6 rounded-md bg-gradient-to-br from-slate-600 to-slate-700">
-                      {SectionIcon && <SectionIcon className="h-3.5 w-3.5 text-white" />}
-                    </div>
-                    <p className="text-xs font-bold text-foreground uppercase tracking-widest">
-                      {module.name}
-                    </p>
-                  </div>
+           <nav className="flex-1 overflow-y-auto px-3 scrollbar-thin pb-20">
+             {modules.map((module) => {
+               const SectionIcon = sectionIcons[module.section];
+               return (
+                 <div key={module.id} className="mb-6 last:mb-0">
+                   <div className="flex items-center gap-2 px-3 py-2.5 mb-3">
+                     <div className="flex items-center justify-center h-6 w-6 rounded-md bg-gradient-to-br from-slate-600 to-slate-700">
+                       {SectionIcon && <SectionIcon className="h-3.5 w-3.5 text-white" />}
+                     </div>
+                     <p className="text-xs font-bold text-foreground uppercase tracking-widest">
+                       {module.name}
+                     </p>
+                   </div>
 
-                  <div className="space-y-1">
-                    {module.items.map((item) => {
-                      const isActive = currentPageName === item.page;
-                      const Icon = item.icon;
-                      return (
-                        <Link
-                          key={item.page}
-                          to={createPageUrl(item.page)}
-                          className={cn(
-                            "flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 mx-1",
-                            isActive 
-                              ? "bg-primary/10 text-primary font-medium" 
-                              : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                          )}
-                        >
-                          {Icon && <Icon className="h-4 w-4 flex-shrink-0" />}
-                          {!Icon && <span className="w-4 flex-shrink-0" />}
-                          <span className="truncate">{item.name}</span>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </nav>
+                   <div className="space-y-1">
+                     {module.items.map((item) => {
+                       const isActive = currentPageName === item.page;
+                       const Icon = item.icon;
+                       return (
+                         <Link
+                           key={item.page}
+                           to={createPageUrl(item.page)}
+                           className={cn(
+                             "flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 mx-1",
+                             isActive 
+                               ? "bg-primary/10 text-primary font-medium" 
+                               : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                           )}
+                         >
+                           {Icon && <Icon className="h-4 w-4 flex-shrink-0" />}
+                           {!Icon && <span className="w-4 flex-shrink-0" />}
+                           <span className="truncate">{item.name}</span>
+                         </Link>
+                       );
+                     })}
+                   </div>
+                 </div>
+               );
+             })}
+           </nav>
 
-          {/* Logout Button - Fixed at bottom */}
-          {externalUser && (
-            <div className="border-t-2 border-slate-300/60 bg-gradient-to-b from-slate-50 to-white p-4 shrink-0">
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-medium transition-colors shadow-sm"
-              >
-                <LogOut className="h-4 w-4" />
-                Cerrar sesión
-              </button>
-            </div>
-          )}
+           {/* Logout Button - Fixed at bottom */}
+           {externalUser && (
+             <div className="absolute bottom-0 left-0 right-0 border-t-2 border-slate-300/60 bg-gradient-to-b from-slate-50 to-white p-4 shrink-0">
+               <button
+                 onClick={handleLogout}
+                 className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-medium transition-colors shadow-sm"
+               >
+                 <LogOut className="h-4 w-4" />
+                 Cerrar sesión
+               </button>
+             </div>
+           )}
         </div>
       </aside>
 
