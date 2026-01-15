@@ -135,16 +135,10 @@ export default function SettingsRoles() {
   const addPermissionMutation = useMutation({
     mutationFn: ({ role_id, permission_id }) =>
       base44.entities.RolePermission.create({ role_id, permission_id }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["rolePermissions"] });
-    },
   });
 
   const removePermissionMutation = useMutation({
     mutationFn: (rolePermissionId) => base44.entities.RolePermission.delete(rolePermissionId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["rolePermissions"] });
-    },
   });
 
   const handleOpenDialog = (role = null) => {
@@ -187,12 +181,34 @@ export default function SettingsRoles() {
     );
 
     if (rolePermission) {
-      removePermissionMutation.mutate(rolePermission.id);
-    } else {
-      addPermissionMutation.mutate({
-        role_id: selectedRole.id,
-        permission_id: permissionId,
+      // Optimistic update
+      setSelectedPermissions(prev => {
+        const next = new Set(prev);
+        next.delete(permissionId);
+        return next;
       });
+      removePermissionMutation.mutate(rolePermissionId, {
+        onError: () => {
+          // Revertir en caso de error
+          setSelectedPermissions(prev => new Set(prev).add(permissionId));
+        },
+      });
+    } else {
+      // Optimistic update
+      setSelectedPermissions(prev => new Set(prev).add(permissionId));
+      addPermissionMutation.mutate(
+        { role_id: selectedRole.id, permission_id: permissionId },
+        {
+          onError: () => {
+            // Revertir en caso de error
+            setSelectedPermissions(prev => {
+              const next = new Set(prev);
+              next.delete(permissionId);
+              return next;
+            });
+          },
+        }
+      );
     }
   };
 
