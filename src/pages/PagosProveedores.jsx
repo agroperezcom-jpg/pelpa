@@ -151,7 +151,10 @@ export default function PagosProveedores() {
 
         // Actualizar compra
         const compra = compras.find(c => c.id === detalle.compra_id);
-        const nuevoSaldo = (compra.saldo_pendiente || compra.total_compra) - detalle.importe_aplicado;
+        const saldoActual = compra.saldo_pendiente !== undefined && compra.saldo_pendiente !== null 
+          ? compra.saldo_pendiente 
+          : compra.total_compra;
+        const nuevoSaldo = saldoActual - detalle.importe_aplicado;
         const nuevoEstado = Math.abs(nuevoSaldo) < 0.01 ? "PAGADA" : "PARCIAL";
 
         await base44.entities.Compra.update(detalle.compra_id, {
