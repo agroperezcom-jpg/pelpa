@@ -105,11 +105,21 @@ export default function PrintPreview({ presupuesto, onClose }) {
           gap: 1rem !important;
         }
 
+        .print-container {
+          flex: 1 !important;
+          overflow: auto !important;
+          background: #f9fafb !important;
+          display: flex !important;
+          justify-content: center !important;
+          padding: 2rem !important;
+        }
+
         .print-area {
           visibility: visible !important;
           position: relative !important;
           margin: 0 !important;
           padding: 0 !important;
+          background: white !important;
         }
 
         @media print {
@@ -124,15 +134,22 @@ export default function PrintPreview({ presupuesto, onClose }) {
             overflow: hidden !important;
           }
 
+          .print-container {
+            flex: none !important;
+            overflow: visible !important;
+            background: white !important;
+            padding: 0 !important;
+            display: block !important;
+            position: static !important;
+          }
+
           *,
           *::before,
           *::after {
             visibility: hidden !important;
-            display: none !important;
-            margin: 0 !important;
-            padding: 0 !important;
           }
 
+          .print-container,
           .print-area,
           .print-area *,
           .print-area *::before,
