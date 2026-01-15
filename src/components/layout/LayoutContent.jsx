@@ -35,7 +35,7 @@ export default function LayoutContent({ children, currentPageName }) {
 
   const { data: configuracionEmpresa = [] } = useQuery({
     queryKey: ['configuracionEmpresa'],
-    queryFn: () => base44.modules.configuracion.configuracionEmpresa.list()
+    queryFn: () => base44.entities.ConfiguracionEmpresa.list()
   });
 
   const config = configuracionEmpresa[0];
