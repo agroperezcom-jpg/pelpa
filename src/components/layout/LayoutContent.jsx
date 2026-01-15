@@ -312,9 +312,18 @@ export default function LayoutContent({ children, currentPageName }) {
             })}
           </nav>
 
-
-        </div>
-      </aside>
+          {/* Sidebar Footer - Logout Button */}
+          <div className="mt-auto border-t border-slate-200/40 bg-white p-3 shrink-0">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors font-medium text-sm"
+            >
+              <LogOut className="h-4 w-4" />
+              Cerrar sesión
+            </button>
+          </div>
+          </div>
+          </aside>
 
       {/* Main Content */}
       <main className={cn(
