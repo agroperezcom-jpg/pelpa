@@ -127,7 +127,38 @@ export default function Purchases() {
       const compra = compras.find(c => c.id === compraId);
       if (!compra) throw new Error("Compra no encontrada");
 
-      // 1. Eliminar detalles de compra y revertir inventario
+      // 1. Eliminar pagos a proveedores asociados a esta compra
+      const pagosProveedorDetalle = await base44.entities.PagoProveedorDetalle.filter({ 
+        compra_id: compraId 
+      });
+
+      const cabecerasIds = new Set();
+      for (const detalle of pagosProveedorDetalle) {
+        cabecerasIds.add(detalle.pago_proveedor_cabecera_id);
+        await base44.entities.PagoProveedorDetalle.delete(detalle.id);
+      }
+
+      // Eliminar cabeceras de pago y sus medios si no tienen más detalles
+      for (const cabeceraId of cabecerasIds) {
+        const detallesRestantes = await base44.entities.PagoProveedorDetalle.filter({ 
+          pago_proveedor_cabecera_id: cabeceraId 
+        });
+
+        if (detallesRestantes.length === 0) {
+          // Eliminar medios de pago
+          const mediosPago = await base44.entities.PagoProveedorMedio.filter({ 
+            pago_proveedor_cabecera_id: cabeceraId 
+          });
+          for (const medio of mediosPago) {
+            await base44.entities.PagoProveedorMedio.delete(medio.id);
+          }
+
+          // Eliminar cabecera
+          await base44.entities.PagoProveedorCabecera.delete(cabeceraId);
+        }
+      }
+
+      // 2. Eliminar detalles de compra y revertir inventario
       const detalles = await base44.entities.CompraDetalle.filter({ compra_id: compraId });
       for (const detalle of detalles) {
         const producto = products.find(p => p.id === detalle.producto_id);
@@ -150,7 +181,7 @@ export default function Purchases() {
         await base44.entities.CompraDetalle.delete(detalle.id);
       }
 
-      // 2. Eliminar movimientos de tesorería
+      // 3. Eliminar movimientos de tesorería
       const movimientos = await base44.entities.MovimientoTesoreria.filter({
         referencia_tipo: "compra",
         referencia_id: compraId
@@ -175,13 +206,13 @@ export default function Purchases() {
         await base44.entities.MovimientoTesoreria.delete(mov.id);
       }
 
-      // 3. Eliminar pagos de compra
+      // 4. Eliminar pagos de compra directos
       const pagosCompra = await base44.entities.PagoCompra.filter({ compra_id: compraId });
       for (const pago of pagosCompra) {
         await base44.entities.PagoCompra.delete(pago.id);
       }
 
-      // 4. Eliminar cheques relacionados
+      // 5. Eliminar cheques relacionados
       const cheques = await base44.entities.Check.filter({
         referencia_origen_tipo: "COMPRA",
         referencia_origen_id: compraId
@@ -190,30 +221,34 @@ export default function Purchases() {
         await base44.entities.Check.delete(cheque.id);
       }
 
-      // 5. Eliminar movimientos de cuenta corriente y actualizar saldo del proveedor
+      // 6. Eliminar movimientos de cuenta corriente y actualizar saldo del proveedor
       const movimientosCC = await base44.entities.MovimientoCC.filter({
         referencia_tipo: "compra",
         referencia_id: compraId
       });
+      
+      let montoTotalRevertir = 0;
       for (const movCC of movimientosCC) {
+        if (movCC.debe > 0) montoTotalRevertir += movCC.debe;
+        if (movCC.haber > 0) montoTotalRevertir -= movCC.haber;
         await base44.entities.MovimientoCC.delete(movCC.id);
       }
 
       const proveedor = proveedores.find(p => p.id === compra.proveedor_id);
       if (proveedor) {
-        const nuevoSaldo = proveedor.saldo_cc - (compra.saldo_pendiente || 0);
+        const nuevoSaldo = proveedor.saldo_cc - montoTotalRevertir;
         await base44.entities.Proveedor.update(proveedor.id, {
           saldo_cc: Math.max(0, nuevoSaldo)
         });
       }
 
-      // 6. Eliminar retenciones IIBB
+      // 7. Eliminar retenciones IIBB
       const retenciones = await base44.entities.RetencionIIBB.filter({ compra_id: compraId });
       for (const retencion of retenciones) {
         await base44.entities.RetencionIIBB.delete(retencion.id);
       }
 
-      // 7. Eliminar la compra
+      // 8. Eliminar la compra
       await base44.entities.Compra.delete(compraId);
     },
     onSuccess: () => {
