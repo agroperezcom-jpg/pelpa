@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { usePermissionsEnforcement } from "@/components/permissions/usePermissionsEnforcement";
+import { usePermissions } from "@/components/permissions/usePermissions";
 import { useExternalAuth } from "@/components/context/ExternalAuthContext";
 import {
   LayoutDashboard, ShoppingCart, ShoppingBag, Package, Landmark, BarChart3,
@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 
 export default function LayoutContent({ children, currentPageName }) {
   const { user: externalUser } = useExternalAuth();
-  const { canViewModule, isAdmin } = usePermissionsEnforcement();
+  const { canView, user: permUser, isBlocked } = usePermissions();
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('sidebarExpanded')) ?? true;
@@ -188,25 +188,25 @@ export default function LayoutContent({ children, currentPageName }) {
 
   const modules = allModules
     .map(module => {
-      // Settings visible only to admins
+      // Settings only if has permission
       if (module.id === "ajustes") {
-        return isAdmin ? module : null;
+        return canView("settings") ? module : null;
       }
 
-      // General and other modules always visible
+      // General always visible
       if (!module.permiso) {
         return module;
       }
 
       // Check module permission
-      if (!isAdmin && !canViewModule(module.permiso)) {
+      if (!canView(module.permiso)) {
         return null;
       }
 
       // Filter items by permission
       const filteredItems = module.items.filter(item => {
         if (!item.permiso) return true;
-        return isAdmin || canViewModule(item.permiso);
+        return canView(item.permiso);
       });
 
       if (filteredItems.length === 0) {
