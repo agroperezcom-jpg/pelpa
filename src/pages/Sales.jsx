@@ -259,6 +259,147 @@ export default function Sales() {
     }
   });
 
+  const eliminarVentaMutation = useMutation({
+    mutationFn: async (ventaId) => {
+      const venta = sales.find(s => s.id === ventaId);
+      if (!venta) throw new Error("Venta no encontrada");
+
+      // 1. Revertir stock de productos
+      for (const item of venta.items.filter(i => i.type === 'product')) {
+        const product = products.find(p => p.id === item.item_id);
+        if (product) {
+          await base44.entities.Product.update(product.id, {
+            stock: product.stock + item.quantity
+          });
+
+          await base44.entities.InventoryMovement.create({
+            product_id: product.id,
+            product_name: product.name,
+            type: 'ingreso',
+            quantity: item.quantity,
+            previous_stock: product.stock,
+            new_stock: product.stock + item.quantity,
+            reason: 'Eliminación de venta',
+            reference: `Eliminación venta ${venta.numero_comprobante || venta.id}`
+          });
+        }
+      }
+
+      // 2. Eliminar movimientos de tesorería y revertir saldos
+      const todosMovimientos = await base44.entities.MovimientoTesoreria.list();
+      const movimientosVenta = todosMovimientos.filter(m => 
+        m.referencia_tipo === "venta" && m.referencia_id === ventaId
+      );
+      
+      for (const mov of movimientosVenta) {
+        if (mov.tipo === "INGRESO") {
+          // Revertir ingreso
+          if (mov.banco_id) {
+            const banco = bancos.find(b => b.id === mov.banco_id);
+            if (banco) {
+              await base44.entities.Banco.update(mov.banco_id, {
+                saldo_actual: banco.saldo_actual - mov.importe
+              });
+            }
+          }
+          if (mov.caja_id) {
+            const caja = cajas.find(c => c.id === mov.caja_id);
+            if (caja) {
+              await base44.entities.Caja.update(mov.caja_id, {
+                saldo_actual: caja.saldo_actual - mov.importe
+              });
+            }
+          }
+        }
+        await base44.entities.MovimientoTesoreria.delete(mov.id);
+      }
+
+      // 3. Eliminar pagos de venta
+      const pagosVenta = await base44.entities.PagoVenta.filter({ venta_id: ventaId });
+      for (const pago of pagosVenta) {
+        await base44.entities.PagoVenta.delete(pago.id);
+      }
+
+      // 4. Revertir cuenta corriente del cliente
+      const movimientosCC = await base44.entities.MovimientoCC.list();
+      const movsCCVenta = movimientosCC.filter(m => 
+        m.referencia_tipo === "venta" && m.referencia_id === ventaId
+      );
+      
+      for (const movCC of movsCCVenta) {
+        if (venta.client_id) {
+          const client = clients.find(c => c.id === venta.client_id);
+          if (client) {
+            // Revertir: debe aumenta deuda, haber la disminuye
+            const ajuste = movCC.haber - movCC.debe;
+            await base44.entities.Client.update(venta.client_id, {
+              saldo_cc: Math.max(0, client.saldo_cc + ajuste)
+            });
+          }
+        }
+        await base44.entities.MovimientoCC.delete(movCC.id);
+      }
+
+      // 5. Eliminar registros de IVA
+      if (venta.genera_iva) {
+        const ivaVentas = await base44.entities.IVAVenta.filter({ venta_id: ventaId });
+        for (const iva of ivaVentas) {
+          await base44.entities.IVAVenta.delete(iva.id);
+        }
+      }
+
+      // 6. Eliminar registros de IIBB
+      if (venta.genera_iibb) {
+        const iibbVentas = await base44.entities.IIBBVenta.filter({ venta_id: ventaId });
+        for (const iibb of iibbVentas) {
+          await base44.entities.IIBBVenta.delete(iibb.id);
+        }
+      }
+
+      // 7. Eliminar cheques de terceros recibidos
+      const cheques = await base44.entities.Check.filter({
+        referencia_origen_tipo: "VENTA",
+        referencia_origen_id: ventaId
+      });
+      for (const cheque of cheques) {
+        await base44.entities.Check.delete(cheque.id);
+      }
+
+      // 8. Liberar número de comprobante si corresponde
+      if (venta.talonario_id) {
+        const talonario = talonarios.find(t => t.id === venta.talonario_id);
+        if (talonario?.permite_reutilizar && venta.numero_comprobante) {
+          const numeroComprobante = parseInt(venta.numero_comprobante.split('-')[1]);
+          const numerosLiberados = talonario.numeros_liberados || [];
+
+          await base44.entities.Talonario.update(talonario.id, {
+            numeros_liberados: [...numerosLiberados, numeroComprobante].sort((a, b) => a - b)
+          });
+        }
+      }
+
+      // 9. Eliminar la venta
+      await base44.entities.Sale.delete(ventaId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sales'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosCC'] });
+      queryClient.invalidateQueries({ queryKey: ['cajas'] });
+      queryClient.invalidateQueries({ queryKey: ['bancos'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['talonarios'] });
+      queryClient.invalidateQueries({ queryKey: ['ivaVentas'] });
+      queryClient.invalidateQueries({ queryKey: ['iibbVentas'] });
+      queryClient.invalidateQueries({ queryKey: ['cheques'] });
+      toast.success("Venta eliminada correctamente");
+    },
+    onError: (error) => {
+      toast.error(`Error: ${error.message}`);
+    }
+  });
+
   const anularVentaMutation = useMutation({
     mutationFn: async ({ ventaId, motivo }) => {
       const venta = sales.find(s => s.id === ventaId);
@@ -1140,22 +1281,37 @@ export default function Sales() {
                   ${sale.total?.toLocaleString()}
                 </TableCell>
                 <TableCell>
-                  {sale.estado === "CONFIRMADA" && (
+                  <div className="flex gap-1">
+                    {sale.estado === "CONFIRMADA" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-orange-600 hover:text-orange-700"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const motivo = prompt("Motivo de anulación:");
+                          if (motivo) {
+                            anularVentaMutation.mutate({ ventaId: sale.id, motivo });
+                          }
+                        }}
+                      >
+                        Anular
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
                       className="text-red-600 hover:text-red-700"
                       onClick={(e) => {
                         e.stopPropagation();
-                        const motivo = prompt("Motivo de anulación:");
-                        if (motivo) {
-                          anularVentaMutation.mutate({ ventaId: sale.id, motivo });
+                        if (window.confirm(`¿ELIMINAR esta venta completamente?\n\nSe revertirá:\n- Stock de productos\n- Movimientos de tesorería\n- IVA y IIBB\n- Cuenta corriente\n\nEsta acción no se puede deshacer.`)) {
+                          eliminarVentaMutation.mutate(sale.id);
                         }
                       }}
                     >
-                      Anular
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
