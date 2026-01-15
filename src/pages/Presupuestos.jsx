@@ -1312,8 +1312,8 @@ export default function Presupuestos() {
       )}
 
       {/* Print View */}
-      {isPrintDialogOpen && selectedPresupuesto && (
-        <div className="fixed inset-0 z-50 bg-white">
+      {isPrintView && selectedPresupuesto && (
+        <div className="fixed inset-0 z-[9999] bg-white flex flex-col">
           <div className="flex justify-end gap-2 p-4 bg-slate-100 border-b">
             <Button 
               onClick={() => window.print()}
@@ -1324,12 +1324,12 @@ export default function Presupuestos() {
             </Button>
             <Button 
               variant="outline"
-              onClick={() => setIsPrintDialogOpen(false)}
+              onClick={() => setIsPrintView(false)}
             >
               Cerrar
             </Button>
           </div>
-          <div className="overflow-auto h-[calc(100vh-60px)]">
+          <div className="overflow-auto flex-1">
             <PresupuestoImpresion presupuesto={selectedPresupuesto} />
           </div>
         </div>
