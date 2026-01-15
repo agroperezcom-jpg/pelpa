@@ -61,7 +61,32 @@ export default function SettingsRoles() {
 
   const { data: permissions = [] } = useQuery({
     queryKey: ["permissions"],
-    queryFn: () => base44.entities.Permission.list(),
+    queryFn: async () => {
+      const existing = await base44.entities.Permission.list();
+      
+      // Crear todos los permisos que falten
+      const existingKeys = new Set(existing.map(p => `${p.module_key}:${p.action}`));
+      const toCreate = [];
+      
+      MODULES.forEach(module => {
+        ACTIONS.forEach(action => {
+          const key = `${module.key}:${action.key}`;
+          if (!existingKeys.has(key)) {
+            toCreate.push({
+              module_key: module.key,
+              action: action.key,
+            });
+          }
+        });
+      });
+      
+      if (toCreate.length > 0) {
+        await base44.entities.Permission.bulkCreate(toCreate);
+        return base44.entities.Permission.list();
+      }
+      
+      return existing;
+    },
   });
 
   const { data: rolePermissions = [] } = useQuery({
@@ -296,18 +321,7 @@ export default function SettingsRoles() {
                                 id={`${module.key}-${action.key}`}
                                 checked={isGranted || false}
                                 onCheckedChange={() => {
-                                  if (!permission) {
-                                    // Crear el permiso primero
-                                    base44.entities.Permission.create({
-                                      module_key: module.key,
-                                      action: action.key,
-                                    }).then((newPermission) => {
-                                      addPermissionMutation.mutate({
-                                        role_id: selectedRole.id,
-                                        permission_id: newPermission.id,
-                                      });
-                                    });
-                                  } else {
+                                  if (permission) {
                                     handleTogglePermission(permission.id);
                                   }
                                 }}
