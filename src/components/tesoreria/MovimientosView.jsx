@@ -301,7 +301,14 @@ export default function MovimientosView() {
           </TableHeader>
           <TableBody>
             {movimientosFiltrados.map((mov) => (
-              <TableRow key={mov.id} className="hover:bg-slate-50">
+              <TableRow 
+                key={mov.id} 
+                className="hover:bg-slate-50 cursor-pointer"
+                onClick={() => {
+                  setSelectedMovimiento(mov);
+                  setDetailDialogOpen(true);
+                }}
+              >
                 <TableCell className="text-sm text-slate-600">
                   {format(new Date(mov.fecha), "d MMM yyyy", { locale: es })}
                 </TableCell>
