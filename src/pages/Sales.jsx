@@ -1748,73 +1748,16 @@ export default function Sales() {
 
           <DialogFooter className="px-6 py-4 border-t mt-0">
             <div className="w-full space-y-3">
-              <div className="grid grid-cols-3 gap-2">
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPreviewTicketType('mobile')}
-                  disabled={downloadingTicket !== null}
-                  className="text-xs"
-                >
-                  <Eye className="h-3 w-3 mr-1" />
-                  Mobile
-                </Button>
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPreviewTicketType('80mm')}
-                  disabled={downloadingTicket !== null}
-                  className="text-xs"
-                >
-                  <Eye className="h-3 w-3 mr-1" />
-                  80mm
-                </Button>
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPreviewTicketType('a4')}
-                  disabled={downloadingTicket !== null}
-                  className="text-xs"
-                >
-                  <Eye className="h-3 w-3 mr-1" />
-                  A4
-                </Button>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-2">
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDownloadTicket('mobile')}
-                  disabled={downloadingTicket !== null}
-                  className="text-xs"
-                >
-                  <Download className="h-3 w-3 mr-1" />
-                  {downloadingTicket === 'mobile' ? 'Gen...' : 'Mobile'}
-                </Button>
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDownloadTicket('80mm')}
-                  disabled={downloadingTicket !== null}
-                  className="text-xs"
-                >
-                  <Download className="h-3 w-3 mr-1" />
-                  {downloadingTicket === '80mm' ? 'Gen...' : '80mm'}
-                </Button>
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDownloadTicket('a4')}
-                  disabled={downloadingTicket !== null}
-                  className="text-xs"
-                >
-                  <Download className="h-3 w-3 mr-1" />
-                  {downloadingTicket === 'a4' ? 'Gen...' : 'A4'}
-                </Button>
-              </div>
-              
               <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsPrintPreviewOpen(true)}
+                  className="flex-1 gap-2"
+                >
+                  <Printer className="h-4 w-4" />
+                  Imprimir / PDF
+                </Button>
                 <Button 
                   variant="outline"
                   onClick={() => {
@@ -1825,7 +1768,6 @@ export default function Sales() {
                   size="sm"
                 >
                   <Mail className="h-4 w-4" />
-                  Email
                 </Button>
                 <Button 
                   variant="outline"
@@ -1834,12 +1776,12 @@ export default function Sales() {
                   size="sm"
                 >
                   <MessageCircle className="h-4 w-4" />
-                  WhatsApp
-                </Button>
-                <Button onClick={handleCloseTicket} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
-                  Cerrar
                 </Button>
               </div>
+              
+              <Button onClick={handleCloseTicket} className="w-full bg-emerald-600 hover:bg-emerald-700">
+                Cerrar
+              </Button>
             </div>
           </DialogFooter>
         </DialogContent>
