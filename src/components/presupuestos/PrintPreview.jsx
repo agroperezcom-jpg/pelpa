@@ -132,17 +132,33 @@ export default function PrintPreview({ presupuesto, onClose }) {
         }
 
         @media print {
+          /* Hide everything by default */
+          body * {
+            display: none !important;
+            visibility: hidden !important;
+          }
+
+          /* Show only the print wrapper and its contents */
+          .print-wrapper,
+          .print-wrapper * {
+            display: block !important;
+            visibility: visible !important;
+          }
+
           .print-wrapper {
             position: static !important;
             top: auto !important;
             left: auto !important;
             right: auto !important;
             bottom: auto !important;
-            width: auto !important;
+            width: 100% !important;
             height: auto !important;
             background: white !important;
             z-index: auto !important;
             overflow: visible !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            flex-direction: column !important;
           }
 
           .print-header {
@@ -150,6 +166,7 @@ export default function PrintPreview({ presupuesto, onClose }) {
             visibility: hidden !important;
             height: 0 !important;
             overflow: hidden !important;
+            margin: 0 !important;
           }
 
           .print-container {
@@ -159,6 +176,8 @@ export default function PrintPreview({ presupuesto, onClose }) {
             padding: 0 !important;
             display: block !important;
             position: static !important;
+            width: 100% !important;
+            height: auto !important;
           }
 
           .print-area {
@@ -173,28 +192,21 @@ export default function PrintPreview({ presupuesto, onClose }) {
             box-shadow: none !important;
             border: none !important;
             visibility: visible !important;
-          }
-
-          .print-area * {
-            visibility: visible !important;
+            display: block !important;
           }
 
           @page {
             margin: 0 !important;
             padding: 0 !important;
-            size: auto !important;
+            size: A4 !important;
           }
 
-          html {
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 100% !important;
-          }
-
+          html,
           body {
             margin: 0 !important;
             padding: 0 !important;
             width: 100% !important;
+            height: auto !important;
             background: white !important;
           }
         }
