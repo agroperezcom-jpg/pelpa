@@ -47,8 +47,7 @@ import {
 import { format, addDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
-import PresupuestoPDF from "../components/presupuestos/PresupuestoPDF";
-import PresupuestoImpresion from "../components/presupuestos/PresupuestoImpresion";
+import PrintPreview from "../components/presupuestos/PrintPreview";
 import CobroPresupuestoDialog from "../components/presupuestos/CobroPresupuestoDialog";
 import CancelacionPresupuestoDialog from "../components/presupuestos/CancelacionPresupuestoDialog";
 import WhatsAppSendDialog from "../components/whatsapp/WhatsAppSendDialog";
