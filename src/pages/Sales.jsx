@@ -1281,37 +1281,19 @@ export default function Sales() {
                   ${sale.total?.toLocaleString()}
                 </TableCell>
                 <TableCell>
-                  <div className="flex gap-1">
-                    {sale.estado === "CONFIRMADA" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-orange-600 hover:text-orange-700"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const motivo = prompt("Motivo de anulación:");
-                          if (motivo) {
-                            anularVentaMutation.mutate({ ventaId: sale.id, motivo });
-                          }
-                        }}
-                      >
-                        Anular
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-600 hover:text-red-700"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (window.confirm(`¿ELIMINAR esta venta completamente?\n\nSe revertirá:\n- Stock de productos\n- Movimientos de tesorería\n- IVA y IIBB\n- Cuenta corriente\n\nEsta acción no se puede deshacer.`)) {
-                          eliminarVentaMutation.mutate(sale.id);
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm(`¿ELIMINAR esta venta completamente?\n\nSe revertirá:\n- Stock de productos\n- Movimientos de tesorería\n- IVA y IIBB\n- Cuenta corriente\n\nEsta acción no se puede deshacer.`)) {
+                        eliminarVentaMutation.mutate(sale.id);
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
