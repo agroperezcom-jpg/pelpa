@@ -133,8 +133,21 @@ export default function DashboardEjecutivo() {
   const resultadoBrutoMes = totalVentasMes - costoVentasMes;
 
   // 2️⃣ TESORERÍA
-  const saldoCajas = cajas.reduce((acc, c) => acc + (c.saldo_actual || 0), 0);
-  const saldoBancos = bancos.reduce((acc, b) => acc + (b.saldo_actual || 0), 0);
+  // Calcular saldos reales desde movimientos de tesorería
+  const saldoCajas = movimientosTesoreria.reduce((acc, mov) => {
+    if (!mov.caja_id) return acc;
+    if (mov.tipo === "INGRESO") return acc + mov.importe;
+    if (mov.tipo === "EGRESO") return acc - mov.importe;
+    return acc;
+  }, 0);
+
+  const saldoBancos = movimientosTesoreria.reduce((acc, mov) => {
+    if (!mov.banco_id) return acc;
+    if (mov.tipo === "INGRESO") return acc + mov.importe;
+    if (mov.tipo === "EGRESO") return acc - mov.importe;
+    return acc;
+  }, 0);
+
   const saldoTotal = saldoCajas + saldoBancos;
 
   const ingresosMes = movimientosTesoreria.filter(m => 
