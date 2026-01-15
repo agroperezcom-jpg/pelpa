@@ -243,8 +243,43 @@ export default function Expenses() {
     }
   });
 
+  const calculateNextExpenseDate = (baseDate, frequency) => {
+    const date = new Date(baseDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (frequency === "mensual") {
+      const dayOfMonth = date.getDate();
+      let next = new Date(today);
+      next.setDate(dayOfMonth);
+      if (next <= today) next.setMonth(next.getMonth() + 1);
+      return next.toISOString().split('T')[0];
+    } else if (frequency === "trimestral") {
+      const baseMonth = date.getMonth();
+      const dayOfMonth = date.getDate();
+      let next = new Date(today);
+      const nextQuarterMonth = baseMonth + (Math.ceil((today.getMonth() - baseMonth) / 3) * 3);
+      next.setMonth(nextQuarterMonth);
+      next.setDate(dayOfMonth);
+      if (next <= today) next.setMonth(next.getMonth() + 3);
+      return next.toISOString().split('T')[0];
+    } else if (frequency === "anual") {
+      const month = date.getMonth();
+      const dayOfMonth = date.getDate();
+      let next = new Date(today);
+      next.setMonth(month);
+      next.setDate(dayOfMonth);
+      if (next <= today) next.setFullYear(next.getFullYear() + 1);
+      return next.toISOString().split('T')[0];
+    }
+    return baseDate;
+  };
+
   const payRecurringMutation = useMutation({
     mutationFn: async ({ expenseId, data }) => {
+      const expense = expenses.find(e => e.id === expenseId);
+      if (!expense) throw new Error("Gasto no encontrado");
+
       const medio = mediosPago.find(m => m.id === data.medio_pago_id);
       if (!medio) throw new Error("Debe seleccionar un medio de pago");
       
@@ -289,6 +324,14 @@ export default function Expenses() {
       if (data.caja_id && caja) {
         await base44.entities.Caja.update(data.caja_id, {
           saldo_actual: caja.saldo_actual - data.amount
+        });
+      }
+
+      // Calcular y actualizar próxima fecha si es recurrente
+      if (expense.is_recurring && expense.recurring_frequency) {
+        const nextDate = calculateNextExpenseDate(expense.date, expense.recurring_frequency);
+        await base44.entities.Expense.update(expenseId, {
+          date: nextDate
         });
       }
     },
