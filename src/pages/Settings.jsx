@@ -1,33 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle
-} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Globe, Palette, Briefcase, Printer } from "lucide-react";
 import ConfiguracionProyectos from "../components/settings/ConfiguracionProyectos";
 import IdentidadEmpresa from "../components/settings/IdentidadEmpresa";
 import ThemeSelector from "../components/theme/ThemeSelector";
@@ -38,9 +11,6 @@ import CompanyConfiguration from "../components/settings/CompanyConfiguration";
 
 export default function Settings() {
   const [activeView, setActiveView] = useState("empresa");
-  const queryClient = useQueryClient();
-
-  // Configuración básica visible para todos
 
   return (
     <div className="space-y-6">
@@ -72,7 +42,7 @@ export default function Settings() {
        {/* NIVEL 1: Configuración básica - VISIBLE PARA TODOS */}
        <div className="space-y-6">
          {activeView === "empresa" && (
-           <CompanyConfiguration isAdmin={user?.role === 'admin'} />
+           <CompanyConfiguration />
          )}
 
          {activeView === "identidad" && <IdentidadEmpresa />}
@@ -92,10 +62,7 @@ export default function Settings() {
          {activeView === "impresoras" && <ConfiguracionImpresoras />}
 
          {activeView === "plan_cuentas" && <PlanDeCuentas />}
-       </div>
-
-
-
-      </div>
-      );
-      }
+         </div>
+         </div>
+         );
+         }
