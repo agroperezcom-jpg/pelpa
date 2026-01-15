@@ -410,34 +410,19 @@ export default function LayoutContent({ children, currentPageName }) {
             })}
           </nav>
 
-          {/* User Section - ALWAYS show if externalUser exists */}
-           {externalUser && (
-             <div className="p-3 border-t border-border/40 space-y-3">
-               <div className="flex items-center gap-3 px-3 py-2">
-                 <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                   <span className="text-sm font-medium text-slate-600">
-                     {getInitials(externalUser.full_name)}
-                   </span>
-                 </div>
-                 <div className="flex-1 min-w-0">
-                   <p className="text-sm font-medium text-foreground truncate">
-                     {externalUser.full_name}
-                   </p>
-                   <p className="text-xs text-muted-foreground truncate">
-                     {externalUser.email}
-                   </p>
-                 </div>
-               </div>
-               <button
-                 onClick={handleLogout}
-                 className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-colors font-medium text-sm"
-                 title="Cerrar sesión"
-               >
-                 <LogOut className="h-4 w-4" />
-                 Cerrar sesión
-               </button>
-             </div>
-           )}
+          {/* Cerrar Sesión Button */}
+          {externalUser && (
+            <div className="px-3 py-3 border-t border-border/40">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 px-3 py-3 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-colors font-medium text-sm"
+                title="Cerrar sesión"
+              >
+                <LogOut className="h-4 w-4" />
+                Cerrar sesión
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
