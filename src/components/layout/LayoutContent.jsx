@@ -19,12 +19,11 @@ import { cn } from "@/lib/utils";
 export default function LayoutContent({ children, currentPageName }) {
   const { user: externalUser, isAdmin: externalIsAdmin } = useExternalAuth();
   const [user, setUser] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarPinned, setSidebarPinned] = useState(() => {
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('sidebarPinned')) ?? false;
+      return JSON.parse(localStorage.getItem('sidebarExpanded')) ?? true;
     } catch {
-      return false;
+      return true;
     }
   });
   const [commandOpen, setCommandOpen] = useState(false);
@@ -79,14 +78,8 @@ export default function LayoutContent({ children, currentPageName }) {
   }, []);
 
   useEffect(() => {
-    if (!sidebarPinned) {
-      setSidebarOpen(false);
-    }
-  }, [location, sidebarPinned]);
-
-  useEffect(() => {
-    localStorage.setItem('sidebarPinned', JSON.stringify(sidebarPinned));
-  }, [sidebarPinned]);
+    localStorage.setItem('sidebarExpanded', JSON.stringify(sidebarExpanded));
+  }, [sidebarExpanded]);
 
   const handleLogout = async () => {
     if (window.__AUTH_GATEWAY_LOGOUT__) {
@@ -248,168 +241,118 @@ export default function LayoutContent({ children, currentPageName }) {
   };
 
   return (
-    <div className="min-h-screen bg-background transition-theme">
-      {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card/90 backdrop-blur-sm border-b border-border/40 z-50 flex items-center justify-between px-4 transition-theme">
-        <button 
-          onClick={() => setSidebarOpen(true)}
-          className="p-2 -ml-2 rounded-lg hover:bg-secondary transition-colors"
-        >
-          <Menu className="h-5 w-5 text-muted-foreground" />
-        </button>
-
-        <span 
-          className="text-sm font-medium text-foreground"
-          style={{ fontFamily: fontFamilyMap[tipografiaLogo] }}
-        >
-          {allPages.find(p => p.page === currentPageName)?.name || "Dashboard"}
-        </span>
-        
-        <button 
-          onClick={() => setCommandOpen(true)}
-          className="p-2 -mr-2 rounded-lg hover:bg-secondary transition-colors"
-        >
-          <Search className="h-5 w-5 text-muted-foreground" />
-        </button>
-      </header>
-
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div 
-          className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar Toggle Button */}
-      {!sidebarOpen && (
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="fixed left-6 top-20 z-45 p-3 rounded-full bg-card border border-border/40 shadow-lg hover:shadow-xl hover:bg-secondary transition-all duration-200 lg:hidden"
-          title="Abrir menú"
-        >
-          <ChevronRight className="h-5 w-5 text-muted-foreground" />
-        </button>
-      )}
-
+    <div className="min-h-screen bg-background transition-theme flex">
       {/* Sidebar */}
       <aside className={cn(
-        "fixed top-0 left-0 bottom-0 w-64 bg-gradient-to-b from-slate-50 to-slate-100/50 border-r border-slate-200/60 z-50 transition-theme",
-        "transition-transform duration-300 ease-out",
-        "lg:translate-x-0",
-        sidebarOpen || sidebarPinned ? "translate-x-0" : "-translate-x-full"
+        "bg-gradient-to-b from-slate-50 to-slate-100/50 border-r border-slate-200/60 transition-all duration-300 ease-out flex flex-col h-screen fixed left-0 top-0 bottom-0 z-40",
+        sidebarExpanded ? "w-64" : "w-0"
       )}>
-        <div className="flex flex-col h-full">
-           {/* Logo */}
-           <div className="h-14 flex items-center justify-between px-5 border-b border-slate-200/40 bg-white/50 shrink-0">
-             <div className="flex items-center gap-2.5">
-               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center">
-                 <span className="text-white text-sm font-semibold">
-                   {nombreEmpresa.charAt(0).toUpperCase()}
-                 </span>
-               </div>
-               <span 
-                 className="font-semibold text-foreground tracking-tight"
-                 style={{ fontFamily: fontFamilyMap[tipografiaLogo] }}
-               >
-                 {nombreEmpresa}
-               </span>
-             </div>
-             <div className="flex items-center gap-2">
-               <button 
-                 onClick={() => setSidebarPinned(!sidebarPinned)}
-                 className="hidden sm:flex p-1.5 rounded-lg hover:bg-secondary transition-colors"
-                 title={sidebarPinned ? "Desfijar" : "Fijar"}
-               >
-                 {sidebarPinned ? (
-                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                 ) : (
-                   <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
-                 )}
-               </button>
-               <button 
-                 onClick={() => setSidebarOpen(false)}
-                 className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
-               >
-                 <ChevronRight className="h-4 w-4 text-muted-foreground rotate-180" />
-               </button>
-             </div>
-           </div>
+        <div className={cn(
+          "flex flex-col h-full overflow-hidden",
+          !sidebarExpanded && "pointer-events-none"
+        )}>
+          {/* Logo */}
+          <div className="h-14 flex items-center justify-between px-5 border-b border-slate-200/40 bg-white/50 shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center">
+                <span className="text-white text-sm font-semibold">
+                  {nombreEmpresa.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <span 
+                className="font-semibold text-foreground tracking-tight truncate"
+                style={{ fontFamily: fontFamilyMap[tipografiaLogo] }}
+              >
+                {nombreEmpresa}
+              </span>
+            </div>
+          </div>
 
-           {/* Search */}
-           <div className="px-4 py-3 shrink-0">
-             <button
-               onClick={() => setCommandOpen(true)}
-               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground bg-secondary/60 rounded-lg hover:bg-secondary transition-colors"
-             >
-               <Search className="h-4 w-4" />
-               <span className="flex-1 text-left">Buscar...</span>
-               <kbd className="hidden sm:inline-flex text-xs px-1.5 py-0.5 bg-background rounded border border-border/60">⌘K</kbd>
-             </button>
-           </div>
+          {/* Search */}
+          <div className="px-4 py-3 shrink-0">
+            <button
+              onClick={() => setCommandOpen(true)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground bg-secondary/60 rounded-lg hover:bg-secondary transition-colors"
+            >
+              <Search className="h-4 w-4" />
+              <span className="flex-1 text-left text-sm">Buscar...</span>
+            </button>
+          </div>
 
-           {/* Navigation */}
-           <nav className="flex-1 overflow-y-auto px-3 scrollbar-thin pb-20">
-             {modules.map((module) => {
-               const SectionIcon = sectionIcons[module.section];
-               return (
-                 <div key={module.id} className="mb-6 last:mb-0">
-                   <div className="flex items-center gap-2 px-3 py-2.5 mb-3">
-                     <div className="flex items-center justify-center h-6 w-6 rounded-md bg-gradient-to-br from-slate-600 to-slate-700">
-                       {SectionIcon && <SectionIcon className="h-3.5 w-3.5 text-white" />}
-                     </div>
-                     <p className="text-xs font-bold text-foreground uppercase tracking-widest">
-                       {module.name}
-                     </p>
-                   </div>
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto px-3 scrollbar-thin pb-20">
+            {modules.map((module) => {
+              const SectionIcon = sectionIcons[module.section];
+              return (
+                <div key={module.id} className="mb-6 last:mb-0">
+                  <div className="flex items-center gap-2 px-3 py-2.5 mb-3">
+                    <div className="flex items-center justify-center h-6 w-6 rounded-md bg-gradient-to-br from-slate-600 to-slate-700">
+                      {SectionIcon && <SectionIcon className="h-3.5 w-3.5 text-white" />}
+                    </div>
+                    <p className="text-xs font-bold text-foreground uppercase tracking-widest">
+                      {module.name}
+                    </p>
+                  </div>
 
-                   <div className="space-y-1">
-                     {module.items.map((item) => {
-                       const isActive = currentPageName === item.page;
-                       const Icon = item.icon;
-                       return (
-                         <Link
-                           key={item.page}
-                           to={createPageUrl(item.page)}
-                           className={cn(
-                             "flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 mx-1",
-                             isActive 
-                               ? "bg-primary/10 text-primary font-medium" 
-                               : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                           )}
-                         >
-                           {Icon && <Icon className="h-4 w-4 flex-shrink-0" />}
-                           {!Icon && <span className="w-4 flex-shrink-0" />}
-                           <span className="truncate">{item.name}</span>
-                         </Link>
-                       );
-                     })}
-                   </div>
-                 </div>
-               );
-             })}
-           </nav>
+                  <div className="space-y-1">
+                    {module.items.map((item) => {
+                      const isActive = currentPageName === item.page;
+                      const Icon = item.icon;
+                      return (
+                        <Link
+                          key={item.page}
+                          to={createPageUrl(item.page)}
+                          className={cn(
+                            "flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 mx-1",
+                            isActive 
+                              ? "bg-primary/10 text-primary font-medium" 
+                              : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                          )}
+                        >
+                          {Icon && <Icon className="h-4 w-4 flex-shrink-0" />}
+                          {!Icon && <span className="w-4 flex-shrink-0" />}
+                          <span className="truncate">{item.name}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </nav>
 
-           {/* Logout Button - Fixed at bottom */}
-           {externalUser && (
-             <div className="absolute bottom-0 left-0 right-0 border-t-2 border-slate-300/60 bg-gradient-to-b from-slate-50 to-white p-4 shrink-0">
-               <button
-                 onClick={handleLogout}
-                 className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-medium transition-colors shadow-sm"
-               >
-                 <LogOut className="h-4 w-4" />
-                 Cerrar sesión
-               </button>
-             </div>
-           )}
+          {/* Logout Button - Fixed at bottom */}
+          {externalUser && (
+            <div className="border-t-2 border-slate-300/60 bg-gradient-to-b from-slate-50 to-white p-4 shrink-0">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-medium transition-colors shadow-sm"
+              >
+                <LogOut className="h-4 w-4" />
+                Cerrar sesión
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="lg:pl-64 min-h-screen">
-        <div className="pt-14 lg:pt-0">
-          <header className="hidden lg:flex h-14 items-center justify-between px-6 border-b border-border/40 bg-card/60 backdrop-blur-sm sticky top-0 z-30 transition-theme">
-            <div className="flex items-center gap-2 text-sm">
+      <main className={cn(
+        "flex-1 min-h-screen transition-all duration-300 ease-out",
+        sidebarExpanded ? "lg:ml-0" : "lg:ml-0"
+      )}>
+        {/* Header */}
+        <header className="h-14 flex items-center justify-between px-6 border-b border-border/40 bg-card/60 backdrop-blur-sm sticky top-0 z-30 transition-theme">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setSidebarExpanded(!sidebarExpanded)}
+              className="p-2 rounded-lg hover:bg-secondary transition-colors hidden lg:flex"
+              title={sidebarExpanded ? "Contraer menú" : "Expandir menú"}
+            >
+              <Menu className="h-5 w-5 text-muted-foreground" />
+            </button>
+
+            <div className="flex items-center gap-2 text-sm hidden lg:flex">
               <span className="text-muted-foreground">
                 {modules.find(m => m.items.some(i => i.page === currentPageName))?.name}
               </span>
@@ -418,28 +361,34 @@ export default function LayoutContent({ children, currentPageName }) {
                 {allPages.find(p => p.page === currentPageName)?.name || "Dashboard"}
               </span>
             </div>
-            
-            <div className="flex items-center gap-3">
-              <button className="p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
-                <Bell className="h-4 w-4" />
-              </button>
-              {externalUser && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span className="text-sm font-medium">Cerrar sesión</span>
-                </Button>
-              )}
-            </div>
-          </header>
 
-          <div className="p-4 lg:p-6 max-w-[1600px] mx-auto animate-fade-in">
-            {children}
+            {/* Mobile: Show page name */}
+            <span className="text-sm font-medium text-foreground lg:hidden">
+              {allPages.find(p => p.page === currentPageName)?.name || "Dashboard"}
+            </span>
           </div>
+
+          <div className="flex items-center gap-3">
+            <button className="p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+              <Bell className="h-4 w-4" />
+            </button>
+            {externalUser && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline text-sm font-medium">Cerrar sesión</span>
+              </Button>
+            )}
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <div className="p-4 lg:p-6 max-w-[1600px] mx-auto animate-fade-in">
+          {children}
         </div>
       </main>
 
