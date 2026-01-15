@@ -6,7 +6,7 @@ export default function PresupuestoImpresion({ presupuesto }) {
   if (!presupuesto) return null;
 
   return (
-    <div className="w-full h-screen bg-white overflow-auto">
+    <div className="w-full bg-white">
       <style>
         {`
           @page {
@@ -25,7 +25,7 @@ export default function PresupuestoImpresion({ presupuesto }) {
         `}
       </style>
 
-      <div className="w-full max-w-4xl mx-auto bg-white p-12" style={{ minHeight: "297mm", maxWidth: "210mm" }}>
+      <div className="w-full max-w-4xl mx-auto bg-white pt-32 px-12 pb-12" style={{ minHeight: "297mm", maxWidth: "210mm" }}>
         {/* Header */}
         <div className="flex justify-between items-start mb-8 pb-4 border-b-2 border-blue-600">
           <div>
