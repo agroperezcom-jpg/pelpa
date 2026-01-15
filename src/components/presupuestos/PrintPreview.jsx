@@ -73,93 +73,118 @@ export default function PrintPreview({ presupuesto, onClose }) {
       </div>
 
       <style>{`
-        * {
-          box-sizing: border-box;
-        }
+                * {
+                  box-sizing: border-box;
+                }
 
-        .print-wrapper {
-          position: fixed !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          bottom: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
-          background: #f9fafb !important;
-          z-index: 99999 !important;
-          padding: 0 !important;
-          margin: 0 !important;
-          display: flex !important;
-          flex-direction: column !important;
-          overflow: hidden !important;
-        }
+                .print-wrapper {
+                  position: fixed !important;
+                  top: 0 !important;
+                  left: 0 !important;
+                  right: 0 !important;
+                  bottom: 0 !important;
+                  width: 100% !important;
+                  height: 100% !important;
+                  background: #f9fafb !important;
+                  z-index: 99999 !important;
+                  padding: 0 !important;
+                  margin: 0 !important;
+                  display: flex !important;
+                  flex-direction: column !important;
+                  overflow: hidden !important;
+                }
 
-        .print-header {
-          display: flex !important;
-          align-items: center !important;
-          justify-content: space-between !important;
-          padding: 1rem 1.5rem !important;
-          background: #f3f4f6 !important;
-          border-bottom: 1px solid #e5e7eb !important;
-          flex-shrink: 0 !important;
-          gap: 1rem !important;
-        }
+                .print-header {
+                  display: flex !important;
+                  align-items: center !important;
+                  justify-content: space-between !important;
+                  padding: 1rem 1.5rem !important;
+                  background: #f3f4f6 !important;
+                  border-bottom: 1px solid #e5e7eb !important;
+                  flex-shrink: 0 !important;
+                  gap: 1rem !important;
+                }
 
-        .print-container {
-          flex: 1 !important;
-          overflow: auto !important;
-          background: #f9fafb !important;
-          display: flex !important;
-          justify-content: center !important;
-          padding: 2rem !important;
-        }
+                .print-container {
+                  flex: 1 !important;
+                  overflow: auto !important;
+                  background: #f9fafb !important;
+                  display: flex !important;
+                  justify-content: center !important;
+                  padding: 2rem !important;
+                }
 
-        .print-area {
-          visibility: visible !important;
-          position: relative !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          background: white !important;
-        }
+                .print-area {
+                  visibility: visible !important;
+                  position: relative !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  background: white !important;
+                }
 
-        /* Select dropdown styles */
-        [role="listbox"] {
-          z-index: 100000 !important;
-        }
+                /* Select dropdown styles */
+                [role="listbox"] {
+                  z-index: 100000 !important;
+                }
 
-        [role="option"] {
-          visibility: visible !important;
-        }
+                [role="option"] {
+                  visibility: visible !important;
+                }
 
-        @media print {
-          .print-header {
-            display: none !important;
-          }
+                @media print {
+                  html, body {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    width: 100% !important;
+                    height: 100% !important;
+                    background: white !important;
+                  }
 
-          .print-wrapper {
-            position: static !important;
-            overflow: visible !important;
-            background: white !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
+                  .print-wrapper {
+                    position: static !important;
+                    width: 100% !important;
+                    height: 100% !important;
+                    overflow: visible !important;
+                    background: white !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    display: block !important;
+                    flex-direction: column !important;
+                  }
 
-          .print-container {
-            padding: 0 !important;
-            background: white !important;
-            overflow: visible !important;
-          }
+                  .print-header {
+                    display: none !important;
+                  }
 
-          .print-area {
-            background: white !important;
-          }
+                  .print-container {
+                    padding: 0 !important;
+                    background: white !important;
+                    overflow: visible !important;
+                    display: block !important;
+                    width: 100% !important;
+                    height: 100% !important;
+                  }
 
-          @page {
-            margin: 0 !important;
-            size: A4 !important;
-          }
-        }
-      `}</style>
+                  .print-area {
+                    background: white !important;
+                    display: block !important;
+                    width: 100% !important;
+                    height: 100% !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                  }
+
+                  .print-area * {
+                    display: block !important;
+                  }
+
+                  @page {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    size: A4 !important;
+                  }
+                }
+              `}</style>
     </>
   );
 }
