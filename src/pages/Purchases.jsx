@@ -158,7 +158,7 @@ export default function Purchases() {
         iva_21,
         total_compra,
         saldo_pendiente: saldoPendiente,
-        estado: saldoPendiente > 0.01 ? "PENDIENTE" : "PAGADA"
+        estado: "CONFIRMADA"
       });
 
       for (const detalle of detallesData) {
@@ -515,7 +515,7 @@ export default function Purchases() {
   const medioSeleccionado = mediosPago.find(m => m.id === nuevoPago.medio_pago_id);
 
   const today = new Date().toISOString().split('T')[0];
-  const comprasHoy = compras.filter(c => c.fecha === today && c.estado === "CONFIRMADA");
+  const comprasHoy = compras.filter(c => c.fecha === today && (c.estado === "CONFIRMADA" || c.estado === "PENDIENTE" || c.estado === "PARCIAL" || c.estado === "PAGADA"));
   const totalHoy = comprasHoy.reduce((acc, c) => acc + (c.total_compra || 0), 0);
 
   return (
@@ -532,7 +532,7 @@ export default function Purchases() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => {
-            const data = compras.filter(c => c.estado === "CONFIRMADA").map(c => ({
+            const data = compras.map(c => ({
               fecha: c.fecha,
               proveedor: c.proveedor_nombre,
               comprobante: `${c.tipo_comprobante}-${c.numero_comprobante_proveedor}`,
@@ -694,7 +694,7 @@ export default function Purchases() {
                   <div>
                     <p className="text-xs font-medium text-slate-500 uppercase">Compras del Mes</p>
                     <p className="text-3xl font-bold text-slate-800 mt-2">
-                      {compras.filter(c => c.fecha?.startsWith(fechaReporte) && c.estado === "CONFIRMADA").length}
+                      {compras.filter(c => c.fecha?.startsWith(fechaReporte)).length}
                     </p>
                   </div>
                   <FileText className="h-10 w-10 text-blue-600" />
@@ -708,7 +708,7 @@ export default function Purchases() {
                   <div>
                     <p className="text-xs font-medium text-slate-500 uppercase">Total Comprado</p>
                     <p className="text-3xl font-bold text-blue-600 mt-2">
-                      ${compras.filter(c => c.fecha?.startsWith(fechaReporte) && c.estado === "CONFIRMADA")
+                      ${compras.filter(c => c.fecha?.startsWith(fechaReporte))
                         .reduce((acc, c) => acc + (c.total_compra || 0), 0).toLocaleString()}
                     </p>
                   </div>
@@ -723,7 +723,7 @@ export default function Purchases() {
                   <div>
                     <p className="text-xs font-medium text-slate-500 uppercase">IVA Crédito Fiscal</p>
                     <p className="text-3xl font-bold text-emerald-600 mt-2">
-                      ${compras.filter(c => c.fecha?.startsWith(fechaReporte) && c.estado === "CONFIRMADA")
+                      ${compras.filter(c => c.fecha?.startsWith(fechaReporte))
                         .reduce((acc, c) => acc + (c.iva_21 || 0), 0).toLocaleString()}
                     </p>
                   </div>
@@ -753,7 +753,7 @@ export default function Purchases() {
               <TableBody>
                 {(() => {
                   const comprasPorProveedor = {};
-                  compras.filter(c => c.fecha?.startsWith(fechaReporte) && c.estado === "CONFIRMADA").forEach(c => {
+                  compras.filter(c => c.fecha?.startsWith(fechaReporte)).forEach(c => {
                     const prov = c.proveedor_nombre || "Sin proveedor";
                     if (!comprasPorProveedor[prov]) {
                       comprasPorProveedor[prov] = { cantidad: 0, neto: 0, iva: 0, total: 0 };
@@ -803,7 +803,7 @@ export default function Purchases() {
               </TableHeader>
               <TableBody>
                 {compras
-                  .filter(c => c.fecha?.startsWith(fechaReporte) && c.estado === "CONFIRMADA")
+                  .filter(c => c.fecha?.startsWith(fechaReporte))
                   .map((compra) => (
                     <TableRow key={compra.id}>
                       <TableCell className="text-sm text-slate-600">
@@ -833,7 +833,7 @@ export default function Purchases() {
                       </TableCell>
                     </TableRow>
                   ))}
-                {compras.filter(c => c.fecha?.startsWith(fechaReporte) && c.estado === "CONFIRMADA").length === 0 && (
+                {compras.filter(c => c.fecha?.startsWith(fechaReporte)).length === 0 && (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-slate-500">
                       No hay compras en este período
