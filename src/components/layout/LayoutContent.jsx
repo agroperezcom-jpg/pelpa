@@ -8,7 +8,7 @@ import { useExternalAuth } from "@/components/context/ExternalAuthContext";
 import {
   LayoutDashboard, ShoppingCart, ShoppingBag, Package, Landmark, BarChart3,
   Calendar as CalendarIcon, Briefcase, Settings, Shield, LogOut, Search,
-  ChevronRight, Menu, X, FileText, Bell, Users, Wrench, FileCheck, Building2,
+  ChevronRight, Menu, X, FileText, Users, Wrench, FileCheck, Building2,
   CreditCard, Percent, TrendingUp, DollarSign, Check, Printer, Zap, ClipboardList
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
