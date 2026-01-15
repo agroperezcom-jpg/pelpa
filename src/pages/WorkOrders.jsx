@@ -14,41 +14,59 @@ import WorkOrderOperationalCalendar from '../components/work-orders/WorkOrderOpe
 export default function WorkOrders() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [selectedWorkOrder, setSelectedWorkOrder] = useState(null);
+  const [selectedTask, setSelectedTask] = useState(null);
   const [viewMode, setViewMode] = useState('list');
 
-  const { data: workOrders = [], refetch } = useQuery({
-    queryKey: ['workOrders'],
-    queryFn: () => base44.entities.Project.filter({ is_work_order: true })
+  // Obtener todas las tareas de todos los proyectos
+  const { data: allTasks = [], refetch } = useQuery({
+    queryKey: ['allProjectTasks'],
+    queryFn: () => base44.entities.ProjectTask.list('-created_date', 500)
   });
 
-  const filteredWorkOrders = workOrders.filter(wo => {
-    const matchesSearch =
-      wo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      wo.work_order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (wo.client_name && wo.client_name.toLowerCase().includes(searchTerm.toLowerCase()));
+  // Obtener proyectos para mapear nombres
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: () => base44.entities.Project.list('-created_date', 200)
+  });
 
-    const matchesStatus = filterStatus === 'all' || wo.work_order_status === filterStatus;
+  // Enriquecer tareas con información del proyecto
+  const enrichedTasks = allTasks.map(task => {
+    const project = projects.find(p => p.id === task.project_id);
+    return {
+      ...task,
+      project_name: project?.name || 'Sin proyecto',
+      client_name: project?.client_name,
+      project_color: project?.color
+    };
+  });
+
+  const filteredTasks = enrichedTasks.filter(task => {
+    const matchesSearch =
+      task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (task.project_name && task.project_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (task.client_name && task.client_name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesStatus = filterStatus === 'all' || task.status === filterStatus;
 
     return matchesSearch && matchesStatus;
   });
 
-  // Summary stats
+  // Summary stats basado en estados de tareas
   const stats = {
-    total: workOrders.length,
-    inProgress: workOrders.filter(wo => ['DESIGN', 'PRINTING', 'FINISHING'].includes(wo.work_order_status)).length,
-    ready: workOrders.filter(wo => wo.work_order_status === 'READY').length,
-    delivered: workOrders.filter(wo => wo.work_order_status === 'DELIVERED').length
+    total: allTasks.length,
+    inProgress: allTasks.filter(task => task.status === 'en_progreso').length,
+    pending: allTasks.filter(task => task.status === 'pendiente').length,
+    completed: allTasks.filter(task => task.status === 'completada').length
   };
 
-  if (selectedWorkOrder) {
-    return (
-      <WorkOrderDetailView
-        workOrder={selectedWorkOrder}
-        onBack={() => setSelectedWorkOrder(null)}
-        onUpdate={() => refetch()}
-      />
-    );
+  if (selectedTask) {
+    // Aquí podrías mostrar un detalle de la tarea si lo deseas
+    // Por ahora, volvemos a la lista
+    const project = projects.find(p => p.id === selectedTask.project_id);
+    if (project) {
+      window.location.href = `/Projects?id=${project.id}`;
+      return null;
+    }
   }
 
   return (
@@ -74,20 +92,20 @@ export default function WorkOrders() {
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">En ejecución</p>
+            <p className="text-sm text-muted-foreground">Pendientes</p>
+            <p className="text-2xl font-bold mt-1 text-amber-600">{stats.pending}</p>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground">En progreso</p>
             <p className="text-2xl font-bold mt-1 text-orange-600">{stats.inProgress}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Listos</p>
-            <p className="text-2xl font-bold mt-1 text-green-600">{stats.ready}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Entregados</p>
-            <p className="text-2xl font-bold mt-1 text-emerald-600">{stats.delivered}</p>
+            <p className="text-sm text-muted-foreground">Completadas</p>
+            <p className="text-2xl font-bold mt-1 text-green-600">{stats.completed}</p>
           </CardContent>
         </Card>
       </div>
@@ -112,12 +130,9 @@ export default function WorkOrders() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los estados</SelectItem>
-                <SelectItem value="DESIGN">En diseño</SelectItem>
-                <SelectItem value="PRINTING">En impresión</SelectItem>
-                <SelectItem value="FINISHING">En terminación</SelectItem>
-                <SelectItem value="READY">Listo para retirar</SelectItem>
-                <SelectItem value="DELIVERED">Entregado</SelectItem>
-                <SelectItem value="CANCELLED">Cancelado</SelectItem>
+                <SelectItem value="pendiente">Pendiente</SelectItem>
+                <SelectItem value="en_progreso">En progreso</SelectItem>
+                <SelectItem value="completada">Completada</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -139,14 +154,51 @@ export default function WorkOrders() {
 
         {/* List View */}
         <TabsContent value="list" className="mt-6">
-          {filteredWorkOrders.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredWorkOrders.map(wo => (
-                <WorkOrderCard
-                  key={wo.id}
-                  workOrder={wo}
-                  onView={() => setSelectedWorkOrder(wo)}
-                />
+          {filteredTasks.length > 0 ? (
+            <div className="space-y-2">
+              {filteredTasks.map(task => (
+                <Card 
+                  key={task.id} 
+                  className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer"
+                  onClick={() => setSelectedTask(task)}
+                  style={{ borderLeft: `4px solid ${task.project_color || '#3b82f6'}` }}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-slate-800 truncate">{task.name}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-sm text-slate-500">{task.project_name}</p>
+                          {task.client_name && (
+                            <>
+                              <span className="text-slate-300">•</span>
+                              <p className="text-sm text-slate-500">{task.client_name}</p>
+                            </>
+                          )}
+                        </div>
+                        {task.description && (
+                          <p className="text-sm text-slate-600 mt-2 line-clamp-2">{task.description}</p>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <span className={`px-2.5 py-1 text-xs font-medium rounded-md ${
+                          task.status === 'completada' ? 'bg-green-100 text-green-700' :
+                          task.status === 'en_progreso' ? 'bg-orange-100 text-orange-700' :
+                          'bg-amber-100 text-amber-700'
+                        }`}>
+                          {task.status === 'completada' ? 'Completada' :
+                           task.status === 'en_progreso' ? 'En progreso' :
+                           'Pendiente'}
+                        </span>
+                        {task.due_date && (
+                          <p className="text-xs text-slate-500">
+                            {new Date(task.due_date).toLocaleDateString('es-AR')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           ) : (
@@ -155,8 +207,8 @@ export default function WorkOrders() {
                 <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <p className="text-muted-foreground">
                   {searchTerm || filterStatus !== 'all'
-                    ? 'No se encontraron órdenes de trabajo'
-                    : 'No hay órdenes de trabajo creadas aún'}
+                    ? 'No se encontraron tareas'
+                    : 'No hay tareas creadas aún'}
                 </p>
               </CardContent>
             </Card>
@@ -165,7 +217,12 @@ export default function WorkOrders() {
 
         {/* Calendar View */}
         <TabsContent value="calendar" className="mt-6">
-          <WorkOrderOperationalCalendar workOrders={filteredWorkOrders} />
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-12 text-center">
+              <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <p className="text-muted-foreground">Vista de calendario disponible próximamente</p>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
