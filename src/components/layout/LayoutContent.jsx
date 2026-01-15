@@ -188,22 +188,25 @@ export default function LayoutContent({ children, currentPageName }) {
 
   const modules = allModules
     .map(module => {
+      // Settings visible only to admins
       if (module.id === "ajustes") {
-        return module;
+        return isAdmin ? module : null;
       }
 
+      // General and other modules always visible
       if (!module.permiso) {
         return module;
       }
 
-      const hasModuleAccess = externalIsAdmin || allowedModules.includes(module.permiso);
-      if (!hasModuleAccess) {
+      // Check module permission
+      if (!isAdmin && !canViewModule(module.permiso)) {
         return null;
       }
 
+      // Filter items by permission
       const filteredItems = module.items.filter(item => {
         if (!item.permiso) return true;
-        return externalIsAdmin || allowedModules.includes(item.permiso);
+        return isAdmin || canViewModule(item.permiso);
       });
 
       if (filteredItems.length === 0) {
