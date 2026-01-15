@@ -312,21 +312,7 @@ export default function LayoutContent({ children, currentPageName }) {
             })}
           </nav>
 
-          {/* Logout Button - Fixed at bottom */}
-          {externalUser && (
-            <div className="border-t border-slate-200/60 bg-white p-4 shrink-0 space-y-2">
-              <p className="text-xs text-muted-foreground px-3">
-                {externalUser.full_name}
-              </p>
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-medium transition-colors shadow-sm"
-              >
-                <LogOut className="h-4 w-4" />
-                Cerrar sesión
-              </button>
-            </div>
-          )}
+
         </div>
       </aside>
 
@@ -358,17 +344,6 @@ export default function LayoutContent({ children, currentPageName }) {
           </div>
 
           <div className="flex items-center gap-3">
-            {externalUser && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline text-sm font-medium">Cerrar sesión</span>
-              </Button>
-            )}
           </div>
         </header>
 
