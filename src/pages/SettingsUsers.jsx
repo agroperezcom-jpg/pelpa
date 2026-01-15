@@ -282,6 +282,24 @@ export default function SettingsUsers() {
                 placeholder="juan@example.com"
               />
             </div>
+            <div className="space-y-2">
+              <Label>Rol</Label>
+              <Select value={formData.role_id} onValueChange={(value) =>
+                setFormData({ ...formData, role_id: value })
+              }>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sin asignar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={null}>Sin asignar</SelectItem>
+                  {roles.map((role) => (
+                    <SelectItem key={role.id} value={role.id}>
+                      {role.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
