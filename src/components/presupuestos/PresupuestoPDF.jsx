@@ -23,20 +23,25 @@ export default function PresupuestoPDF({ presupuesto, onPrint }) {
       <style>
         {`
           @media print {
+            body {
+              margin: 0 !important;
+              padding: 0 !important;
+              background: white !important;
+            }
+            html, body {
+              width: 100% !important;
+              height: 100% !important;
+            }
             .no-print {
               display: none !important;
             }
-            body * {
-              visibility: hidden;
-            }
-            .presupuesto-print, .presupuesto-print * {
-              visibility: visible;
-            }
             .presupuesto-print {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
+              margin: 0 !important;
+              padding: 2cm !important;
+              box-shadow: none !important;
+              border: none !important;
+              width: 100% !important;
+              page-break-after: avoid;
             }
           }
         `}
