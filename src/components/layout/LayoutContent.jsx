@@ -350,7 +350,7 @@ export default function LayoutContent({ children, currentPageName }) {
               <Menu className="h-5 w-5 text-muted-foreground" />
             </button>
 
-            <div className="flex items-center gap-2 text-sm hidden lg:flex">
+            <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">
                 {modules.find(m => m.items.some(i => i.page === currentPageName))?.name}
               </span>
@@ -359,11 +359,6 @@ export default function LayoutContent({ children, currentPageName }) {
                 {allPages.find(p => p.page === currentPageName)?.name || "Dashboard"}
               </span>
             </div>
-
-            {/* Mobile: Show page name */}
-            <span className="text-sm font-medium text-foreground lg:hidden">
-              {allPages.find(p => p.page === currentPageName)?.name || "Dashboard"}
-            </span>
           </div>
 
           <div className="flex items-center gap-3">
