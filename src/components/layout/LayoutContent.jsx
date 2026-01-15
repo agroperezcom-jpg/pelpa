@@ -20,6 +20,13 @@ export default function LayoutContent({ children, currentPageName }) {
   const { user: externalUser, isAdmin: externalIsAdmin } = useExternalAuth();
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('sidebarCollapsed')) ?? false;
+    } catch {
+      return false;
+    }
+  });
   const [sidebarPinned, setSidebarPinned] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('sidebarPinned')) ?? false;
@@ -87,6 +94,10 @@ export default function LayoutContent({ children, currentPageName }) {
   useEffect(() => {
     localStorage.setItem('sidebarPinned', JSON.stringify(sidebarPinned));
   }, [sidebarPinned]);
+
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed));
+  }, [sidebarCollapsed]);
 
   const handleLogout = async () => {
     if (window.__AUTH_GATEWAY_LOGOUT__) {
@@ -294,10 +305,10 @@ export default function LayoutContent({ children, currentPageName }) {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed top-0 left-0 bottom-0 w-64 bg-gradient-to-b from-slate-50 to-slate-100/50 border-r border-slate-200/60 z-50 transition-theme",
-        "transition-transform duration-300 ease-out",
-        "lg:translate-x-0",
-        sidebarOpen || sidebarPinned ? "translate-x-0" : "-translate-x-full"
+        "fixed top-0 left-0 bottom-0 bg-gradient-to-b from-slate-50 to-slate-100/50 border-r border-slate-200/60 z-50 transition-theme",
+        "transition-all duration-300 ease-out",
+        sidebarCollapsed ? "w-0" : "w-64",
+        sidebarOpen || sidebarPinned ? "translate-x-0 lg:translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         <div className="flex flex-col h-full">
            {/* Logo */}
@@ -406,7 +417,10 @@ export default function LayoutContent({ children, currentPageName }) {
       </aside>
 
       {/* Main Content */}
-      <main className="lg:pl-64 min-h-screen">
+      <main className={cn(
+        "min-h-screen transition-all duration-300 ease-out",
+        sidebarCollapsed ? "lg:pl-0" : "lg:pl-64"
+      )}>
         <div className="pt-14 lg:pt-0">
           <header className="hidden lg:flex h-14 items-center justify-between px-6 border-b border-border/40 bg-card/60 backdrop-blur-sm sticky top-0 z-30 transition-theme">
             <div className="flex items-center gap-2 text-sm">
@@ -417,7 +431,8 @@ export default function LayoutContent({ children, currentPageName }) {
               <span className="font-medium text-foreground">
                 {allPages.find(p => p.page === currentPageName)?.name || "Dashboard"}
               </span>
-            </div>
+              </div>
+              </div>
             
             <div className="flex items-center gap-3">
               <button className="p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
