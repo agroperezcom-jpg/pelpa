@@ -82,6 +82,14 @@ export default function Expenses() {
   const [recurringDialogOpen, setRecurringDialogOpen] = useState(false);
   const [recurringExpense, setRecurringExpense] = useState(null);
   const [nextDate, setNextDate] = useState("");
+  const [activeTab, setActiveTab] = useState("pagados");
+  const [payingExpenseId, setPayingExpenseId] = useState(null);
+  const [payDialog, setPayDialog] = useState(false);
+  const [payData, setPayData] = useState({
+    medio_pago_id: "",
+    banco_id: "",
+    caja_id: ""
+  });
   const [cuentaSearch, setCuentaSearch] = useState("");
   const [formData, setFormData] = useState({
     description: "",
@@ -139,6 +147,22 @@ export default function Expenses() {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
+      // Si es recurrente, solo registrar sin crear movimiento
+      if (data.is_recurring) {
+        const expense = await base44.entities.Expense.create({
+          ...data,
+          medio_pago_id: data.medio_pago_id || null,
+          banco_id: null,
+          caja_id: null,
+          movimiento_tesoreria_id: null,
+          medio_pago_nombre: "",
+          banco_nombre: "",
+          caja_nombre: ""
+        });
+        return expense;
+      }
+
+      // Si es gasto a pagar hoy, crear con movimiento de tesorería
       const medio = mediosPago.find(m => m.id === data.medio_pago_id);
       
       if (!medio) {
@@ -164,7 +188,6 @@ export default function Expenses() {
         throw new Error(`Saldo insuficiente en ${caja.nombre}. Saldo disponible: $${caja.saldo_actual}`);
       }
 
-      // Crear gasto con toda la información
       const expense = await base44.entities.Expense.create({
         ...data,
         medio_pago_nombre: medio.nombre,
@@ -214,6 +237,66 @@ export default function Expenses() {
       queryClient.invalidateQueries({ queryKey: ['bancos'] });
       queryClient.invalidateQueries({ queryKey: ['cajas'] });
       handleCloseDialog();
+    },
+    onError: (error) => {
+      alert(error.message);
+    }
+  });
+
+  const payRecurringMutation = useMutation({
+    mutationFn: async ({ expenseId, data }) => {
+      const medio = mediosPago.find(m => m.id === data.medio_pago_id);
+      if (!medio) throw new Error("Debe seleccionar un medio de pago");
+      
+      const banco = bancos.find(b => b.id === data.banco_id);
+      const caja = cajas.find(c => c.id === data.caja_id);
+
+      // Validar saldo
+      if (data.banco_id && banco && banco.saldo_actual < data.amount) {
+        throw new Error(`Saldo insuficiente en ${banco.nombre}`);
+      }
+      if (data.caja_id && caja && caja.saldo_actual < data.amount) {
+        throw new Error(`Saldo insuficiente en ${caja.nombre}`);
+      }
+
+      // Crear movimiento de tesorería
+      const movimiento = await base44.entities.MovimientoTesoreria.create({
+        fecha: data.date,
+        tipo: "EGRESO",
+        medio_pago_id: medio.id,
+        medio_pago_nombre: medio.nombre,
+        banco_id: data.banco_id || null,
+        banco_nombre: banco?.nombre || "",
+        caja_id: data.caja_id || null,
+        caja_nombre: caja?.nombre || "",
+        importe: data.amount,
+        referencia_tipo: "gasto",
+        referencia_id: expenseId,
+        observaciones: `Gasto: ${data.description} (${data.cuenta_contable_nombre || data.category})`
+      });
+
+      // Actualizar expense con movimiento
+      await base44.entities.Expense.update(expenseId, {
+        movimiento_tesoreria_id: movimiento.id
+      });
+
+      // Actualizar saldos
+      if (data.banco_id && banco) {
+        await base44.entities.Banco.update(data.banco_id, {
+          saldo_actual: banco.saldo_actual - data.amount
+        });
+      }
+      if (data.caja_id && caja) {
+        await base44.entities.Caja.update(data.caja_id, {
+          saldo_actual: caja.saldo_actual - data.amount
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
+      queryClient.invalidateQueries({ queryKey: ['bancos'] });
+      queryClient.invalidateQueries({ queryKey: ['cajas'] });
     },
     onError: (error) => {
       alert(error.message);
@@ -424,29 +507,31 @@ export default function Expenses() {
   };
 
   // Filter expenses
-  const filteredExpenses = expenses.filter(expense => {
+  const paidExpenses = expenses.filter(e => e.movimiento_tesoreria_id);
+  const futureExpenses = expenses.filter(e => !e.movimiento_tesoreria_id && e.is_recurring);
+
+  const filteredExpenses = (activeTab === "pagados" ? paidExpenses : futureExpenses).filter(expense => {
     const matchesSearch = 
       expense.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       expense.vendor?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === "all" || expense.category === categoryFilter;
-    const matchesMonth = expense.date?.startsWith(monthFilter);
+    const matchesMonth = activeTab === "pagados" ? expense.date?.startsWith(monthFilter) : true;
     return matchesSearch && matchesCategory && matchesMonth;
   });
 
   // Calculate stats
-  const monthExpenses = expenses.filter(e => e.date?.startsWith(monthFilter));
+  const monthExpenses = paidExpenses.filter(e => e.date?.startsWith(monthFilter));
   const totalMonth = monthExpenses.reduce((acc, e) => acc + (e.amount || 0), 0);
-  const recurringExpenses = monthExpenses.filter(e => e.is_recurring);
-  const totalRecurring = recurringExpenses.reduce((acc, e) => acc + (e.amount || 0), 0);
+  const totalFuture = futureExpenses.reduce((acc, e) => acc + (e.amount || 0), 0);
 
   // Previous month comparison
   const prevMonth = format(subMonths(new Date(monthFilter + '-01'), 1), 'yyyy-MM');
-  const prevMonthExpenses = expenses.filter(e => e.date?.startsWith(prevMonth));
+  const prevMonthExpenses = paidExpenses.filter(e => e.date?.startsWith(prevMonth));
   const totalPrevMonth = prevMonthExpenses.reduce((acc, e) => acc + (e.amount || 0), 0);
   const percentChange = totalPrevMonth > 0 ? ((totalMonth - totalPrevMonth) / totalPrevMonth * 100) : 0;
 
   // Chart data by category
-  const categoryData = monthExpenses.reduce((acc, expense) => {
+  const categoryData = (activeTab === "pagados" ? monthExpenses : futureExpenses).reduce((acc, expense) => {
     const cat = expense.cuenta_contable_nombre || expense.category || 'Sin categoría';
     if (!acc[cat]) acc[cat] = 0;
     acc[cat] += expense.amount || 0;
@@ -465,7 +550,7 @@ export default function Expenses() {
   });
 
   const trendData = last6Months.map(month => {
-    const monthExp = expenses.filter(e => e.date?.startsWith(month));
+    const monthExp = paidExpenses.filter(e => e.date?.startsWith(month));
     return {
       month: format(new Date(month + '-01'), 'MMM', { locale: es }),
       total: monthExp.reduce((acc, e) => acc + (e.amount || 0), 0)
@@ -544,19 +629,19 @@ export default function Expenses() {
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-slate-500 uppercase">Gastos Recurrentes</p>
-                <p className="text-2xl font-bold text-slate-800 mt-1">{formatCurrency(totalRecurring)}</p>
-                <p className="text-xs text-slate-500 mt-1">{recurringExpenses.length} conceptos</p>
-              </div>
-              <div className="w-10 h-10 bg-violet-50 rounded-xl flex items-center justify-center">
-                <RefreshCw className="h-5 w-5 text-violet-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+           <CardContent className="p-4">
+             <div className="flex items-center justify-between">
+               <div>
+                 <p className="text-xs font-medium text-slate-500 uppercase">Gastos Futuros</p>
+                 <p className="text-2xl font-bold text-violet-600 mt-1">{formatCurrency(totalFuture)}</p>
+                 <p className="text-xs text-slate-500 mt-1">{futureExpenses.length} conceptos</p>
+               </div>
+               <div className="w-10 h-10 bg-violet-50 rounded-xl flex items-center justify-center">
+                 <RefreshCw className="h-5 w-5 text-violet-600" />
+               </div>
+             </div>
+           </CardContent>
+         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -643,6 +728,30 @@ export default function Expenses() {
         </Card>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-slate-200">
+        <button
+          onClick={() => setActiveTab("pagados")}
+          className={`px-4 py-3 font-medium text-sm transition-colors ${
+            activeTab === "pagados"
+              ? "text-slate-900 border-b-2 border-slate-900"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          Gastos Pagados
+        </button>
+        <button
+          onClick={() => setActiveTab("futuros")}
+          className={`px-4 py-3 font-medium text-sm transition-colors ${
+            activeTab === "futuros"
+              ? "text-slate-900 border-b-2 border-slate-900"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          Gastos Futuros ({futureExpenses.length})
+        </button>
+      </div>
+
       {/* Filters */}
       <Card className="border-0 shadow-sm">
         <CardContent className="p-4">
@@ -669,12 +778,14 @@ export default function Expenses() {
                 ))}
               </SelectContent>
             </Select>
-            <Input
-              type="month"
-              value={monthFilter}
-              onChange={(e) => setMonthFilter(e.target.value)}
-              className="w-full sm:w-40"
-            />
+            {activeTab === "pagados" && (
+              <Input
+                type="month"
+                value={monthFilter}
+                onChange={(e) => setMonthFilter(e.target.value)}
+                className="w-full sm:w-40"
+              />
+            )}
           </div>
         </CardContent>
       </Card>
@@ -722,45 +833,84 @@ export default function Expenses() {
                   {formatCurrency(expense.amount)}
                 </TableCell>
                 <TableCell className="text-center">
-                  {expense.is_recurring && (
+                  {expense.is_recurring && activeTab === "futuros" && (
                     <button
                       onClick={() => handleOpenRecurringDialog(expense)}
                       className="inline-block"
                     >
                       <Badge variant="secondary" className="bg-violet-100 text-violet-700 cursor-pointer hover:bg-violet-200 transition-colors">
                         <RefreshCw className="h-3 w-3 mr-1" />
-                        {expense.recurring_frequency}
+                        Próx: {nextDate || expense.date?.split('-')[2]}
                       </Badge>
                     </button>
                   )}
                 </TableCell>
                 <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleOpenDialog(expense)}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Editar
-                      </DropdownMenuItem>
-                      {expense.receipt_url && (
-                        <DropdownMenuItem onClick={() => window.open(expense.receipt_url, '_blank')}>
-                          <FileText className="h-4 w-4 mr-2" />
-                          Ver Comprobante
+                  {activeTab === "futuros" && !expense.movimiento_tesoreria_id ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => {
+                          setPayingExpenseId(expense.id);
+                          setPayData({
+                            medio_pago_id: expense.medio_pago_id || "",
+                            banco_id: expense.banco_id || "",
+                            caja_id: expense.caja_id || ""
+                          });
+                          setPayDialog(true);
+                        }}>
+                          <DollarSign className="h-4 w-4 mr-2" />
+                          Pagar Ahora
                         </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem 
-                        onClick={() => deleteMutation.mutate(expense.id)}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Eliminar
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        <DropdownMenuItem onClick={() => handleOpenRecurringDialog(expense)}>
+                          <Calendar className="h-4 w-4 mr-2" />
+                          Cambiar Fecha
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleOpenDialog(expense)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => deleteMutation.mutate(expense.id)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleOpenDialog(expense)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        {expense.receipt_url && (
+                          <DropdownMenuItem onClick={() => window.open(expense.receipt_url, '_blank')}>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Ver Comprobante
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem 
+                          onClick={() => deleteMutation.mutate(expense.id)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -774,6 +924,111 @@ export default function Expenses() {
           </TableBody>
         </Table>
       </Card>
+
+      {/* Pay Recurring Dialog */}
+      <Dialog open={payDialog} onOpenChange={setPayDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Pagar Gasto</DialogTitle>
+          </DialogHeader>
+          {payingExpenseId && (() => {
+            const expense = expenses.find(e => e.id === payingExpenseId);
+            return expense ? (
+              <div className="space-y-4">
+                <div className="bg-slate-50 p-4 rounded-lg space-y-2">
+                  <div>
+                    <p className="text-xs text-slate-500">Descripción</p>
+                    <p className="font-semibold">{expense.description}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Monto</p>
+                    <p className="text-lg font-bold text-red-600">{formatCurrency(expense.amount)}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Medio de Pago *</Label>
+                  <Select 
+                    value={payData.medio_pago_id} 
+                    onValueChange={(v) => setPayData({ ...payData, medio_pago_id: v, banco_id: "", caja_id: "" })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar medio" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mediosPago.map(m => (
+                        <SelectItem key={m.id} value={m.id}>{m.nombre}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {mediosPago.find(m => m.id === payData.medio_pago_id)?.requiere_banco && (
+                  <div className="space-y-2">
+                    <Label>Banco *</Label>
+                    <Select value={payData.banco_id} onValueChange={(v) => setPayData({ ...payData, banco_id: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar banco" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bancos.map(b => (
+                          <SelectItem key={b.id} value={b.id}>
+                            {b.nombre} (Saldo: {formatCurrency(b.saldo_actual || 0)})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {mediosPago.find(m => m.id === payData.medio_pago_id)?.requiere_caja && (
+                  <div className="space-y-2">
+                    <Label>Caja *</Label>
+                    <Select value={payData.caja_id} onValueChange={(v) => setPayData({ ...payData, caja_id: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar caja" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cajas.map(c => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.nombre} (Saldo: {formatCurrency(c.saldo_actual || 0)})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            ) : null;
+          })()}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setPayDialog(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => {
+                const expense = expenses.find(e => e.id === payingExpenseId);
+                if (expense && payData.medio_pago_id) {
+                  payRecurringMutation.mutate({
+                    expenseId: payingExpenseId,
+                    data: {
+                      ...payData,
+                      amount: expense.amount,
+                      date: format(new Date(), 'yyyy-MM-dd'),
+                      description: expense.description,
+                      cuenta_contable_nombre: expense.cuenta_contable_nombre
+                    }
+                  });
+                  setPayDialog(false);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Pagar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Recurring Date Dialog */}
       <Dialog open={recurringDialogOpen} onOpenChange={setRecurringDialogOpen}>
