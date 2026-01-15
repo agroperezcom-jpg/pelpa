@@ -17,7 +17,6 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 export default function LayoutContent({ children, currentPageName }) {
-  // Now useExternalAuth is called inside a component that's a child of the provider
   const { user: externalUser, isAdmin: externalIsAdmin } = useExternalAuth();
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -56,7 +55,6 @@ export default function LayoutContent({ children, currentPageName }) {
     "nunito": "'Nunito', sans-serif"
   };
 
-  // Reconstruct user from external auth - single source of truth
   useEffect(() => {
     if (externalUser) {
       setUser({
@@ -65,7 +63,6 @@ export default function LayoutContent({ children, currentPageName }) {
         role: externalUser.role
       });
     } else {
-      // Only set to null if explicitly unauthenticated, not during loading
       setUser(null);
     }
   }, [externalUser]);
@@ -215,8 +212,6 @@ export default function LayoutContent({ children, currentPageName }) {
 
   const modules = allModules
     .map(module => {
-      // Ajustes ahora es VISIBLE PARA TODOS
-      // El filtro se hace DENTRO de Settings.js por isAdmin
       if (module.id === "ajustes") {
         return module;
       }
@@ -274,23 +269,12 @@ export default function LayoutContent({ children, currentPageName }) {
           {allPages.find(p => p.page === currentPageName)?.name || "Dashboard"}
         </span>
         
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={() => setCommandOpen(true)}
-            className="p-2 rounded-lg hover:bg-secondary transition-colors"
-          >
-            <Search className="h-5 w-5 text-muted-foreground" />
-          </button>
-          {externalUser && (
-            <button 
-              onClick={handleLogout}
-              className="p-2 rounded-lg hover:bg-red-50 text-red-500 hover:text-red-700 transition-colors"
-              title="Cerrar sesión"
-            >
-              <LogOut className="h-5 w-5" />
-            </button>
-          )}
-        </div>
+        <button 
+          onClick={() => setCommandOpen(true)}
+          className="p-2 -mr-2 rounded-lg hover:bg-secondary transition-colors"
+        >
+          <Search className="h-5 w-5 text-muted-foreground" />
+        </button>
       </header>
 
       {/* Mobile Sidebar Overlay */}
@@ -369,7 +353,7 @@ export default function LayoutContent({ children, currentPageName }) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto px-3 pb-4 scrollbar-thin">
+          <nav className="flex-1 overflow-y-auto px-3 scrollbar-thin">
             {modules.map((module) => {
               const SectionIcon = sectionIcons[module.section];
               return (
@@ -410,13 +394,12 @@ export default function LayoutContent({ children, currentPageName }) {
             })}
           </nav>
 
-          {/* Cerrar Sesión Button */}
+          {/* Logout Button - Siempre visible al final */}
           {externalUser && (
-            <div className="px-3 py-3 border-t border-border/40">
+            <div className="border-t border-slate-200/40 bg-white/50 p-4">
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 px-3 py-3 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-colors font-medium text-sm"
-                title="Cerrar sesión"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
               >
                 <LogOut className="h-4 w-4" />
                 Cerrar sesión
