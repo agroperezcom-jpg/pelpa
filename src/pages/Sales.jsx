@@ -11,6 +11,7 @@ import ReportesDialog from "../components/pos/ReportesDialog";
 import TicketPrint from "../components/pos/TicketPrint";
 import SaleDetailDialog from "../components/sales/SaleDetailDialog";
 import AsignarCuentaDialog from "../components/sales/AsignarCuentaDialog";
+import PrintPreviewSales from "../components/sales/PrintPreviewSales";
 
 import {
   Dialog,
