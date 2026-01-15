@@ -162,11 +162,6 @@ export default function CuentaCorrienteView() {
     }
   });
 
-  const { data: compras = [] } = useQuery({
-    queryKey: ['compras'],
-    queryFn: () => base44.entities.Compra.list('-fecha', 500)
-  });
-
   const pagarProveedorMutation = useMutation({
     mutationFn: async (data) => {
       const medio = mediosPago.find(m => m.id === data.medio_pago_id);
@@ -193,12 +188,15 @@ export default function CuentaCorrienteView() {
 
       // Actualizar estados de compras del proveedor si el saldo llega a cero
       if (Math.abs(nuevoSaldo) < 0.01) {
-        const comprasProveedor = compras.filter(c => 
-          c.proveedor_id === proveedor.id && 
-          (c.estado === "PENDIENTE" || c.estado === "PARCIAL")
+        const comprasProveedor = await base44.entities.Compra.filter({
+          proveedor_id: proveedor.id
+        });
+        
+        const comprasPendientes = comprasProveedor.filter(c => 
+          c.estado === "PENDIENTE" || c.estado === "PARCIAL"
         );
         
-        for (const compra of comprasProveedor) {
+        for (const compra of comprasPendientes) {
           await base44.entities.Compra.update(compra.id, {
             saldo_pendiente: 0,
             estado: "PAGADA"
