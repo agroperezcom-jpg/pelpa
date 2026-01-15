@@ -233,35 +233,36 @@ export default function Expenses() {
         throw new Error("Gasto no encontrado");
       }
 
-      // Si tiene movimiento vinculado, eliminarlo y revertir saldos
-      if (gasto.movimiento_tesoreria_id) {
-        const movimiento = await base44.entities.MovimientoTesoreria.list();
-        const mov = movimiento.find(m => m.id === gasto.movimiento_tesoreria_id);
-        
-        if (mov) {
-          // Revertir saldo del banco
-          if (mov.banco_id) {
-            const banco = bancos.find(b => b.id === mov.banco_id);
-            if (banco) {
-              await base44.entities.Banco.update(mov.banco_id, {
-                saldo_actual: banco.saldo_actual + mov.importe
-              });
-            }
+      // CRÍTICO: Eliminar TODOS los movimientos vinculados al gasto (por ID o por referencia)
+      const todosMovimientos = await base44.entities.MovimientoTesoreria.list();
+      const movimientosVinculados = todosMovimientos.filter(m => 
+        m.id === gasto.movimiento_tesoreria_id || 
+        (m.referencia_tipo === "gasto" && m.referencia_id === id)
+      );
+      
+      for (const mov of movimientosVinculados) {
+        // Revertir saldo del banco
+        if (mov.banco_id) {
+          const banco = bancos.find(b => b.id === mov.banco_id);
+          if (banco) {
+            await base44.entities.Banco.update(mov.banco_id, {
+              saldo_actual: banco.saldo_actual + mov.importe
+            });
           }
-
-          // Revertir saldo de la caja
-          if (mov.caja_id) {
-            const caja = cajas.find(c => c.id === mov.caja_id);
-            if (caja) {
-              await base44.entities.Caja.update(mov.caja_id, {
-                saldo_actual: caja.saldo_actual + mov.importe
-              });
-            }
-          }
-
-          // Eliminar movimiento
-          await base44.entities.MovimientoTesoreria.delete(mov.id);
         }
+
+        // Revertir saldo de la caja
+        if (mov.caja_id) {
+          const caja = cajas.find(c => c.id === mov.caja_id);
+          if (caja) {
+            await base44.entities.Caja.update(mov.caja_id, {
+              saldo_actual: caja.saldo_actual + mov.importe
+            });
+          }
+        }
+
+        // Eliminar movimiento
+        await base44.entities.MovimientoTesoreria.delete(mov.id);
       }
       
       // Eliminar gasto

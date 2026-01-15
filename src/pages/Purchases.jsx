@@ -181,12 +181,38 @@ export default function Purchases() {
         await base44.entities.CompraDetalle.delete(detalle.id);
       }
 
-      // 3. Eliminar movimientos de tesorería
+      // 3. Eliminar movimientos de tesorería vinculados directamente
       const movimientos = await base44.entities.MovimientoTesoreria.filter({
         referencia_tipo: "compra",
         referencia_id: compraId
       });
       for (const mov of movimientos) {
+        if (mov.banco_id) {
+          const banco = bancos.find(b => b.id === mov.banco_id);
+          if (banco) {
+            await base44.entities.Banco.update(mov.banco_id, {
+              saldo_actual: banco.saldo_actual + mov.importe
+            });
+          }
+        }
+        if (mov.caja_id) {
+          const caja = cajas.find(c => c.id === mov.caja_id);
+          if (caja) {
+            await base44.entities.Caja.update(mov.caja_id, {
+              saldo_actual: caja.saldo_actual + mov.importe
+            });
+          }
+        }
+        await base44.entities.MovimientoTesoreria.delete(mov.id);
+      }
+
+      // CRÍTICO: Eliminar movimientos de pago huérfanos relacionados con esta compra
+      const todosMov = await base44.entities.MovimientoTesoreria.list();
+      const movimientosHuerfanos = todosMov.filter(m => 
+        m.referencia_tipo === "pago" && 
+        m.observaciones?.toLowerCase().includes(compra.proveedor_nombre?.toLowerCase() || "")
+      );
+      for (const mov of movimientosHuerfanos) {
         if (mov.banco_id) {
           const banco = bancos.find(b => b.id === mov.banco_id);
           if (banco) {
