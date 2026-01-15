@@ -34,7 +34,8 @@ export default function Calendar() {
     freeTasks: true,
     milestones: true,
     campaigns: true,
-    events: false
+    events: false,
+    expenses: true
   });
   const [selectedProject, setSelectedProject] = useState("all");
   const [selectedUser, setSelectedUser] = useState("all");
@@ -145,6 +146,11 @@ export default function Calendar() {
   const { data: freeTasks = [] } = useQuery({
     queryKey: ['freeTasks'],
     queryFn: () => base44.entities.FreeTask.list()
+  });
+
+  const { data: expenses = [] } = useQuery({
+    queryKey: ['expenses'],
+    queryFn: () => base44.entities.Expense.list('-created_date', 1000)
   });
 
   const { data: calendarConfigs = [] } = useQuery({
@@ -430,6 +436,70 @@ export default function Calendar() {
                 currentDate.setDate(currentDate.getDate() + 1);
               }
             }
+          }
+        }
+      });
+    }
+
+    // Gastos Recurrentes
+    if (layers.expenses) {
+      expenses.forEach(expense => {
+        if (expense.is_recurring && expense.date) {
+          const baseDate = new Date(expense.date);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          // Generar instancias hasta 6 meses en el futuro
+          const maxDate = new Date();
+          maxDate.setMonth(maxDate.getMonth() + 6);
+
+          let currentDate = new Date(baseDate);
+          currentDate.setHours(0, 0, 0, 0);
+
+          let instanceCount = 0;
+          while (currentDate <= maxDate && instanceCount < 12) {
+            if (currentDate >= baseDate) {
+              let shouldInclude = false;
+
+              if (expense.recurring_frequency === "mensual") {
+                const baseDayOfMonth = baseDate.getDate();
+                shouldInclude = currentDate.getDate() === baseDayOfMonth;
+              } else if (expense.recurring_frequency === "trimestral") {
+                const baseMonth = baseDate.getMonth();
+                const baseDay = baseDate.getDate();
+                const currentMonth = currentDate.getMonth();
+                const currentDay = currentDate.getDate();
+                shouldInclude = (currentMonth - baseMonth) % 3 === 0 && currentDay === baseDay;
+              } else if (expense.recurring_frequency === "anual") {
+                const baseMonth = baseDate.getMonth();
+                const baseDay = baseDate.getDate();
+                shouldInclude = currentDate.getMonth() === baseMonth && currentDate.getDate() === baseDay;
+              }
+
+              if (shouldInclude) {
+                const dateStr = currentDate.toISOString().split('T')[0];
+                
+                events.push({
+                  id: `expense-${expense.id}-${dateStr}`,
+                  name: `💰 ${expense.description}`,
+                  type: "expense",
+                  date: dateStr,
+                  start_date: dateStr,
+                  estimated_end_date: dateStr,
+                  status: "pending",
+                  priority: "normal",
+                  data: expense,
+                  is_recurrence_instance: true,
+                  parent_expense_id: expense.id,
+                  amount: expense.amount
+                });
+                
+                instanceCount++;
+              }
+            }
+
+            // Avanzar al siguiente día
+            currentDate.setDate(currentDate.getDate() + 1);
           }
         }
       });
@@ -950,7 +1020,8 @@ export default function Calendar() {
       task: "#10b981",
       freeTask: "#64748b",
       milestone: "#f59e0b",
-      campaign: "#ec4899"
+      campaign: "#ec4899",
+      expense: "#ef4444"
     };
     
     return defaults[event.type] || event.color || "#64748b";
