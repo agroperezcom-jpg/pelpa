@@ -23,16 +23,68 @@ export default function PrintPreview({ presupuesto, onClose }) {
   }, []);
 
   const getFormatComponent = () => {
-    switch (format) {
-      case "mobile":
-        return <PrintFormatMobile presupuesto={presupuesto} />;
-      case "80mm":
-        return <PrintFormat80mm presupuesto={presupuesto} />;
-      case "a4":
-      default:
-        return <PrintFormatA4 presupuesto={presupuesto} />;
-    }
-  };
+        switch (format) {
+          case "mobile":
+            return <PrintFormatMobile presupuesto={presupuesto} />;
+          case "80mm":
+            return <PrintFormat80mm presupuesto={presupuesto} />;
+          case "a4":
+          default:
+            return <PrintFormatA4 presupuesto={presupuesto} />;
+        }
+      };
+
+      const handlePrint = () => {
+        const printArea = document.querySelector(".print-area");
+        if (!printArea) return;
+
+        const printWindow = window.open("", "_blank");
+        const printContent = printArea.innerHTML;
+
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style>
+                * {
+                  margin: 0;
+                  padding: 0;
+                  box-sizing: border-box;
+                }
+                body {
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+                  background: white;
+                  padding: 0;
+                  margin: 0;
+                }
+                @page {
+                  margin: 0;
+                  size: A4;
+                }
+                @media print {
+                  body {
+                    margin: 0;
+                    padding: 0;
+                  }
+                }
+              </style>
+            </head>
+            <body>
+              ${printContent}
+            </body>
+          </html>
+        `);
+
+        printWindow.document.close();
+        printWindow.focus();
+
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 250);
+      };
 
   return (
     <>
