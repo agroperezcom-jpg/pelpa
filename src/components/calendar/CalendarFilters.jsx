@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, CheckSquare, Target, Calendar, Megaphone } from "lucide-react";
+import { Briefcase, CheckSquare, Target, Calendar, Megaphone, DollarSign } from "lucide-react";
 
 export default function CalendarFilters({ 
   layers, 
@@ -27,7 +27,8 @@ export default function CalendarFilters({
     { key: "freeTasks", label: "Tareas Libres", icon: Calendar, color: "text-slate-600" },
     { key: "milestones", label: "Hitos", icon: Target, color: "text-amber-600" },
     { key: "campaigns", label: "Campañas", icon: Megaphone, color: "text-pink-600" },
-    { key: "events", label: "Eventos", icon: Calendar, color: "text-slate-400" }
+    { key: "events", label: "Eventos", icon: Calendar, color: "text-slate-400" },
+    { key: "expenses", label: "Gastos a Pagar", icon: DollarSign, color: "text-red-600" }
   ];
 
   const activeLayersCount = Object.values(layers).filter(Boolean).length;
