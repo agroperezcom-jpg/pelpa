@@ -1,4 +1,3 @@
-import AdminUserSetup from './pages/AdminUserSetup';
 import Analytics from './pages/Analytics';
 import Calendar from './pages/Calendar';
 import Cheques from './pages/Cheques';
@@ -40,7 +39,6 @@ import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "AdminUserSetup": AdminUserSetup,
     "Analytics": Analytics,
     "Calendar": Calendar,
     "Cheques": Cheques,

@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { usePermissions } from "@/components/permissions/usePermissions";
+import { usePermissionsEnforcement } from "@/components/permissions/usePermissionsEnforcement";
 import { useExternalAuth } from "@/components/context/ExternalAuthContext";
 import {
   LayoutDashboard, ShoppingCart, ShoppingBag, Package, Landmark, BarChart3,
@@ -17,8 +17,8 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 export default function LayoutContent({ children, currentPageName }) {
-  const { user: externalUser, isAdmin: externalIsAdmin } = useExternalAuth();
-  const [user, setUser] = useState(null);
+  const { user: externalUser } = useExternalAuth();
+  const { canViewModule, isAdmin } = usePermissionsEnforcement();
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('sidebarExpanded')) ?? true;
@@ -29,7 +29,6 @@ export default function LayoutContent({ children, currentPageName }) {
   const [commandOpen, setCommandOpen] = useState(false);
   const [commandSearch, setCommandSearch] = useState("");
   const location = useLocation();
-  const { hasPermission, getAllowedModules, isAdmin, loading: permissionsLoading } = usePermissions();
 
   const { data: configuracionEmpresa = [] } = useQuery({
     queryKey: ['configuracionEmpresa'],
@@ -54,17 +53,7 @@ export default function LayoutContent({ children, currentPageName }) {
     "nunito": "'Nunito', sans-serif"
   };
 
-  useEffect(() => {
-    if (externalUser) {
-      setUser({
-        email: externalUser.email,
-        full_name: externalUser.full_name,
-        role: externalUser.role
-      });
-    } else {
-      setUser(null);
-    }
-  }, [externalUser]);
+
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -88,8 +77,6 @@ export default function LayoutContent({ children, currentPageName }) {
       console.warn('No external logout handler configured');
     }
   };
-
-  const allowedModules = permissionsLoading ? [] : getAllowedModules(externalIsAdmin);
 
   const sectionIcons = {
     general: LayoutDashboard,
@@ -321,7 +308,10 @@ export default function LayoutContent({ children, currentPageName }) {
 
           {/* Logout Button - Fixed at bottom */}
           {externalUser && (
-            <div className="border-t border-slate-200/60 bg-white p-4 shrink-0">
+            <div className="border-t border-slate-200/60 bg-white p-4 shrink-0 space-y-2">
+              <p className="text-xs text-muted-foreground px-3">
+                {externalUser.full_name}
+              </p>
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-medium transition-colors shadow-sm"
