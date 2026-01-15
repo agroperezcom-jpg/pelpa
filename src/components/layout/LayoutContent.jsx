@@ -189,7 +189,7 @@ export default function LayoutContent({ children, currentPageName }) {
          { name: "Tesorería", page: "TesoreriaV2", icon: Landmark, permiso: "tesoreria" },
          { name: "Cheques", page: "Cheques", icon: CreditCard, permiso: "cheques" },
          { name: "Gastos", page: "Expenses", icon: DollarSign, permiso: "gastos" },
-         { name: "Dashboard Ejecutivo", page: "FinanzasHub", icon: BarChart3, permiso: "analytics" },
+         { name: "Finanzas", page: "FinanzasHub", icon: BarChart3, permiso: "analytics" },
          { name: "Estado de Resultados", page: "EstadoResultados", icon: FileText, permiso: "analytics" },
          { name: "Analytics", page: "Analytics", icon: TrendingUp, permiso: "analytics" },
        ]
