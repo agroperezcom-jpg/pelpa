@@ -49,8 +49,21 @@ export default function TesoreriaV2() {
     queryFn: () => base44.entities.Proveedor.list()
   });
 
-  const totalCajas = cajas.reduce((acc, c) => acc + (c.saldo_actual || 0), 0);
-  const totalBancos = bancos.reduce((acc, b) => acc + (b.saldo_actual || 0), 0);
+  // Calcular saldos reales desde movimientos de tesorería
+  const totalCajas = movimientos.reduce((acc, mov) => {
+    if (!mov.caja_id) return acc;
+    if (mov.tipo === "INGRESO") return acc + mov.importe;
+    if (mov.tipo === "EGRESO") return acc - mov.importe;
+    return acc;
+  }, 0);
+
+  const totalBancos = movimientos.reduce((acc, mov) => {
+    if (!mov.banco_id) return acc;
+    if (mov.tipo === "INGRESO") return acc + mov.importe;
+    if (mov.tipo === "EGRESO") return acc - mov.importe;
+    return acc;
+  }, 0);
+
   const totalDeudaClientes = clientes.reduce((acc, c) => acc + (c.saldo_cc || 0), 0);
   const totalDeudaProveedores = proveedores.reduce((acc, p) => acc + (p.saldo_cc || 0), 0);
 
