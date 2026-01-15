@@ -241,20 +241,18 @@ export default function LayoutContent({ children, currentPageName }) {
   };
 
   return (
-    <div className="min-h-screen bg-background transition-theme flex">
+    <div className="min-h-screen bg-background transition-theme">
       {/* Sidebar */}
       <aside className={cn(
-        "bg-gradient-to-b from-slate-50 to-slate-100/50 border-r border-slate-200/60 transition-all duration-300 ease-out flex flex-col h-screen fixed left-0 top-0 bottom-0 z-40",
-        sidebarExpanded ? "w-64" : "w-0"
+        "fixed top-0 left-0 bottom-0 z-40 flex flex-col transition-all duration-300 ease-out",
+        "bg-slate-50 border-r border-slate-200/60",
+        sidebarExpanded ? "w-64" : "w-0 border-0"
       )}>
-        <div className={cn(
-          "flex flex-col h-full overflow-hidden",
-          !sidebarExpanded && "pointer-events-none"
-        )}>
+        <div className="flex flex-col h-full overflow-hidden">
           {/* Logo */}
-          <div className="h-14 flex items-center justify-between px-5 border-b border-slate-200/40 bg-white/50 shrink-0">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center">
+          <div className="h-14 flex items-center justify-between px-5 border-b border-slate-200/40 bg-white shrink-0">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center flex-shrink-0">
                 <span className="text-white text-sm font-semibold">
                   {nombreEmpresa.charAt(0).toUpperCase()}
                 </span>
@@ -272,9 +270,9 @@ export default function LayoutContent({ children, currentPageName }) {
           <div className="px-4 py-3 shrink-0">
             <button
               onClick={() => setCommandOpen(true)}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground bg-secondary/60 rounded-lg hover:bg-secondary transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
             >
-              <Search className="h-4 w-4" />
+              <Search className="h-4 w-4 flex-shrink-0" />
               <span className="flex-1 text-left text-sm">Buscar...</span>
             </button>
           </div>
@@ -286,10 +284,10 @@ export default function LayoutContent({ children, currentPageName }) {
               return (
                 <div key={module.id} className="mb-6 last:mb-0">
                   <div className="flex items-center gap-2 px-3 py-2.5 mb-3">
-                    <div className="flex items-center justify-center h-6 w-6 rounded-md bg-gradient-to-br from-slate-600 to-slate-700">
+                    <div className="flex items-center justify-center h-6 w-6 rounded-md bg-gradient-to-br from-slate-600 to-slate-700 flex-shrink-0">
                       {SectionIcon && <SectionIcon className="h-3.5 w-3.5 text-white" />}
                     </div>
-                    <p className="text-xs font-bold text-foreground uppercase tracking-widest">
+                    <p className="text-xs font-bold text-foreground uppercase tracking-widest truncate">
                       {module.name}
                     </p>
                   </div>
@@ -323,7 +321,7 @@ export default function LayoutContent({ children, currentPageName }) {
 
           {/* Logout Button - Fixed at bottom */}
           {externalUser && (
-            <div className="border-t-2 border-slate-300/60 bg-gradient-to-b from-slate-50 to-white p-4 shrink-0">
+            <div className="border-t border-slate-200/60 bg-white p-4 shrink-0">
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-medium transition-colors shadow-sm"
@@ -338,15 +336,15 @@ export default function LayoutContent({ children, currentPageName }) {
 
       {/* Main Content */}
       <main className={cn(
-        "flex-1 min-h-screen transition-all duration-300 ease-out",
-        sidebarExpanded ? "lg:ml-0" : "lg:ml-0"
+        "transition-all duration-300 ease-out min-h-screen",
+        sidebarExpanded ? "ml-64" : "ml-0"
       )}>
         {/* Header */}
-        <header className="h-14 flex items-center justify-between px-6 border-b border-border/40 bg-card/60 backdrop-blur-sm sticky top-0 z-30 transition-theme">
+        <header className="h-14 flex items-center justify-between px-6 border-b border-border/40 bg-card sticky top-0 z-30 transition-theme">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setSidebarExpanded(!sidebarExpanded)}
-              className="p-2 rounded-lg hover:bg-secondary transition-colors hidden lg:flex"
+              className="p-2 rounded-lg hover:bg-secondary transition-colors"
               title={sidebarExpanded ? "Contraer menú" : "Expandir menú"}
             >
               <Menu className="h-5 w-5 text-muted-foreground" />
