@@ -123,14 +123,23 @@ export default function PrintPreview({ presupuesto, onClose }) {
         }
 
         @media print {
+          .print-wrapper {
+            position: static !important;
+            top: auto !important;
+            left: auto !important;
+            right: auto !important;
+            bottom: auto !important;
+            width: auto !important;
+            height: auto !important;
+            background: white !important;
+            z-index: auto !important;
+            overflow: visible !important;
+          }
+
           .print-header {
             display: none !important;
             visibility: hidden !important;
-            position: absolute !important;
-            top: -10000px !important;
-            left: -10000px !important;
             height: 0 !important;
-            width: 0 !important;
             overflow: hidden !important;
           }
 
@@ -141,21 +150,6 @@ export default function PrintPreview({ presupuesto, onClose }) {
             padding: 0 !important;
             display: block !important;
             position: static !important;
-          }
-
-          *,
-          *::before,
-          *::after {
-            visibility: hidden !important;
-          }
-
-          .print-container,
-          .print-area,
-          .print-area *,
-          .print-area *::before,
-          .print-area *::after {
-            visibility: visible !important;
-            display: block !important;
           }
 
           .print-area {
@@ -169,6 +163,11 @@ export default function PrintPreview({ presupuesto, onClose }) {
             padding: 0 !important;
             box-shadow: none !important;
             border: none !important;
+            visibility: visible !important;
+          }
+
+          .print-area * {
+            visibility: visible !important;
           }
 
           @page {
