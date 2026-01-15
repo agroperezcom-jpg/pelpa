@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Plus, MoreVertical, Edit, Trash2, Wallet } from "lucide-react";
+import { formatCurrency } from "@/components/utils/formatCurrency";
 
 export default function CajasView() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -121,7 +122,7 @@ export default function CajasView() {
                 </TableCell>
                 <TableCell className="text-right">
                   <span className="font-bold text-lg text-emerald-600">
-                    ${caja.saldo_actual?.toLocaleString() || 0}
+                    {formatCurrency(caja.saldo_actual || 0)}
                   </span>
                 </TableCell>
                 <TableCell className="text-right">

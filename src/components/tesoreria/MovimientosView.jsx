@@ -38,6 +38,7 @@ import {
 import { Plus, MoreVertical, Trash2, ArrowDownCircle, ArrowUpCircle, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { formatCurrency } from "@/components/utils/formatCurrency";
 
 export default function MovimientosView() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -273,11 +274,11 @@ export default function MovimientosView() {
           <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
             <div>
               <p className="text-xs text-slate-500">Total Ingresos</p>
-              <p className="text-2xl font-bold text-green-600">${totalIngresos.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-green-600">{formatCurrency(totalIngresos)}</p>
             </div>
             <div>
               <p className="text-xs text-slate-500">Total Egresos</p>
-              <p className="text-2xl font-bold text-red-600">${totalEgresos.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-red-600">{formatCurrency(totalEgresos)}</p>
             </div>
           </div>
         </div>
@@ -319,7 +320,7 @@ export default function MovimientosView() {
                 </TableCell>
                 <TableCell className="text-right">
                   <span className={`font-bold ${mov.tipo === "INGRESO" ? "text-green-600" : "text-red-600"}`}>
-                    {mov.tipo === "INGRESO" ? "+" : "-"}${mov.importe?.toLocaleString()}
+                    {mov.tipo === "INGRESO" ? "+" : "-"} {formatCurrency(mov.importe, false)}
                   </span>
                 </TableCell>
                 <TableCell className="text-sm text-slate-500 capitalize">{mov.referencia_tipo}</TableCell>

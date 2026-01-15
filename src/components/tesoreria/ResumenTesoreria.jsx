@@ -1,6 +1,7 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Wallet, Building2, Users, Package } from "lucide-react";
+import { formatCurrency } from "@/components/utils/formatCurrency";
 
 export default function ResumenTesoreria({ 
   totalCajas, 
@@ -19,7 +20,7 @@ export default function ResumenTesoreria({
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase">Efectivo en Cajas</p>
               <p className="text-3xl font-bold text-emerald-600 mt-2">
-                ${totalCajas.toLocaleString()}
+                {formatCurrency(totalCajas)}
               </p>
             </div>
             <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
@@ -35,7 +36,7 @@ export default function ResumenTesoreria({
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase">Saldo en Bancos</p>
               <p className="text-3xl font-bold text-blue-600 mt-2">
-                ${totalBancos.toLocaleString()}
+                {formatCurrency(totalBancos)}
               </p>
             </div>
             <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -51,7 +52,7 @@ export default function ResumenTesoreria({
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase">Deuda Clientes</p>
               <p className="text-3xl font-bold text-indigo-600 mt-2">
-                ${totalDeudaClientes.toLocaleString()}
+                {formatCurrency(totalDeudaClientes)}
               </p>
             </div>
             <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
@@ -67,7 +68,7 @@ export default function ResumenTesoreria({
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase">Deuda Proveedores</p>
               <p className="text-3xl font-bold text-amber-600 mt-2">
-                ${totalDeudaProveedores.toLocaleString()}
+                {formatCurrency(totalDeudaProveedores)}
               </p>
             </div>
             <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
@@ -83,7 +84,7 @@ export default function ResumenTesoreria({
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase">Total Tesorería Disponible</p>
               <p className="text-3xl font-bold text-purple-600 mt-2">
-                ${totalTesoreria.toLocaleString()}
+                {formatCurrency(totalTesoreria)}
               </p>
               <p className="text-xs text-slate-500 mt-1">Cajas + Bancos</p>
             </div>
@@ -100,7 +101,7 @@ export default function ResumenTesoreria({
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase">Balance Cuenta Corriente</p>
               <p className={`text-3xl font-bold mt-2 ${balanceCC >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ${balanceCC.toLocaleString()}
+                {formatCurrency(balanceCC)}
               </p>
               <p className="text-xs text-slate-500 mt-1">
                 {balanceCC >= 0 ? 'A favor' : 'En contra'}

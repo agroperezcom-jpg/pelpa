@@ -35,6 +35,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Plus, MoreVertical, Edit, Trash2, Building2, Wallet } from "lucide-react";
+import { formatCurrency } from "@/components/utils/formatCurrency";
 
 export default function BancosView() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -138,7 +139,7 @@ export default function BancosView() {
                 </TableCell>
                 <TableCell className="text-right">
                   <span className="font-bold text-lg text-blue-600">
-                    ${banco.saldo_actual?.toLocaleString() || 0}
+                    {formatCurrency(banco.saldo_actual || 0)}
                   </span>
                 </TableCell>
                 <TableCell className="text-right">

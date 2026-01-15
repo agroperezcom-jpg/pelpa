@@ -65,6 +65,7 @@ import {
   Pie,
   Cell
 } from "recharts";
+import { formatCurrency } from "@/components/utils/formatCurrency";
 
 
 
@@ -459,7 +460,7 @@ export default function Expenses() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-slate-500 uppercase">Total del Mes</p>
-                <p className="text-2xl font-bold text-red-600 mt-1">${totalMonth.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-red-600 mt-1">{formatCurrency(totalMonth)}</p>
                 <div className="flex items-center gap-1 mt-1">
                   {percentChange !== 0 && (
                     <>
@@ -482,7 +483,7 @@ export default function Expenses() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-slate-500 uppercase">Gastos Recurrentes</p>
-                <p className="text-2xl font-bold text-slate-800 mt-1">${totalRecurring.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-slate-800 mt-1">{formatCurrency(totalRecurring)}</p>
                 <p className="text-xs text-slate-500 mt-1">{recurringExpenses.length} conceptos</p>
               </div>
               <div className="w-10 h-10 bg-violet-50 rounded-xl flex items-center justify-center">
@@ -497,7 +498,7 @@ export default function Expenses() {
               <div>
                 <p className="text-xs font-medium text-slate-500 uppercase">Promedio Diario</p>
                 <p className="text-2xl font-bold text-slate-800 mt-1">
-                  ${Math.round(totalMonth / new Date().getDate()).toLocaleString()}
+                  {formatCurrency(Math.round(totalMonth / new Date().getDate()))}
                 </p>
               </div>
               <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
@@ -653,7 +654,7 @@ export default function Expenses() {
                 </TableCell>
                 <TableCell className="text-slate-600">{expense.vendor || '-'}</TableCell>
                 <TableCell className="text-right font-bold text-red-600">
-                  ${expense.amount?.toLocaleString()}
+                  {formatCurrency(expense.amount)}
                 </TableCell>
                 <TableCell className="text-center">
                   {expense.is_recurring && (
@@ -825,7 +826,7 @@ export default function Expenses() {
                   <SelectContent>
                     {bancos.map(b => (
                       <SelectItem key={b.id} value={b.id}>
-                        {b.nombre} (Saldo: ${b.saldo_actual?.toLocaleString() || 0})
+                        {b.nombre} (Saldo: {formatCurrency(b.saldo_actual || 0)})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -843,7 +844,7 @@ export default function Expenses() {
                   <SelectContent>
                     {cajas.map(c => (
                       <SelectItem key={c.id} value={c.id}>
-                        {c.nombre} (Saldo: ${c.saldo_actual?.toLocaleString() || 0})
+                        {c.nombre} (Saldo: {formatCurrency(c.saldo_actual || 0)})
                       </SelectItem>
                     ))}
                   </SelectContent>
