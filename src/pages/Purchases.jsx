@@ -222,20 +222,28 @@ export default function Purchases() {
       }
 
       // 6. Eliminar movimientos de cuenta corriente y actualizar saldo del proveedor
-      const movimientosCC = await base44.entities.MovimientoCC.filter({
-        referencia_tipo: "compra",
-        referencia_id: compraId
+      const todosMovimientosCC = await base44.entities.MovimientoCC.filter({
+        tipo_entidad: "PROVEEDOR",
+        entidad_id: compra.proveedor_id
       });
       
+      // Buscar todos los movimientos relacionados a esta compra
+      const movimientosAEliminar = todosMovimientosCC.filter(m => 
+        (m.referencia_tipo === "compra" && m.referencia_id === compraId) ||
+        (m.referencia_tipo === "pago" && m.concepto?.includes(compra.numero_comprobante_proveedor))
+      );
+      
       let montoTotalRevertir = 0;
-      for (const movCC of movimientosCC) {
-        if (movCC.debe > 0) montoTotalRevertir += movCC.debe;
-        if (movCC.haber > 0) montoTotalRevertir -= movCC.haber;
+      for (const movCC of movimientosAEliminar) {
+        // Debe aumenta la deuda, Haber la disminuye
+        // Al revertir: restamos el debe y sumamos el haber
+        montoTotalRevertir += (movCC.debe - movCC.haber);
         await base44.entities.MovimientoCC.delete(movCC.id);
       }
 
       const proveedor = proveedores.find(p => p.id === compra.proveedor_id);
       if (proveedor) {
+        // Revertimos el efecto de los movimientos eliminados
         const nuevoSaldo = proveedor.saldo_cc - montoTotalRevertir;
         await base44.entities.Proveedor.update(proveedor.id, {
           saldo_cc: Math.max(0, nuevoSaldo)
