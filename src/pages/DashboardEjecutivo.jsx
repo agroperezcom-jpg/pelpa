@@ -97,6 +97,11 @@ export default function DashboardEjecutivo() {
     queryFn: () => base44.entities.PagoVenta.list('', 1000)
   });
 
+  const { data: expenses = [] } = useQuery({
+    queryKey: ['expenses'],
+    queryFn: () => base44.entities.Expense.list('-created_date', 1000)
+  });
+
   // ==================== CÁLCULOS ====================
 
   const today = format(new Date(), 'yyyy-MM-dd');
