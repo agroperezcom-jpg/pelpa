@@ -194,27 +194,6 @@ export default function Expenses() {
         banco_nombre: banco?.nombre || "",
         caja_nombre: caja?.nombre || ""
       });
-      
-      // Crear movimiento de tesorería
-      const movimiento = await base44.entities.MovimientoTesoreria.create({
-        fecha: data.date,
-        tipo: "EGRESO",
-        medio_pago_id: medio.id,
-        medio_pago_nombre: medio.nombre,
-        banco_id: data.banco_id || null,
-        banco_nombre: banco?.nombre || "",
-        caja_id: data.caja_id || null,
-        caja_nombre: caja?.nombre || "",
-        importe: data.amount,
-        referencia_tipo: "gasto",
-        referencia_id: expense.id,
-        observaciones: `Gasto: ${data.description} (${data.cuenta_contable_nombre || data.category})`
-        });
-
-      // Actualizar expense con el ID del movimiento
-      await base44.entities.Expense.update(expense.id, {
-        movimiento_tesoreria_id: movimiento.id
-      });
 
       // Actualizar saldos
       if (data.banco_id && banco) {
@@ -233,7 +212,7 @@ export default function Expenses() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
+      queryClient.invalidateQueries({ queryKey: ['gastos'] });
       queryClient.invalidateQueries({ queryKey: ['bancos'] });
       queryClient.invalidateQueries({ queryKey: ['cajas'] });
       handleCloseDialog();
@@ -294,26 +273,7 @@ export default function Expenses() {
         throw new Error(`Saldo insuficiente en ${caja.nombre}`);
       }
 
-      // Crear movimiento de tesorería
-      const movimiento = await base44.entities.MovimientoTesoreria.create({
-        fecha: data.date,
-        tipo: "EGRESO",
-        medio_pago_id: medio.id,
-        medio_pago_nombre: medio.nombre,
-        banco_id: data.banco_id || null,
-        banco_nombre: banco?.nombre || "",
-        caja_id: data.caja_id || null,
-        caja_nombre: caja?.nombre || "",
-        importe: data.amount,
-        referencia_tipo: "gasto",
-        referencia_id: expenseId,
-        observaciones: `Gasto: ${data.description} (${data.cuenta_contable_nombre || data.category})`
-      });
-
-      // Actualizar expense con movimiento
-      await base44.entities.Expense.update(expenseId, {
-        movimiento_tesoreria_id: movimiento.id
-      });
+      // Tesorería ahora es 100% derivada - no se crean movimientos manuales
 
       // Actualizar saldos
       if (data.banco_id && banco) {
@@ -337,7 +297,7 @@ export default function Expenses() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
+      queryClient.invalidateQueries({ queryKey: ['gastos'] });
       queryClient.invalidateQueries({ queryKey: ['bancos'] });
       queryClient.invalidateQueries({ queryKey: ['cajas'] });
     },
@@ -362,32 +322,23 @@ export default function Expenses() {
         throw new Error("Gasto no encontrado");
       }
 
-      // ELIMINAR TODOS LOS MOVIMIENTOS DE TESORERÍA POR REFERENCIA_ID (100% CONECTADO)
-      const movimientosVinculados = await base44.entities.MovimientoTesoreria.filter({ referencia_id: id });
-      
-      for (const mov of movimientosVinculados) {
-        // Revertir saldo del banco (egreso -> devolver al banco)
-        if (mov.banco_id) {
-          const banco = bancos.find(b => b.id === mov.banco_id);
-          if (banco) {
-            await base44.entities.Banco.update(mov.banco_id, {
-              saldo_actual: banco.saldo_actual + mov.importe
-            });
-          }
+      // Revertir saldos antes de eliminar el gasto
+      if (gasto.banco_id) {
+        const banco = bancos.find(b => b.id === gasto.banco_id);
+        if (banco) {
+          await base44.entities.Banco.update(gasto.banco_id, {
+            saldo_actual: banco.saldo_actual + gasto.amount
+          });
         }
+      }
 
-        // Revertir saldo de la caja (egreso -> devolver a la caja)
-        if (mov.caja_id) {
-          const caja = cajas.find(c => c.id === mov.caja_id);
-          if (caja) {
-            await base44.entities.Caja.update(mov.caja_id, {
-              saldo_actual: caja.saldo_actual + mov.importe
-            });
-          }
+      if (gasto.caja_id) {
+        const caja = cajas.find(c => c.id === gasto.caja_id);
+        if (caja) {
+          await base44.entities.Caja.update(gasto.caja_id, {
+            saldo_actual: caja.saldo_actual + gasto.amount
+          });
         }
-
-        // ELIMINAR el movimiento
-        await base44.entities.MovimientoTesoreria.delete(mov.id);
       }
       
       // Eliminar gasto
@@ -395,7 +346,7 @@ export default function Expenses() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
+      queryClient.invalidateQueries({ queryKey: ['gastos'] });
       queryClient.invalidateQueries({ queryKey: ['bancos'] });
       queryClient.invalidateQueries({ queryKey: ['cajas'] });
     }
