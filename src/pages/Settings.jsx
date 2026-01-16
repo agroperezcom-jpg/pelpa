@@ -41,8 +41,9 @@ export default function Settings() {
              <SelectItem value="proyectos">Proyectos</SelectItem>
              <SelectItem value="impresoras">Impresoras</SelectItem>
              <SelectItem value="plan_cuentas">Plan de Cuentas</SelectItem>
+             <SelectItem value="seed">🌱 Inicializar Sistema</SelectItem>
              <SelectItem value="debug">🔍 Debug Permisos</SelectItem>
-           </SelectContent>
+             </SelectContent>
          </Select>
        </div>
 
