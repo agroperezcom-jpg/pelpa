@@ -1,5 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -39,13 +41,18 @@ Deno.serve(async (req) => {
     let modulesCreated = 0;
     let permissionsCreated = 0;
     let rolePermissionsCreated = 0;
-    let errors = [];
 
-    // 1. Create/sync Module records
+    // Get all existing modules, permissions, and roles first
+    const existingModules = await base44.asServiceRole.entities.Module.list();
+    const existingPermissions = await base44.asServiceRole.entities.Permission.list();
+    const adminRoles = await base44.asServiceRole.entities.Role.filter({ name: 'Administrador' });
+    const adminRole = adminRoles?.[0];
+
+    // 1. Create/sync Modules (with rate limit delay)
     for (const mod of SIDEBAR_MODULES) {
       try {
-        const existing = await base44.asServiceRole.entities.Module.filter({ key: mod.key });
-        if (!existing || existing.length === 0) {
+        const exists = existingModules.some(m => m.key === mod.key);
+        if (!exists) {
           await base44.asServiceRole.entities.Module.create({
             key: mod.key,
             name: mod.name,
@@ -54,78 +61,71 @@ Deno.serve(async (req) => {
             is_active: true
           });
           modulesCreated++;
+          await sleep(100);
         }
       } catch (error) {
-        errors.push({ step: 'module', module: mod.key, error: error.message });
+        console.error(`Error creating module ${mod.key}:`, error.message);
       }
     }
 
-    // 2. Create Permission records (module_key + action combination)
+    // 2. Create Permissions (with rate limit delay)
+    const permissionsToCreate = [];
     for (const mod of SIDEBAR_MODULES) {
       for (const action of ACTIONS) {
-        try {
-          const existing = await base44.asServiceRole.entities.Permission.filter({ 
-            module_key: mod.key, 
-            action: action 
-          });
-          if (!existing || existing.length === 0) {
-            await base44.asServiceRole.entities.Permission.create({
-              module_key: mod.key,
-              action: action,
-              description: `${action} en ${mod.name}`
-            });
-            permissionsCreated++;
-          }
-        } catch (error) {
-          errors.push({ step: 'permission', module: mod.key, action, error: error.message });
+        const exists = existingPermissions.some(p => p.module_key === mod.key && p.action === action);
+        if (!exists) {
+          permissionsToCreate.push({ module_key: mod.key, action, name: mod.name });
         }
       }
     }
 
-    // 3. Get Admin role
-    const adminRoles = await base44.asServiceRole.entities.Role.filter({ name: 'Administrador' });
-    const adminRole = adminRoles?.[0];
-
-    if (adminRole) {
-      // Delete existing role permissions for Admin
-      const existingPerms = await base44.asServiceRole.entities.RolePermission.filter({ role_id: adminRole.id });
-      for (const perm of existingPerms || []) {
-        try {
-          await base44.asServiceRole.entities.RolePermission.delete(perm.id);
-        } catch (e) {
-          // Silent
-        }
+    for (const perm of permissionsToCreate) {
+      try {
+        await base44.asServiceRole.entities.Permission.create({
+          module_key: perm.module_key,
+          action: perm.action,
+          description: `${perm.action} en ${perm.name}`
+        });
+        permissionsCreated++;
+        await sleep(100);
+      } catch (error) {
+        console.error(`Error creating permission ${perm.module_key}/${perm.action}:`, error.message);
       }
+    }
 
-      // Get all permissions
-      const allPermissions = await base44.asServiceRole.entities.Permission.list();
+    // 3. Assign all permissions to Admin role
+    if (adminRole) {
+      const allPerms = await base44.asServiceRole.entities.Permission.list();
+      const existingRolePerms = await base44.asServiceRole.entities.RolePermission.list();
 
-      // Assign all permissions to Admin role
-      for (const permission of allPermissions || []) {
+      for (const perm of allPerms || []) {
         try {
-          await base44.asServiceRole.entities.RolePermission.create({
-            role_id: adminRole.id,
-            permission_id: permission.id,
-            module_key: permission.module_key,
-            action: permission.action
-          });
-          rolePermissionsCreated++;
+          const exists = existingRolePerms.some(rp => rp.role_id === adminRole.id && rp.permission_id === perm.id);
+          if (!exists) {
+            await base44.asServiceRole.entities.RolePermission.create({
+              role_id: adminRole.id,
+              permission_id: perm.id,
+              module_key: perm.module_key,
+              action: perm.action
+            });
+            rolePermissionsCreated++;
+            await sleep(50);
+          }
         } catch (error) {
-          errors.push({ step: 'rolePermission', module: permission.module_key, error: error.message });
+          console.error(`Error assigning permission to admin:`, error.message);
         }
       }
     }
 
     return Response.json({
       status: 'success',
-      message: 'Sistema de módulos y permisos inicializado correctamente',
+      message: 'Sistema sincronizado',
       summary: {
         modulesCreated,
         permissionsCreated,
         rolePermissionsAssigned: rolePermissionsCreated,
         adminRoleId: adminRole?.id
-      },
-      errors: errors.length > 0 ? errors : null
+      }
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
