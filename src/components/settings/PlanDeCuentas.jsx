@@ -606,7 +606,7 @@ export default function PlanDeCuentas() {
 
       {/* Dialog Importar CSV */}
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Importar Plan de Cuentas desde CSV</DialogTitle>
           </DialogHeader>
