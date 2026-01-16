@@ -52,7 +52,16 @@ export default function SettingsUsers() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.users.inviteUser(data.email, "user"),
+    mutationFn: async (data) => {
+      const response = await base44.functions.invoke("createUserWithStatus", {
+        full_name: data.full_name,
+        email: data.email,
+        role: "user",
+        status: "active",
+        role_id: data.role_id,
+      });
+      return response;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       setDialogOpen(false);
