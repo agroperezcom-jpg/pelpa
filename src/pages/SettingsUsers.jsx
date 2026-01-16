@@ -52,11 +52,21 @@ export default function SettingsUsers() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.User.create(data),
+    mutationFn: async (data) => {
+      // Invitar usuario con el rol "user" por defecto
+      await base44.users.inviteUser(data.email, "user");
+      // Si tiene un role_id asignado, actualizarlo después
+      if (data.role_id) {
+        const users = await base44.entities.User.filter({ email: data.email });
+        if (users.length > 0) {
+          await base44.entities.User.update(users[0].id, { role_id: data.role_id });
+        }
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       setDialogOpen(false);
-      setFormData({ full_name: "", email: "" });
+      setFormData({ full_name: "", email: "", role_id: "" });
     },
     onError: (error) => {
       alert("Error al crear empleado: " + error.message);
