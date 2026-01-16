@@ -64,12 +64,12 @@ export default function Calendar() {
   const queryClient = useQueryClient();
   const { hasPermission, isAdmin, loading: permissionsLoading } = usePermissions();
 
-  // Permisos del calendario (usando module key "calendar")
-  const canViewCalendar = isAdmin || hasPermission("calendar", "VIEW");
-  const canCreateEvents = isAdmin || hasPermission("calendar", "CREATE");
-  const canEditEvents = isAdmin || hasPermission("calendar", "EDIT");
-  const canEditTasks = isAdmin || hasPermission("calendar", "EDIT");
-  const canEditProjects = isAdmin || hasPermission("calendar", "EDIT");
+  // Permisos del calendario
+  const canViewCalendar = isAdmin || hasPermission("calendario", "ver");
+  const canCreateEvents = isAdmin || hasPermission("calendario", "crear");
+  const canEditEvents = isAdmin || hasPermission("calendario", "editar_eventos");
+  const canEditTasks = isAdmin || hasPermission("calendario", "editar_tareas");
+  const canEditProjects = isAdmin || hasPermission("calendario", "editar_proyectos");
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});

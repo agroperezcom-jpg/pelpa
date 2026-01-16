@@ -6,10 +6,12 @@ import { useQuery } from "@tanstack/react-query";
 import { usePermissionsEnforcement } from "@/components/permissions/usePermissionsEnforcement";
 import { useExternalAuth } from "@/components/context/ExternalAuthContext";
 import { useAutoLinkEmpleado } from "@/components/auth/useAutoLinkEmpleado";
-import { SIDEBAR_STRUCTURE } from "@/components/config/sidebarStructure";
 import UserProfile from "./UserProfile";
 import {
-  Search, ChevronRight, Menu, FileText
+  LayoutDashboard, ShoppingCart, ShoppingBag, Package, Landmark, BarChart3,
+  Calendar as CalendarIcon, Briefcase, Settings, Shield, LogOut, Search,
+  ChevronRight, Menu, X, FileText, Users, Wrench, FileCheck, Building2,
+  CreditCard, Percent, TrendingUp, DollarSign, Check, Printer, Zap, ClipboardList
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,7 +75,113 @@ export default function LayoutContent({ children, currentPageName }) {
 
 
 
-  const allModules = SIDEBAR_STRUCTURE;
+  const sectionIcons = {
+    general: LayoutDashboard,
+    ventas: ShoppingCart,
+    compras: ShoppingBag,
+    inventario: Package,
+    tesoreria: DollarSign,
+    proyectos: Briefcase,
+    calendario: CalendarIcon,
+    ajustes: Settings
+  };
+
+  const allModules = [
+    {
+      id: "general",
+      name: "General",
+      section: "general",
+      icon: LayoutDashboard,
+      permiso: null,
+      items: [
+        { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard, permiso: null },
+      ]
+    },
+    {
+      id: "ventas",
+      name: "Ventas",
+      section: "ventas",
+      icon: ShoppingCart,
+      permiso: "sales",
+      items: [
+        { name: "Ventas", page: "Sales", icon: ShoppingCart, permiso: "sales" },
+        { name: "Presupuestos", page: "Presupuestos", icon: FileText, permiso: "sales" },
+        { name: "Clientes", page: "Clients", icon: Users, permiso: "sales" },
+        { name: "Servicios", page: "Services", icon: Wrench, permiso: "sales" },
+        { name: "Talonarios", page: "Talonarios", icon: FileCheck, permiso: "sales" },
+      ]
+    },
+    {
+      id: "compras",
+      name: "Compras",
+      section: "compras",
+      icon: ShoppingBag,
+      permiso: "purchases",
+      items: [
+        { name: "Compras", page: "Purchases", icon: ShoppingBag, permiso: "purchases" },
+        { name: "Proveedores", page: "Proveedores", icon: Building2, permiso: "purchases" },
+        { name: "Pagos Proveedores", page: "PagosProveedores", icon: CreditCard, permiso: "purchases" },
+      ]
+    },
+    {
+      id: "inventario",
+      name: "Productos",
+      section: "inventario",
+      icon: Package,
+      permiso: "inventory",
+      items: [
+        { name: "Productos", page: "Products", icon: Package, permiso: "inventory" },
+        { name: "Inventario", page: "Inventory", icon: Check, permiso: "inventory" },
+        { name: "Control de Stock", page: "HistorialControlesStock", icon: ClipboardList, permiso: "inventory" },
+      ]
+    },
+    {
+      id: "proyectos",
+      name: "Proyectos",
+      section: "proyectos",
+      icon: Briefcase,
+      permiso: "projects",
+      items: [
+        { name: "Proyectos", page: "Projects", icon: Briefcase, permiso: "projects" },
+        { name: "Órdenes de Trabajo", page: "WorkOrders", icon: Briefcase, permiso: "projects" },
+      ]
+    },
+    {
+      id: "calendario",
+      name: "Agenda",
+      section: "calendario",
+      icon: CalendarIcon,
+      permiso: "calendar",
+      items: [
+        { name: "Calendario", page: "Calendar", icon: CalendarIcon, permiso: "calendar" },
+      ]
+    },
+    {
+       id: "tesoreria",
+       name: "Finanzas",
+       section: "tesoreria",
+       icon: DollarSign,
+       permiso: "finance",
+       items: [
+         { name: "Tesorería", page: "TesoreriaV2", icon: Landmark, permiso: "finance" },
+         { name: "Cheques", page: "Cheques", icon: CreditCard, permiso: "finance" },
+         { name: "Gastos", page: "Expenses", icon: DollarSign, permiso: "finance" },
+         { name: "Finanzas", page: "FinanzasHub", icon: BarChart3, permiso: "finance" },
+         { name: "Estado de Resultados", page: "EstadoResultados", icon: FileText, permiso: "finance" },
+         { name: "Analytics", page: "Analytics", icon: TrendingUp, permiso: "finance" },
+       ]
+     },
+    {
+      id: "ajustes",
+      name: "Ajustes",
+      section: "ajustes",
+      icon: Settings,
+      permiso: null,
+      items: [
+        { name: "Sistema", page: "Settings", icon: Settings, permiso: null },
+      ]
+    }
+  ];
 
   const modules = allModules
     .map(module => {
@@ -159,7 +267,7 @@ export default function LayoutContent({ children, currentPageName }) {
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto px-3 scrollbar-thin pb-20">
             {modules.map((module) => {
-              const SectionIcon = module.icon;
+              const SectionIcon = sectionIcons[module.section];
               return (
                 <div key={module.id} className="mb-6 last:mb-0">
                   <div className="flex items-center gap-2 px-3 py-2.5 mb-3">

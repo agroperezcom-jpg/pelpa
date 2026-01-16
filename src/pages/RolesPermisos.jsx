@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { SIDEBAR_STRUCTURE } from "@/components/config/sidebarStructure";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -118,23 +117,42 @@ function UserStatusToggle({ user }) {
   );
 }
 
-// Convertir estructura del sidebar a formato módulos para permisos
-const buildModulosFromSidebar = () => {
-  const modulos = [];
-  SIDEBAR_STRUCTURE.forEach(section => {
-    section.items.forEach(item => {
-      modulos.push({
-        id: item.id,
-        nombre: item.name,
-        categoria: section.name,
-        critico: section.id === "tesoreria" || section.id === "inventario" || section.id === "ventas"
-      });
-    });
-  });
-  return modulos;
-};
+const MODULOS = [
+  // VENTAS - Módulos granulares por página
+  { id: "sales", nombre: "Ventas", categoria: "Ventas", critico: true },
+  { id: "presupuestos", nombre: "Presupuestos", categoria: "Ventas", critico: false },
+  { id: "clients", nombre: "Clientes", categoria: "Ventas", critico: false },
+  { id: "services", nombre: "Servicios", categoria: "Ventas", critico: false },
+  { id: "talonarios", nombre: "Talonarios", categoria: "Ventas", critico: true },
 
-const MODULOS = buildModulosFromSidebar();
+  // COMPRAS - Módulos granulares por página
+  { id: "purchases", nombre: "Compras", categoria: "Compras", critico: true },
+  { id: "suppliers", nombre: "Proveedores", categoria: "Compras", critico: false },
+  { id: "supplier_payments", nombre: "Pagos Proveedores", categoria: "Compras", critico: false },
+
+  // INVENTARIO - Módulos granulares por página
+  { id: "products", nombre: "Productos", categoria: "Inventario", critico: true },
+  { id: "inventory", nombre: "Inventario", categoria: "Inventario", critico: true },
+  { id: "stock_control", nombre: "Control de Stock", categoria: "Inventario", critico: false },
+
+  // PROYECTOS - Módulos granulares por página
+  { id: "projects", nombre: "Proyectos", categoria: "Proyectos", critico: false },
+  { id: "work_orders", nombre: "Órdenes de Trabajo", categoria: "Proyectos", critico: false },
+
+  // AGENDA - Módulo único
+  { id: "calendar", nombre: "Calendario", categoria: "Agenda", critico: false },
+
+  // FINANZAS - Módulos granulares por página
+  { id: "treasury", nombre: "Tesorería", categoria: "Finanzas", critico: true },
+  { id: "checks", nombre: "Cheques", categoria: "Finanzas", critico: true },
+  { id: "expenses", nombre: "Gastos", categoria: "Finanzas", critico: false },
+  { id: "financials", nombre: "Finanzas", categoria: "Finanzas", critico: false },
+  { id: "income_statement", nombre: "Estado de Resultados", categoria: "Finanzas", critico: false },
+  { id: "analytics", nombre: "Analytics", categoria: "Finanzas", critico: false },
+
+  // SISTEMA
+  { id: "settings", nombre: "Configuración", categoria: "Sistema", critico: true }
+];
 
 const ACCIONES = [
   { id: "VIEW", nombre: "Ver", desc: "Acceder al módulo" },
@@ -570,19 +588,19 @@ export default function RolesPermisos() {
             </div>
 
             <div className="px-6 py-6 space-y-8">
-               {SIDEBAR_STRUCTURE.map(section => {
-                 const modulosCategoria = MODULOS.filter(m => m.categoria === section.name);
-                 if (modulosCategoria.length === 0) return null;
+              {['Ventas', 'Compras', 'Inventario', 'Proyectos', 'Agenda', 'Finanzas', 'Sistema'].map(categoria => {
+                const modulosCategoria = MODULOS.filter(m => m.categoria === categoria);
+                if (modulosCategoria.length === 0) return null;
 
-                 return (
-                   <div key={section.id} className="space-y-4">
-                     <div className="flex items-center gap-3 mb-4">
-                       <div className="w-1 h-6 bg-slate-700 rounded-full"></div>
-                       <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">
-                         {section.name}
-                       </h3>
-                       <div className="h-px flex-1 bg-slate-200"></div>
-                     </div>
+                return (
+                  <div key={categoria} className="space-y-4">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-1 h-6 bg-slate-700 rounded-full"></div>
+                      <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">
+                        {categoria}
+                      </h3>
+                      <div className="h-px flex-1 bg-slate-200"></div>
+                    </div>
 
                     <div className="space-y-3">
                       {modulosCategoria.map(modulo => {
