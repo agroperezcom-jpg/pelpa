@@ -624,6 +624,7 @@ export default function PlanDeCuentas() {
                       <li>rubro_contable debe ser: Activo Corriente, Activo No Corriente, Pasivo Corriente, Pasivo No Corriente, Patrimonio Neto, Ingresos, Costos, Gastos</li>
                       <li>tipo_resultado solo para Ingresos/Costos/Gastos (Ingreso, Costo, Gasto)</li>
                       <li>imputable, usa_en_gastos, usa_en_ingresos: true/false</li>
+                      <li><strong>Las nuevas cuentas se agregarán sin eliminar las existentes</strong></li>
                     </ul>
                   </div>
                 </div>
