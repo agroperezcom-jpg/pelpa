@@ -83,7 +83,9 @@ export default function PlanDeCuentas() {
       
       const cuentasData = [];
       const errors = [];
-      const codigosExistentes = cuentas.map(c => c.codigo);
+      // Obtener TODAS las cuentas existentes para validar duplicados
+      const todasLasCuentas = await base44.entities.CuentaContable.list('codigo', 10000);
+      const codigosExistentes = todasLasCuentas.map(c => c.codigo);
       
       const rubrosValidos = [
         "Activo Corriente", "Activo No Corriente", "Pasivo Corriente", 
