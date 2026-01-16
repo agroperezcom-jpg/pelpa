@@ -46,8 +46,9 @@ export default function TesoreriaV2() {
     queryFn: () => base44.entities.Proveedor.list()
   });
 
-  // Los saldos se mantienen en Caja y Banco directamente
-  // Tesorería solo muestra movimientos derivados (ver detalles en MovimientosView)
+  // Calcular saldos desde cajas y bancos
+  const totalCajas = cajas.reduce((acc, c) => acc + (c.saldo_actual || 0), 0);
+  const totalBancos = bancos.reduce((acc, b) => acc + (b.saldo_actual || 0), 0);
 
   const totalDeudaClientes = clientes.reduce((acc, c) => acc + (c.saldo_cc || 0), 0);
   const totalDeudaProveedores = proveedores.reduce((acc, p) => acc + (p.saldo_cc || 0), 0);
