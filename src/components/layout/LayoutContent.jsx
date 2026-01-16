@@ -91,102 +91,106 @@ export default function LayoutContent({ children, currentPageName }) {
     ajustes: Settings
   };
 
-  const allModules = [
-    {
-      id: "general",
-      name: "General",
-      section: "general",
-      icon: LayoutDashboard,
-      permiso: null,
-      items: [
-        { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard, permiso: null },
-      ]
-    },
-    {
-      id: "ventas",
-      name: "Ventas",
-      section: "ventas",
-      icon: ShoppingCart,
-      permiso: "sales",
-      items: [
-        { name: "Ventas", page: "Sales", icon: ShoppingCart, permiso: "sales" },
-        { name: "Presupuestos", page: "Presupuestos", icon: FileText, permiso: "sales" },
-        { name: "Clientes", page: "Clients", icon: Users, permiso: "sales" },
-        { name: "Servicios", page: "Services", icon: Wrench, permiso: "sales" },
-        { name: "Talonarios", page: "Talonarios", icon: FileCheck, permiso: "sales" },
-      ]
-    },
-    {
-      id: "compras",
-      name: "Compras",
-      section: "compras",
-      icon: ShoppingBag,
-      permiso: "purchases",
-      items: [
-        { name: "Compras", page: "Purchases", icon: ShoppingBag, permiso: "purchases" },
-        { name: "Proveedores", page: "Proveedores", icon: Building2, permiso: "purchases" },
-        { name: "Pagos Proveedores", page: "PagosProveedores", icon: CreditCard, permiso: "purchases" },
-      ]
-    },
-    {
-      id: "inventario",
-      name: "Productos",
-      section: "inventario",
-      icon: Package,
-      permiso: "inventory",
-      items: [
-        { name: "Productos", page: "Products", icon: Package, permiso: "inventory" },
-        { name: "Inventario", page: "Inventory", icon: Check, permiso: "inventory" },
-        { name: "Control de Stock", page: "HistorialControlesStock", icon: ClipboardList, permiso: "inventory" },
-      ]
-    },
-    {
-      id: "proyectos",
-      name: "Proyectos",
-      section: "proyectos",
-      icon: Briefcase,
-      permiso: "projects",
-      items: [
-        { name: "Proyectos", page: "Projects", icon: Briefcase, permiso: "projects" },
-        { name: "Órdenes de Trabajo", page: "WorkOrders", icon: Briefcase, permiso: "projects" },
-      ]
-    },
-    {
-      id: "calendario",
-      name: "Agenda",
-      section: "calendario",
-      icon: CalendarIcon,
-      permiso: "calendar",
-      items: [
-        { name: "Calendario", page: "Calendar", icon: CalendarIcon, permiso: "calendar" },
-      ]
-    },
-    {
-       id: "tesoreria",
-       name: "Finanzas",
-       section: "tesoreria",
-       icon: DollarSign,
-       permiso: "finance",
-       items: [
-         { name: "Tesorería", page: "TesoreriaV2", icon: Landmark, permiso: "finance" },
-         { name: "Cheques", page: "Cheques", icon: CreditCard, permiso: "finance" },
-         { name: "Gastos", page: "Expenses", icon: DollarSign, permiso: "finance" },
-         { name: "Finanzas", page: "FinanzasHub", icon: BarChart3, permiso: "finance" },
-         { name: "Estado de Resultados", page: "EstadoResultados", icon: FileText, permiso: "finance" },
-         { name: "Analytics", page: "Analytics", icon: TrendingUp, permiso: "finance" },
-       ]
-     },
-    {
-      id: "ajustes",
-      name: "Ajustes",
-      section: "ajustes",
-      icon: Settings,
-      permiso: null,
-      items: [
-        { name: "Sistema", page: "Settings", icon: Settings, permiso: null },
-      ]
+  // Map module keys to icon components
+  const iconMap = {
+    ShoppingCart, ShoppingBag, Package, DollarSign, Briefcase, CalendarIcon, Settings,
+    Landmark, BarChart3, FileText, Users, Wrench, FileCheck, Building2, CreditCard,
+    Check, ClipboardList, Percent, TrendingUp, Printer, Zap
+  };
+
+  // Map module keys to page names
+  const moduleKeyToPage = {
+    'sales': 'Sales',
+    'presupuestos': 'Presupuestos',
+    'clients': 'Clients',
+    'services': 'Services',
+    'talonarios': 'Talonarios',
+    'purchases': 'Purchases',
+    'proveedores': 'Proveedores',
+    'supplier_payments': 'PagosProveedores',
+    'products': 'Products',
+    'inventory': 'Inventory',
+    'stock_control': 'HistorialControlesStock',
+    'projects': 'Projects',
+    'work_orders': 'WorkOrders',
+    'calendar': 'Calendar',
+    'treasury': 'TesoreriaV2',
+    'checks': 'Cheques',
+    'expenses': 'Expenses',
+    'finance': 'FinanzasHub',
+    'income_statement': 'EstadoResultados',
+    'analytics': 'Analytics'
+  };
+
+  // Build modules structure from database
+  const buildModulesFromDB = () => {
+    if (!dbModules || dbModules.length === 0) {
+      return [];
     }
-  ];
+
+    const modulesBySection = {};
+
+    // Add general/dashboard
+    if (!modulesBySection['general']) {
+      modulesBySection['general'] = {
+        id: 'general',
+        name: 'General',
+        section: 'general',
+        icon: LayoutDashboard,
+        permiso: null,
+        items: [
+          { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard, permiso: null }
+        ]
+      };
+    }
+
+    // Group modules by section
+    dbModules.forEach(mod => {
+      if (!mod.is_active) return;
+
+      const section = mod.section || mod.key;
+      const IconComponent = iconMap[mod.icon] || FileText;
+      const page = moduleKeyToPage[mod.key];
+
+      if (!modulesBySection[section]) {
+        modulesBySection[section] = {
+          id: section,
+          name: section.charAt(0).toUpperCase() + section.slice(1),
+          section: section,
+          icon: sectionIcons[section] || FileText,
+          permiso: mod.key,
+          items: []
+        };
+      }
+
+      if (page) {
+        modulesBySection[section].items.push({
+          name: mod.name,
+          page: page,
+          icon: IconComponent,
+          permiso: mod.key
+        });
+      }
+    });
+
+    // Add settings (admin only)
+    if (isAdmin) {
+      modulesBySection['ajustes'] = {
+        id: 'ajustes',
+        name: 'Ajustes',
+        section: 'ajustes',
+        icon: Settings,
+        permiso: null,
+        items: [
+          { name: 'Sistema', page: 'Settings', icon: Settings, permiso: null }
+        ]
+      };
+    }
+
+    return Object.values(modulesBySection);
+  };
+
+  const allModules = buildModulesFromDB();
 
   const modules = allModules
     .map(module => {
