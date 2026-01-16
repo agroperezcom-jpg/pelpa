@@ -5,6 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { usePermissionsEnforcement } from "@/components/permissions/usePermissionsEnforcement";
 import { useExternalAuth } from "@/components/context/ExternalAuthContext";
+import { useAutoLinkEmpleado } from "@/components/auth/useAutoLinkEmpleado";
 import UserProfile from "./UserProfile";
 import {
   LayoutDashboard, ShoppingCart, ShoppingBag, Package, Landmark, BarChart3,
@@ -18,6 +19,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 export default function LayoutContent({ children, currentPageName }) {
+  useAutoLinkEmpleado(); // Auto-link Empleado on first access
   const { user: externalUser } = useExternalAuth();
   const { canViewModule, isAdmin } = usePermissionsEnforcement();
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
