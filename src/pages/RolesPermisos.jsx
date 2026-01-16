@@ -118,36 +118,25 @@ function UserStatusToggle({ user }) {
 }
 
 const MODULOS = [
-  // VENTAS
-  { id: "sales", nombre: "Ventas", categoria: "Ventas", critico: true },
-  { id: "presupuestos", nombre: "Presupuestos", categoria: "Ventas", critico: false },
-  { id: "clients", nombre: "Clientes", categoria: "Ventas", critico: false },
-  { id: "services", nombre: "Servicios", categoria: "Ventas", critico: false },
-  { id: "talonarios", nombre: "Talonarios", categoria: "Ventas", critico: true },
+  // VENTAS - 1 módulo, 5 páginas
+  { id: "sales", nombre: "Ventas", categoria: "Operativa", critico: true },
 
-  // COMPRAS
-  { id: "purchases", nombre: "Compras", categoria: "Compras", critico: true },
-  { id: "suppliers", nombre: "Proveedores", categoria: "Compras", critico: false },
-  { id: "supplier_payments", nombre: "Pagos Proveedores", categoria: "Compras", critico: false },
+  // COMPRAS - 1 módulo, 3 páginas
+  { id: "purchases", nombre: "Compras", categoria: "Operativa", critico: true },
 
-  // PRODUCTOS
-  { id: "inventory", nombre: "Productos", categoria: "Inventario", critico: true },
-  { id: "stock_control", nombre: "Control de Stock", categoria: "Inventario", critico: false },
+  // INVENTARIO - 1 módulo, 3 páginas
+  { id: "inventory", nombre: "Inventario", categoria: "Operativa", critico: true },
 
-  // PROYECTOS
-  { id: "projects", nombre: "Proyectos", categoria: "Proyectos", critico: false },
+  // PROYECTOS - 1 módulo, 2 páginas
+  { id: "projects", nombre: "Proyectos", categoria: "Gestión", critico: false },
 
-  // AGENDA
-  { id: "calendar", nombre: "Calendario", categoria: "Agenda", critico: false },
+  // CALENDARIO - 1 módulo, 1 página
+  { id: "calendar", nombre: "Calendario", categoria: "Gestión", critico: false },
 
-  // FINANZAS
-  { id: "finance", nombre: "Tesorería", categoria: "Finanzas", critico: true },
-  { id: "checks", nombre: "Cheques", categoria: "Finanzas", critico: true },
-  { id: "expenses", nombre: "Gastos", categoria: "Finanzas", critico: false },
-  { id: "income_statement", nombre: "Estado de Resultados", categoria: "Finanzas", critico: false },
-  { id: "analytics", nombre: "Analytics", categoria: "Finanzas", critico: false },
+  // FINANZAS - 1 módulo, 6 páginas
+  { id: "finance", nombre: "Finanzas", categoria: "Finanzas", critico: true },
 
-  // SISTEMA
+  // SISTEMA - sin módulo de permisos
   { id: "settings", nombre: "Configuración", categoria: "Sistema", critico: true }
 ];
 
