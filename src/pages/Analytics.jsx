@@ -544,7 +544,7 @@ export default function Analytics() {
           <Target className="h-5 w-5 text-indigo-600" />
           Dashboard Ejecutivo
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           <KPICard
             titulo="Ventas Totales"
             valor={totalVentas}
@@ -572,13 +572,6 @@ export default function Analytics() {
             formato="moneda"
             icono={Activity}
             color={cashFlow > 0 ? 'green' : 'red'}
-          />
-          <KPICard
-            titulo="Retención Clientes"
-            valor={tasaRetencion}
-            formato="porcentaje"
-            icono={Users}
-            color={tasaRetencion > 80 ? 'green' : tasaRetencion > 60 ? 'amber' : 'red'}
           />
         </div>
       </div>
