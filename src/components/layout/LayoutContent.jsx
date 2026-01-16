@@ -38,6 +38,11 @@ export default function LayoutContent({ children, currentPageName }) {
     queryFn: () => base44.entities.ConfiguracionEmpresa.list()
   });
 
+  const { data: dbModules = [] } = useQuery({
+    queryKey: ['modules'],
+    queryFn: () => base44.entities.Module.list()
+  });
+
   const config = configuracionEmpresa[0];
   const nombreEmpresa = config?.nombre_empresa || "Sistema";
   const tipografiaLogo = config?.tipografia_logo || "inter";
