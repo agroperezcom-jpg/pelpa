@@ -34,7 +34,10 @@ export default function TesoreriaV2() {
     queryFn: () => base44.entities.Banco.list()
   });
 
-  // Los movimientos ya no se cargan directamente - se calculan en MovimientosView
+  const { data: movimientos = [] } = useQuery({
+    queryKey: ['movimientosTesoreria'],
+    queryFn: () => base44.entities.MovimientoTesoreria.list('-created_date', 1000)
+  });
 
   const { data: clientes = [] } = useQuery({
     queryKey: ['clients'],
@@ -46,8 +49,20 @@ export default function TesoreriaV2() {
     queryFn: () => base44.entities.Proveedor.list()
   });
 
-  // Los saldos se mantienen en Caja y Banco directamente
-  // Tesorería solo muestra movimientos derivados (ver detalles en MovimientosView)
+  // Calcular saldos reales desde movimientos de tesorería
+  const totalCajas = movimientos.reduce((acc, mov) => {
+    if (!mov.caja_id) return acc;
+    if (mov.tipo === "INGRESO") return acc + mov.importe;
+    if (mov.tipo === "EGRESO") return acc - mov.importe;
+    return acc;
+  }, 0);
+
+  const totalBancos = movimientos.reduce((acc, mov) => {
+    if (!mov.banco_id) return acc;
+    if (mov.tipo === "INGRESO") return acc + mov.importe;
+    if (mov.tipo === "EGRESO") return acc - mov.importe;
+    return acc;
+  }, 0);
 
   const totalDeudaClientes = clientes.reduce((acc, c) => acc + (c.saldo_cc || 0), 0);
   const totalDeudaProveedores = proveedores.reduce((acc, p) => acc + (p.saldo_cc || 0), 0);
