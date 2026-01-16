@@ -675,8 +675,18 @@ export default function PlanDeCuentas() {
             </div>
 
             {csvFile && (
-              <div className="text-sm text-slate-600">
-                Archivo seleccionado: <span className="font-medium">{csvFile.name}</span>
+              <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                <div className="text-sm text-slate-600">
+                  Archivo: <span className="font-medium">{csvFile.name}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCsvFile(null)}
+                  className="h-8 text-slate-500 hover:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             )}
           </div>
