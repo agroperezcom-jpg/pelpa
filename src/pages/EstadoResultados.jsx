@@ -204,68 +204,60 @@ export default function EstadoResultados() {
 
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-0 shadow-sm">
+        <Card className="border shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-slate-500 uppercase">Ingresos</p>
-                <p className="text-2xl font-bold text-green-600 mt-1">
+                <p className="text-2xl font-bold text-slate-900 mt-1">
                   ${totalIngresos.toLocaleString()}
                 </p>
               </div>
-              <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-green-600" />
-              </div>
+              <TrendingUp className="h-5 w-5 text-slate-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-sm">
+        <Card className="border shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-slate-500 uppercase">Utilidad Bruta</p>
-                <p className="text-2xl font-bold text-blue-600 mt-1">
+                <p className="text-2xl font-bold text-slate-900 mt-1">
                   ${utilidadBruta.toLocaleString()}
                 </p>
                 <p className="text-xs text-slate-500 mt-1">Margen: {margenBruto.toFixed(1)}%</p>
               </div>
-              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-blue-600" />
-              </div>
+              <DollarSign className="h-5 w-5 text-slate-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-sm">
+        <Card className="border shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-slate-500 uppercase">Gastos Operativos</p>
-                <p className="text-2xl font-bold text-orange-600 mt-1">
+                <p className="text-2xl font-bold text-slate-900 mt-1">
                   ${totalGastos.toLocaleString()}
                 </p>
               </div>
-              <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
-                <TrendingDown className="h-5 w-5 text-orange-600" />
-              </div>
+              <TrendingDown className="h-5 w-5 text-slate-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className={`border-0 shadow-sm ${utilidadOperativa >= 0 ? 'bg-gradient-to-br from-green-50 to-green-100' : 'bg-gradient-to-br from-red-50 to-red-100'}`}>
+        <Card className="border shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-slate-700 uppercase">Utilidad Operativa</p>
-                <p className={`text-2xl font-bold mt-1 ${utilidadOperativa >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                <p className="text-xs font-medium text-slate-500 uppercase">Utilidad Operativa</p>
+                <p className={`text-2xl font-bold mt-1 ${utilidadOperativa >= 0 ? 'text-slate-900' : 'text-slate-600'}`}>
                   ${utilidadOperativa.toLocaleString()}
                 </p>
-                <p className="text-xs text-slate-600 mt-1">Margen: {margenOperativo.toFixed(1)}%</p>
+                <p className="text-xs text-slate-500 mt-1">Margen: {margenOperativo.toFixed(1)}%</p>
               </div>
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${utilidadOperativa >= 0 ? 'bg-green-200' : 'bg-red-200'}`}>
-                <FileText className={`h-5 w-5 ${utilidadOperativa >= 0 ? 'text-green-700' : 'text-red-700'}`} />
-              </div>
+              <FileText className="h-5 w-5 text-slate-400" />
             </div>
           </CardContent>
         </Card>
@@ -286,8 +278,8 @@ export default function EstadoResultados() {
           </TableHeader>
           <TableBody>
             {/* INGRESOS */}
-            <TableRow className="bg-green-50">
-              <TableCell colSpan={3} className="font-bold text-green-800 uppercase text-sm">
+            <TableRow className="bg-slate-50 border-b-2">
+              <TableCell colSpan={3} className="font-bold text-slate-800 uppercase text-sm py-3">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4" />
                   INGRESOS
@@ -297,20 +289,20 @@ export default function EstadoResultados() {
             {Object.values(ingresosPorCuenta).map((item, idx) => (
               <TableRow key={idx}>
                 <TableCell className="text-slate-600 font-mono text-sm">{item.cuenta_codigo}</TableCell>
-                <TableCell>{item.cuenta_nombre}</TableCell>
-                <TableCell className="text-right font-medium text-green-600">
+                <TableCell className="text-slate-700">{item.cuenta_nombre}</TableCell>
+                <TableCell className="text-right font-medium text-slate-900">
                   ${item.total.toLocaleString()}
                 </TableCell>
               </TableRow>
             ))}
-            <TableRow className="bg-green-100 font-bold">
-              <TableCell colSpan={2} className="text-green-800">TOTAL INGRESOS</TableCell>
-              <TableCell className="text-right text-green-800">${totalIngresos.toLocaleString()}</TableCell>
+            <TableRow className="bg-slate-100 font-bold border-t">
+              <TableCell colSpan={2} className="text-slate-900">TOTAL INGRESOS</TableCell>
+              <TableCell className="text-right text-slate-900">${totalIngresos.toLocaleString()}</TableCell>
             </TableRow>
 
             {/* COSTOS */}
-            <TableRow className="bg-red-50">
-              <TableCell colSpan={3} className="font-bold text-red-800 uppercase text-sm pt-6">
+            <TableRow className="bg-slate-50 border-b-2">
+              <TableCell colSpan={3} className="font-bold text-slate-800 uppercase text-sm pt-6 pb-3">
                 <div className="flex items-center gap-2">
                   <TrendingDown className="h-4 w-4" />
                   COSTOS
@@ -320,8 +312,8 @@ export default function EstadoResultados() {
             {Object.values(costosPorCuenta).map((item, idx) => (
               <TableRow key={idx}>
                 <TableCell className="text-slate-600 font-mono text-sm">{item.cuenta_codigo}</TableCell>
-                <TableCell>{item.cuenta_nombre}</TableCell>
-                <TableCell className="text-right font-medium text-red-600">
+                <TableCell className="text-slate-700">{item.cuenta_nombre}</TableCell>
+                <TableCell className="text-right font-medium text-slate-900">
                   ${item.total.toLocaleString()}
                 </TableCell>
               </TableRow>
@@ -333,27 +325,27 @@ export default function EstadoResultados() {
                 </TableCell>
               </TableRow>
             )}
-            <TableRow className="bg-red-100 font-bold">
-              <TableCell colSpan={2} className="text-red-800">TOTAL COSTOS</TableCell>
-              <TableCell className="text-right text-red-800">${totalCostos.toLocaleString()}</TableCell>
+            <TableRow className="bg-slate-100 font-bold border-t">
+              <TableCell colSpan={2} className="text-slate-900">TOTAL COSTOS</TableCell>
+              <TableCell className="text-right text-slate-900">${totalCostos.toLocaleString()}</TableCell>
             </TableRow>
 
             {/* UTILIDAD BRUTA */}
-            <TableRow className="bg-blue-100 font-bold border-t-2 border-blue-300">
-              <TableCell colSpan={2} className="text-blue-900 text-base">
+            <TableRow className="bg-slate-200 font-bold border-t-2 border-slate-400">
+              <TableCell colSpan={2} className="text-slate-900 text-base py-3">
                 <div className="flex items-center gap-2">
                   <ArrowRight className="h-4 w-4" />
                   UTILIDAD BRUTA
                 </div>
               </TableCell>
-              <TableCell className="text-right text-blue-900 text-base">
+              <TableCell className="text-right text-slate-900 text-base">
                 ${utilidadBruta.toLocaleString()} ({margenBruto.toFixed(1)}%)
               </TableCell>
             </TableRow>
 
             {/* GASTOS OPERATIVOS */}
-            <TableRow className="bg-orange-50">
-              <TableCell colSpan={3} className="font-bold text-orange-800 uppercase text-sm pt-6">
+            <TableRow className="bg-slate-50 border-b-2">
+              <TableCell colSpan={3} className="font-bold text-slate-800 uppercase text-sm pt-6 pb-3">
                 <div className="flex items-center gap-2">
                   <TrendingDown className="h-4 w-4" />
                   GASTOS OPERATIVOS
@@ -363,8 +355,8 @@ export default function EstadoResultados() {
             {Object.values(gastosPorCuenta).map((item, idx) => (
               <TableRow key={idx}>
                 <TableCell className="text-slate-600 font-mono text-sm">{item.cuenta_codigo}</TableCell>
-                <TableCell>{item.cuenta_nombre}</TableCell>
-                <TableCell className="text-right font-medium text-orange-600">
+                <TableCell className="text-slate-700">{item.cuenta_nombre}</TableCell>
+                <TableCell className="text-right font-medium text-slate-900">
                   ${item.total.toLocaleString()}
                 </TableCell>
               </TableRow>
@@ -376,20 +368,20 @@ export default function EstadoResultados() {
                 </TableCell>
               </TableRow>
             )}
-            <TableRow className="bg-orange-100 font-bold">
-              <TableCell colSpan={2} className="text-orange-800">TOTAL GASTOS OPERATIVOS</TableCell>
-              <TableCell className="text-right text-orange-800">${totalGastos.toLocaleString()}</TableCell>
+            <TableRow className="bg-slate-100 font-bold border-t">
+              <TableCell colSpan={2} className="text-slate-900">TOTAL GASTOS OPERATIVOS</TableCell>
+              <TableCell className="text-right text-slate-900">${totalGastos.toLocaleString()}</TableCell>
             </TableRow>
 
             {/* UTILIDAD OPERATIVA */}
-            <TableRow className={`font-bold border-t-4 ${utilidadOperativa >= 0 ? 'bg-green-200 border-green-400' : 'bg-red-200 border-red-400'}`}>
-              <TableCell colSpan={2} className={`text-lg ${utilidadOperativa >= 0 ? 'text-green-900' : 'text-red-900'}`}>
+            <TableRow className="bg-slate-800 text-white font-bold border-t-4 border-slate-900">
+              <TableCell colSpan={2} className="text-lg py-4">
                 <div className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
                   UTILIDAD OPERATIVA
                 </div>
               </TableCell>
-              <TableCell className={`text-right text-lg ${utilidadOperativa >= 0 ? 'text-green-900' : 'text-red-900'}`}>
+              <TableCell className="text-right text-lg">
                 ${utilidadOperativa.toLocaleString()} ({margenOperativo.toFixed(1)}%)
               </TableCell>
             </TableRow>
