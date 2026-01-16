@@ -118,25 +118,39 @@ function UserStatusToggle({ user }) {
 }
 
 const MODULOS = [
-  // VENTAS - 1 módulo, 5 páginas
-  { id: "sales", nombre: "Ventas", categoria: "Operativa", critico: true },
+  // VENTAS - Módulos granulares por página
+  { id: "sales", nombre: "Ventas", categoria: "Ventas", critico: true },
+  { id: "presupuestos", nombre: "Presupuestos", categoria: "Ventas", critico: false },
+  { id: "clients", nombre: "Clientes", categoria: "Ventas", critico: false },
+  { id: "services", nombre: "Servicios", categoria: "Ventas", critico: false },
+  { id: "talonarios", nombre: "Talonarios", categoria: "Ventas", critico: true },
 
-  // COMPRAS - 1 módulo, 3 páginas
-  { id: "purchases", nombre: "Compras", categoria: "Operativa", critico: true },
+  // COMPRAS - Módulos granulares por página
+  { id: "purchases", nombre: "Compras", categoria: "Compras", critico: true },
+  { id: "suppliers", nombre: "Proveedores", categoria: "Compras", critico: false },
+  { id: "supplier_payments", nombre: "Pagos Proveedores", categoria: "Compras", critico: false },
 
-  // INVENTARIO - 1 módulo, 3 páginas
-  { id: "inventory", nombre: "Inventario", categoria: "Operativa", critico: true },
+  // INVENTARIO - Módulos granulares por página
+  { id: "products", nombre: "Productos", categoria: "Inventario", critico: true },
+  { id: "inventory", nombre: "Inventario", categoria: "Inventario", critico: true },
+  { id: "stock_control", nombre: "Control de Stock", categoria: "Inventario", critico: false },
 
-  // PROYECTOS - 1 módulo, 2 páginas
-  { id: "projects", nombre: "Proyectos", categoria: "Gestión", critico: false },
+  // PROYECTOS - Módulos granulares por página
+  { id: "projects", nombre: "Proyectos", categoria: "Proyectos", critico: false },
+  { id: "work_orders", nombre: "Órdenes de Trabajo", categoria: "Proyectos", critico: false },
 
-  // CALENDARIO - 1 módulo, 1 página
-  { id: "calendar", nombre: "Calendario", categoria: "Gestión", critico: false },
+  // AGENDA - Módulo único
+  { id: "calendar", nombre: "Calendario", categoria: "Agenda", critico: false },
 
-  // FINANZAS - 1 módulo, 6 páginas
-  { id: "finance", nombre: "Finanzas", categoria: "Finanzas", critico: true },
+  // FINANZAS - Módulos granulares por página
+  { id: "treasury", nombre: "Tesorería", categoria: "Finanzas", critico: true },
+  { id: "checks", nombre: "Cheques", categoria: "Finanzas", critico: true },
+  { id: "expenses", nombre: "Gastos", categoria: "Finanzas", critico: false },
+  { id: "financials", nombre: "Finanzas", categoria: "Finanzas", critico: false },
+  { id: "income_statement", nombre: "Estado de Resultados", categoria: "Finanzas", critico: false },
+  { id: "analytics", nombre: "Analytics", categoria: "Finanzas", critico: false },
 
-  // SISTEMA - sin módulo de permisos
+  // SISTEMA
   { id: "settings", nombre: "Configuración", categoria: "Sistema", critico: true }
 ];
 
