@@ -29,6 +29,6 @@ export default function Layout({ children, currentPageName }) {
                     {children}
                   </LayoutContent>
                 </ThemeProvider>
-              </ExternalAuthProvider>
-          );
-          }
+                </ExternalAuthProvider>
+                );
+                }
