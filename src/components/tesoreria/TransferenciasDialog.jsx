@@ -64,41 +64,7 @@ export default function TransferenciasDialog({ isOpen, onClose }) {
         throw new Error(`Saldo insuficiente en ${origen.nombre}. Saldo disponible: $${origen.saldo_actual}`);
       }
 
-      // Crear movimientos de salida (EGRESO) y entrada (INGRESO)
-      const medioTransferencia = await base44.entities.MedioPago.filter({ nombre: "Transferencia" });
-      const medioId = medioTransferencia[0]?.id;
-
-      // Movimiento EGRESO (salida del origen)
-      await base44.entities.MovimientoTesoreria.create({
-        fecha: new Date().toISOString().split('T')[0],
-        tipo: "EGRESO",
-        medio_pago_id: medioId,
-        medio_pago_nombre: "Transferencia",
-        banco_id: data.origen_tipo === "BANCO" ? origen.id : null,
-        banco_nombre: data.origen_tipo === "BANCO" ? origen.nombre : "",
-        caja_id: data.origen_tipo === "CAJA" ? origen.id : null,
-        caja_nombre: data.origen_tipo === "CAJA" ? origen.nombre : "",
-        importe: importe,
-        referencia_tipo: "transferencia",
-        observaciones: `Transferencia a ${destino.nombre}${data.observaciones ? ' - ' + data.observaciones : ''}`
-      });
-
-      // Movimiento INGRESO (entrada al destino)
-      await base44.entities.MovimientoTesoreria.create({
-        fecha: new Date().toISOString().split('T')[0],
-        tipo: "INGRESO",
-        medio_pago_id: medioId,
-        medio_pago_nombre: "Transferencia",
-        banco_id: data.destino_tipo === "BANCO" ? destino.id : null,
-        banco_nombre: data.destino_tipo === "BANCO" ? destino.nombre : "",
-        caja_id: data.destino_tipo === "CAJA" ? destino.id : null,
-        caja_nombre: data.destino_tipo === "CAJA" ? destino.nombre : "",
-        importe: importe,
-        referencia_tipo: "transferencia",
-        observaciones: `Transferencia desde ${origen.nombre}${data.observaciones ? ' - ' + data.observaciones : ''}`
-      });
-
-      // Actualizar saldos
+      // Actualizar saldos directamente (sin crear MovimientoTesoreria)
       if (data.origen_tipo === "CAJA") {
         await base44.entities.Caja.update(origen.id, {
           saldo_actual: origen.saldo_actual - importe
@@ -122,7 +88,6 @@ export default function TransferenciasDialog({ isOpen, onClose }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cajas'] });
       queryClient.invalidateQueries({ queryKey: ['bancos'] });
-      queryClient.invalidateQueries({ queryKey: ['movimientosTesoreria'] });
       setFormData({
         origen_tipo: "",
         origen_id: "",
