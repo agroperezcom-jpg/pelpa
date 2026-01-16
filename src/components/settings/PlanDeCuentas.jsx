@@ -612,19 +612,42 @@ export default function PlanDeCuentas() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start gap-2">
+              <div className="flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-blue-800 space-y-2">
-                  <p className="font-medium">Formato del CSV:</p>
-                  <p className="text-xs">Columnas: <code className="bg-white px-1 rounded">codigo,nombre,rubro_contable,tipo_resultado,imputable,usa_en_gastos,usa_en_ingresos</code></p>
-                  <div className="text-xs space-y-1">
-                    <p><strong>Reglas:</strong></p>
-                    <ul className="list-disc list-inside space-y-0.5">
-                      <li>codigo y nombre son obligatorios</li>
-                      <li>rubro_contable debe ser: Activo Corriente, Activo No Corriente, Pasivo Corriente, Pasivo No Corriente, Patrimonio Neto, Ingresos, Costos, Gastos</li>
-                      <li>tipo_resultado solo para Ingresos/Costos/Gastos (Ingreso, Costo, Gasto)</li>
-                      <li>imputable, usa_en_gastos, usa_en_ingresos: true/false</li>
-                      <li><strong>Las nuevas cuentas se agregarán sin eliminar las existentes</strong></li>
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <p className="font-semibold text-blue-900 mb-2">Formato del CSV:</p>
+                    <p className="text-xs text-blue-800">
+                      <strong>Columnas:</strong>
+                    </p>
+                    <code className="block bg-white px-2 py-1 rounded text-xs mt-1 text-blue-900">
+                      codigo,nombre,rubro_contable,tipo_resultado,imputable,usa_en_gastos,usa_en_ingresos
+                    </code>
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <p className="font-semibold text-blue-900 text-xs">Reglas:</p>
+                    <ul className="text-xs text-blue-800 space-y-1 pl-4">
+                      <li className="flex items-start gap-1">
+                        <span className="text-blue-600">•</span>
+                        <span>codigo y nombre son obligatorios</span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <span className="text-blue-600">•</span>
+                        <span>rubro_contable: Activo Corriente, Activo No Corriente, Pasivo Corriente, Pasivo No Corriente, Patrimonio Neto, Ingresos, Costos, Gastos</span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <span className="text-blue-600">•</span>
+                        <span>tipo_resultado solo para Ingresos/Costos/Gastos (Ingreso, Costo, Gasto)</span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <span className="text-blue-600">•</span>
+                        <span>imputable, usa_en_gastos, usa_en_ingresos: true/false</span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <span className="text-blue-600">•</span>
+                        <span className="font-semibold">Las nuevas cuentas se agregarán sin eliminar las existentes</span>
+                      </li>
                     </ul>
                   </div>
                 </div>
