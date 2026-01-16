@@ -583,7 +583,7 @@ export default function RolesPermisos() {
             </div>
 
             <div className="px-6 py-6 space-y-8">
-              {['Operativa', 'Finanzas', 'Gestión', 'Contactos', 'Análisis', 'Sistema'].map(categoria => {
+              {['Ventas', 'Compras', 'Inventario', 'Proyectos', 'Agenda', 'Finanzas', 'Sistema'].map(categoria => {
                 const modulosCategoria = MODULOS.filter(m => m.categoria === categoria);
                 if (modulosCategoria.length === 0) return null;
 
