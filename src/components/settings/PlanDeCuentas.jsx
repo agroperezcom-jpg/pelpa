@@ -682,7 +682,10 @@ export default function PlanDeCuentas() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setCsvFile(null)}
+                  onClick={() => {
+                    setCsvFile(null);
+                    setImportErrors([]);
+                  }}
                   className="h-8 text-slate-500 hover:text-red-600"
                 >
                   <Trash2 className="h-4 w-4" />
