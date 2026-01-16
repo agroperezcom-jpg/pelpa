@@ -5,6 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { usePermissionsEnforcement } from "@/components/permissions/usePermissionsEnforcement";
 import { useExternalAuth } from "@/components/context/ExternalAuthContext";
+import UserProfile from "./UserProfile";
 import {
   LayoutDashboard, ShoppingCart, ShoppingBag, Package, Landmark, BarChart3,
   Calendar as CalendarIcon, Briefcase, Settings, Shield, LogOut, Search,
@@ -70,16 +71,7 @@ export default function LayoutContent({ children, currentPageName }) {
     localStorage.setItem('sidebarExpanded', JSON.stringify(sidebarExpanded));
   }, [sidebarExpanded]);
 
-  const handleLogout = async () => {
-    try {
-      // Call base44 logout which handles session invalidation
-      await base44.auth.logout('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Fallback: redirect to login if logout fails
-      window.location.href = '/';
-    }
-  };
+
 
   const sectionIcons = {
     general: LayoutDashboard,
@@ -312,15 +304,9 @@ export default function LayoutContent({ children, currentPageName }) {
             })}
           </nav>
 
-          {/* Sidebar Footer - Logout Button */}
+          {/* Sidebar Footer */}
           <div className="mt-auto border-t border-slate-200/40 bg-white p-3 shrink-0">
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors font-medium text-sm"
-            >
-              <LogOut className="h-4 w-4" />
-              Cerrar sesión
-            </button>
+            <UserProfile />
           </div>
           </div>
           </aside>
