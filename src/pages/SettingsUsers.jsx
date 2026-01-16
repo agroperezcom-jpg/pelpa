@@ -85,7 +85,10 @@ export default function SettingsUsers() {
 
   const statusMutation = useMutation({
     mutationFn: ({ id, newStatus }) =>
-      base44.entities.Empleado.update(id, { status: newStatus }),
+      base44.functions.invoke("updateUserStatus", { 
+        empleado_id: id, 
+        new_status: newStatus 
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       setConfirmDialog({ open: false, user: null, action: null });
@@ -149,7 +152,7 @@ export default function SettingsUsers() {
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <p className="text-2xl font-bold">{employees.length}</p>
@@ -160,6 +163,12 @@ export default function SettingsUsers() {
           <CardContent className="p-4">
             <p className="text-2xl font-bold text-green-600">{activeCount}</p>
             <p className="text-sm text-muted-foreground">Activos</p>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-4">
+            <p className="text-2xl font-bold text-blue-600">{employees.filter((e) => e.status === "invited").length}</p>
+            <p className="text-sm text-muted-foreground">Invitados</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
