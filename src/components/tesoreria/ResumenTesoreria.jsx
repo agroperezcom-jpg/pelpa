@@ -4,11 +4,17 @@ import { TrendingUp, TrendingDown, Wallet, Building2, Users, Package } from "luc
 import { formatCurrency } from "@/components/utils/formatCurrency";
 
 export default function ResumenTesoreria({ 
-  totalCajas, 
-  totalBancos, 
-  totalDeudaClientes, 
-  totalDeudaProveedores 
+  cajas = [], 
+  bancos = [], 
+  clientes = [], 
+  proveedores = [] 
 }) {
+  // Cálculo directo en tiempo real desde entidades - sin variables intermedias
+  const totalCajas = cajas.reduce((acc, c) => acc + (c.saldo_actual || 0), 0);
+  const totalBancos = bancos.reduce((acc, b) => acc + (b.saldo_actual || 0), 0);
+  const totalDeudaClientes = clientes.reduce((acc, c) => acc + (c.saldo_cc || 0), 0);
+  const totalDeudaProveedores = proveedores.reduce((acc, p) => acc + (p.saldo_cc || 0), 0);
+  
   const totalTesoreria = totalCajas + totalBancos;
   const balanceCC = totalDeudaClientes - totalDeudaProveedores;
 
