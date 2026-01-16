@@ -126,6 +126,59 @@ export default function EstadoResultados() {
   const utilidadOperativa = utilidadBruta - totalGastos;
   const margenOperativo = totalIngresos > 0 ? (utilidadOperativa / totalIngresos * 100) : 0;
 
+  // RESULTADOS NO OPERATIVOS (Financiero + Otro Resultado)
+  const resultadosNoOperativosPorCuenta = gastosPeriodo
+    .filter(g => g.cuenta_contable_id)
+    .reduce((acc, gasto) => {
+      const cuenta = cuentasContables.find(c => c.id === gasto.cuenta_contable_id);
+      if (cuenta?.tipo_resultado === 'Financiero' || cuenta?.tipo_resultado === 'Otro Resultado') {
+        const key = gasto.cuenta_contable_id;
+        if (!acc[key]) {
+          acc[key] = {
+            cuenta_id: gasto.cuenta_contable_id,
+            cuenta_codigo: gasto.cuenta_contable_codigo,
+            cuenta_nombre: gasto.cuenta_contable_nombre,
+            tipo: cuenta.tipo_resultado,
+            total: 0
+          };
+        }
+        // Los resultados financieros pueden ser positivos o negativos
+        acc[key].total += gasto.amount || 0;
+      }
+      return acc;
+    }, {});
+
+  const totalResultadosNoOperativos = Object.values(resultadosNoOperativosPorCuenta).reduce((sum, item) => sum + item.total, 0);
+
+  // RESULTADO ANTES DE IMPUESTOS
+  const resultadoAntesImpuestos = utilidadOperativa - totalResultadosNoOperativos;
+
+  // IMPUESTOS (Impuesto a las Ganancias)
+  const impuestosPorCuenta = gastosPeriodo
+    .filter(g => g.cuenta_contable_id)
+    .reduce((acc, gasto) => {
+      const cuenta = cuentasContables.find(c => c.id === gasto.cuenta_contable_id);
+      if (cuenta?.tipo_resultado === 'Impuesto') {
+        const key = gasto.cuenta_contable_id;
+        if (!acc[key]) {
+          acc[key] = {
+            cuenta_id: gasto.cuenta_contable_id,
+            cuenta_codigo: gasto.cuenta_contable_codigo,
+            cuenta_nombre: gasto.cuenta_contable_nombre,
+            total: 0
+          };
+        }
+        acc[key].total += gasto.amount || 0;
+      }
+      return acc;
+    }, {});
+
+  const totalImpuestos = Object.values(impuestosPorCuenta).reduce((sum, item) => sum + item.total, 0);
+
+  // UTILIDAD NETA (Resultado del Ejercicio)
+  const utilidadNeta = resultadoAntesImpuestos - totalImpuestos;
+  const margenNeto = totalIngresos > 0 ? (utilidadNeta / totalIngresos * 100) : 0;
+
   const exportToCSV = () => {
     const rows = [
       ['ESTADO DE RESULTADOS'],
@@ -145,7 +198,19 @@ export default function EstadoResultados() {
       ...Object.values(gastosPorCuenta).map(item => [item.cuenta_codigo, item.cuenta_nombre, item.total]),
       ['', 'TOTAL GASTOS', totalGastos],
       [''],
-      ['', 'UTILIDAD OPERATIVA', utilidadOperativa]
+      ['', 'UTILIDAD OPERATIVA', utilidadOperativa],
+      [''],
+      ['RESULTADOS NO OPERATIVOS'],
+      ...Object.values(resultadosNoOperativosPorCuenta).map(item => [item.cuenta_codigo, item.cuenta_nombre, item.total]),
+      ['', 'TOTAL RESULTADOS NO OPERATIVOS', totalResultadosNoOperativos],
+      [''],
+      ['', 'RESULTADO ANTES DE IMPUESTOS', resultadoAntesImpuestos],
+      [''],
+      ['IMPUESTOS'],
+      ...Object.values(impuestosPorCuenta).map(item => [item.cuenta_codigo, item.cuenta_nombre, item.total]),
+      ['', 'TOTAL IMPUESTOS', totalImpuestos],
+      [''],
+      ['', 'UTILIDAD NETA', utilidadNeta]
     ];
 
     const csvContent = rows.map(row => row.join(",")).join("\n");
@@ -203,7 +268,7 @@ export default function EstadoResultados() {
       </Card>
 
       {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card className="border shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -226,7 +291,7 @@ export default function EstadoResultados() {
                 <p className="text-2xl font-bold text-slate-900 mt-1">
                   ${utilidadBruta.toLocaleString()}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">Margen: {margenBruto.toFixed(1)}%</p>
+                <p className="text-xs text-slate-500 mt-1">{margenBruto.toFixed(1)}%</p>
               </div>
               <DollarSign className="h-5 w-5 text-slate-400" />
             </div>
@@ -255,9 +320,24 @@ export default function EstadoResultados() {
                 <p className={`text-2xl font-bold mt-1 ${utilidadOperativa >= 0 ? 'text-slate-900' : 'text-slate-600'}`}>
                   ${utilidadOperativa.toLocaleString()}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">Margen: {margenOperativo.toFixed(1)}%</p>
+                <p className="text-xs text-slate-500 mt-1">{margenOperativo.toFixed(1)}%</p>
               </div>
               <FileText className="h-5 w-5 text-slate-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-2 shadow-md">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-slate-700 uppercase">Utilidad Neta</p>
+                <p className={`text-2xl font-bold mt-1 ${utilidadNeta >= 0 ? 'text-slate-900' : 'text-slate-600'}`}>
+                  ${utilidadNeta.toLocaleString()}
+                </p>
+                <p className="text-xs font-medium text-slate-600 mt-1">{margenNeto.toFixed(1)}%</p>
+              </div>
+              <FileText className="h-6 w-6 text-slate-600" />
             </div>
           </CardContent>
         </Card>
@@ -374,15 +454,101 @@ export default function EstadoResultados() {
             </TableRow>
 
             {/* UTILIDAD OPERATIVA */}
+            <TableRow className="bg-slate-200 font-bold border-t-2 border-slate-400">
+              <TableCell colSpan={2} className="text-slate-900 text-base py-3">
+                <div className="flex items-center gap-2">
+                  <ArrowRight className="h-4 w-4" />
+                  UTILIDAD OPERATIVA
+                </div>
+              </TableCell>
+              <TableCell className="text-right text-slate-900 text-base">
+                ${utilidadOperativa.toLocaleString()} ({margenOperativo.toFixed(1)}%)
+              </TableCell>
+            </TableRow>
+
+            {/* RESULTADOS NO OPERATIVOS */}
+            <TableRow className="bg-slate-50 border-b-2">
+              <TableCell colSpan={3} className="font-bold text-slate-800 uppercase text-sm pt-6 pb-3">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  RESULTADOS NO OPERATIVOS
+                </div>
+              </TableCell>
+            </TableRow>
+            {Object.values(resultadosNoOperativosPorCuenta).map((item, idx) => (
+              <TableRow key={idx}>
+                <TableCell className="text-slate-600 font-mono text-sm">{item.cuenta_codigo}</TableCell>
+                <TableCell className="text-slate-700">{item.cuenta_nombre}</TableCell>
+                <TableCell className="text-right font-medium text-slate-900">
+                  ${item.total.toLocaleString()}
+                </TableCell>
+              </TableRow>
+            ))}
+            {Object.values(resultadosNoOperativosPorCuenta).length === 0 && (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center text-slate-400 text-sm py-3">
+                  No hay resultados no operativos registrados en el período
+                </TableCell>
+              </TableRow>
+            )}
+            <TableRow className="bg-slate-100 font-bold border-t">
+              <TableCell colSpan={2} className="text-slate-900">TOTAL RESULTADOS NO OPERATIVOS</TableCell>
+              <TableCell className="text-right text-slate-900">${totalResultadosNoOperativos.toLocaleString()}</TableCell>
+            </TableRow>
+
+            {/* RESULTADO ANTES DE IMPUESTOS */}
+            <TableRow className="bg-slate-200 font-bold border-t-2 border-slate-400">
+              <TableCell colSpan={2} className="text-slate-900 text-base py-3">
+                <div className="flex items-center gap-2">
+                  <ArrowRight className="h-4 w-4" />
+                  RESULTADO ANTES DE IMPUESTOS
+                </div>
+              </TableCell>
+              <TableCell className="text-right text-slate-900 text-base">
+                ${resultadoAntesImpuestos.toLocaleString()}
+              </TableCell>
+            </TableRow>
+
+            {/* IMPUESTOS */}
+            <TableRow className="bg-slate-50 border-b-2">
+              <TableCell colSpan={3} className="font-bold text-slate-800 uppercase text-sm pt-6 pb-3">
+                <div className="flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4" />
+                  IMPUESTO A LAS GANANCIAS
+                </div>
+              </TableCell>
+            </TableRow>
+            {Object.values(impuestosPorCuenta).map((item, idx) => (
+              <TableRow key={idx}>
+                <TableCell className="text-slate-600 font-mono text-sm">{item.cuenta_codigo}</TableCell>
+                <TableCell className="text-slate-700">{item.cuenta_nombre}</TableCell>
+                <TableCell className="text-right font-medium text-slate-900">
+                  ${item.total.toLocaleString()}
+                </TableCell>
+              </TableRow>
+            ))}
+            {Object.values(impuestosPorCuenta).length === 0 && (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center text-slate-400 text-sm py-3">
+                  No hay impuestos registrados en el período
+                </TableCell>
+              </TableRow>
+            )}
+            <TableRow className="bg-slate-100 font-bold border-t">
+              <TableCell colSpan={2} className="text-slate-900">TOTAL IMPUESTOS</TableCell>
+              <TableCell className="text-right text-slate-900">${totalImpuestos.toLocaleString()}</TableCell>
+            </TableRow>
+
+            {/* UTILIDAD NETA */}
             <TableRow className="bg-slate-800 text-white font-bold border-t-4 border-slate-900">
               <TableCell colSpan={2} className="text-lg py-4">
                 <div className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  UTILIDAD OPERATIVA
+                  UTILIDAD NETA (RESULTADO DEL EJERCICIO)
                 </div>
               </TableCell>
               <TableCell className="text-right text-lg">
-                ${utilidadOperativa.toLocaleString()} ({margenOperativo.toFixed(1)}%)
+                ${utilidadNeta.toLocaleString()} ({margenNeto.toFixed(1)}%)
               </TableCell>
             </TableRow>
           </TableBody>
