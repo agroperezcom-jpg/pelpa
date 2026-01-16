@@ -117,7 +117,7 @@ export function usePermissions() {
   const isAdmin = currentUser?.role === 'admin';
 
   // Loading state
-  const isLoading = userLoading || empleadoLoading || rolLoading || permisosLoading;
+  const isLoading = userLoading || empleadoLoading || rolLoading || permisosLoading || modulesLoading;
 
   // Debug helper
   const debugInfo = {
