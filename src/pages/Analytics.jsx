@@ -516,27 +516,7 @@ export default function Analytics() {
         </CardContent>
       </Card>
 
-      {/* Alertas */}
-      {alertas.length > 0 && (
-        <Card className="border-0 shadow-sm bg-gradient-to-r from-amber-50 to-red-50">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <Bell className="h-5 w-5 text-amber-600 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-semibold text-slate-800 mb-2">Alertas Activas ({alertas.length})</p>
-                <div className="space-y-1">
-                  {alertas.map((alerta, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-sm">
-                      <AlertTriangle className={`h-4 w-4 ${alerta.tipo === 'error' ? 'text-red-600' : 'text-amber-600'}`} />
-                      <span className="text-slate-700">{alerta.mensaje}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
 
       {/* Dashboard Ejecutivo */}
       <div>
