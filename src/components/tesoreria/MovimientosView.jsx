@@ -61,6 +61,21 @@ export default function MovimientosView() {
     queryFn: () => base44.entities.Presupuesto.list('-created_date', 1000)
   });
 
+  const { data: pagosVenta = [] } = useQuery({
+    queryKey: ['pagosVenta'],
+    queryFn: () => base44.entities.PagoVenta.list('-created_date', 1000)
+  });
+
+  const { data: mediosPago = [] } = useQuery({
+    queryKey: ['mediosPago'],
+    queryFn: () => base44.entities.MedioPago.list()
+  });
+
+  const { data: movimientosTesoreria = [] } = useQuery({
+    queryKey: ['movimientosTesoreria'],
+    queryFn: () => base44.entities.MovimientoTesoreria.list('-created_date', 1000)
+  });
+
   // Generar movimientos derivados en tiempo real
   const movimientosDerivados = useMemo(() => {
     const movs = [];
@@ -83,22 +98,49 @@ export default function MovimientosView() {
       });
     });
 
-    // Ventas confirmadas → INGRESO
+    // Ventas confirmadas → INGRESO (con desglose de pagos)
     ventas.filter(v => v.estado === "CONFIRMADA").forEach(venta => {
-      movs.push({
-        id: `venta-${venta.id}`,
-        fecha: venta.created_date.split('T')[0],
-        tipo: "INGRESO",
-        importe: venta.total,
-        origen: "Venta",
-        origen_id: venta.id,
-        descripcion: `Venta ${venta.numero_comprobante || venta.id.slice(0, 8)}`,
-        medio_pago: "Venta",
-        banco_nombre: "",
-        caja_nombre: "",
-        cuenta_contable: venta.cuenta_contable_nombre || "",
-        created_date: venta.created_date
-      });
+      // Buscar pagos de esta venta
+      const pagosDeVenta = pagosVenta.filter(p => p.sale_id === venta.id);
+      
+      if (pagosDeVenta.length > 0) {
+        // Si tiene pagos registrados, crear un movimiento por cada pago
+        pagosDeVenta.forEach(pago => {
+          const medio = mediosPago.find(m => m.id === pago.medio_pago_id);
+          movs.push({
+            id: `pago-venta-${pago.id}`,
+            fecha: venta.created_date.split('T')[0],
+            tipo: "INGRESO",
+            importe: pago.importe,
+            origen: "Venta",
+            origen_id: venta.id,
+            descripcion: `Venta ${venta.numero_comprobante || venta.id.slice(0, 8)}`,
+            medio_pago: pago.medio_pago_nombre || medio?.nombre || "Efectivo",
+            categoria_medio: medio?.categoria || "EFECTIVO",
+            banco_nombre: pago.banco_nombre || "",
+            caja_nombre: pago.caja_nombre || "",
+            cuenta_contable: venta.cuenta_contable_nombre || "",
+            created_date: venta.created_date
+          });
+        });
+      } else {
+        // Si no tiene pagos, usar el total de la venta
+        movs.push({
+          id: `venta-${venta.id}`,
+          fecha: venta.created_date.split('T')[0],
+          tipo: "INGRESO",
+          importe: venta.total,
+          origen: "Venta",
+          origen_id: venta.id,
+          descripcion: `Venta ${venta.numero_comprobante || venta.id.slice(0, 8)}`,
+          medio_pago: "Efectivo",
+          categoria_medio: "EFECTIVO",
+          banco_nombre: "",
+          caja_nombre: "",
+          cuenta_contable: venta.cuenta_contable_nombre || "",
+          created_date: venta.created_date
+        });
+      }
     });
 
     // Compras → EGRESO
@@ -137,9 +179,33 @@ export default function MovimientosView() {
       });
     });
 
+    // Movimientos Internos de Tesorería (Transferencias)
+    movimientosTesoreria.forEach(mt => {
+      if (mt.tipo === 'TRANSFERENCIA') {
+        // No agregar transferencias aquí, se manejan en los historiales específicos
+      } else {
+        // Otros movimientos directos
+        movs.push({
+          id: `mt-${mt.id}`,
+          fecha: mt.fecha,
+          tipo: mt.tipo,
+          importe: mt.importe,
+          origen: "Movimiento Tesorería",
+          origen_id: mt.id,
+          descripcion: mt.concepto || `Movimiento ${mt.tipo.toLowerCase()}`,
+          medio_pago: mt.medio_pago || "N/A",
+          categoria_medio: mt.categoria || "EFECTIVO",
+          banco_nombre: mt.banco_nombre || "",
+          caja_nombre: mt.caja_nombre || "",
+          cuenta_contable: "",
+          created_date: mt.created_date
+        });
+      }
+    });
+
     // Ordenar por fecha descendente
     return movs.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
-  }, [gastos, ventas, compras, presupuestos]);
+  }, [gastos, ventas, compras, presupuestos, pagosVenta, mediosPago, movimientosTesoreria]);
 
   // Filtrar movimientos
   const movimientosFiltrados = movimientosDerivados.filter(mov => {
@@ -360,7 +426,15 @@ export default function MovimientosView() {
 
                 <div>
                   <p className="text-xs text-slate-500 uppercase">Medio de Pago</p>
-                  <p className="font-medium">{selectedMovimiento.medio_pago}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className="font-medium">
+                      {selectedMovimiento.categoria_medio === 'EFECTIVO' ? '💵 Efectivo' :
+                       selectedMovimiento.categoria_medio === 'TRANSFERENCIA' ? '🏦 Transferencia' :
+                       selectedMovimiento.categoria_medio === 'BANCO' ? '🏦 Banco' :
+                       selectedMovimiento.categoria_medio === 'CHEQUE' ? '📋 Cheque' :
+                       selectedMovimiento.medio_pago}
+                    </Badge>
+                  </div>
                 </div>
 
                 {(selectedMovimiento.banco_nombre || selectedMovimiento.caja_nombre) && (
