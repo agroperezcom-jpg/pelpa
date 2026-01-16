@@ -11,6 +11,7 @@ import CompanyConfiguration from "../components/settings/CompanyConfiguration";
 import SettingsUsers from "./SettingsUsers";
 import SettingsRoles from "./SettingsRoles";
 import DebugPermissions from "./DebugPermissions";
+import SettingsSeedData from "../components/settings/SettingsSeedData";
 
 export default function Settings() {
   const [activeView, setActiveView] = useState("empresa");
