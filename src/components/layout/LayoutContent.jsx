@@ -102,13 +102,13 @@ export default function LayoutContent({ children, currentPageName }) {
       name: "Ventas",
       section: "ventas",
       icon: ShoppingCart,
-      permiso: "ventas",
+      permiso: "sales",
       items: [
-        { name: "Ventas", page: "Sales", icon: ShoppingCart, permiso: "ventas" },
-        { name: "Presupuestos", page: "Presupuestos", icon: FileText, permiso: "presupuestos" },
-        { name: "Clientes", page: "Clients", icon: Users, permiso: "clientes" },
-        { name: "Servicios", page: "Services", icon: Wrench, permiso: "ventas" },
-        { name: "Talonarios", page: "Talonarios", icon: FileCheck, permiso: "talonarios" },
+        { name: "Ventas", page: "Sales", icon: ShoppingCart, permiso: "sales" },
+        { name: "Presupuestos", page: "Presupuestos", icon: FileText, permiso: "sales" },
+        { name: "Clientes", page: "Clients", icon: Users, permiso: "sales" },
+        { name: "Servicios", page: "Services", icon: Wrench, permiso: "sales" },
+        { name: "Talonarios", page: "Talonarios", icon: FileCheck, permiso: "sales" },
       ]
     },
     {
@@ -116,11 +116,11 @@ export default function LayoutContent({ children, currentPageName }) {
       name: "Compras",
       section: "compras",
       icon: ShoppingBag,
-      permiso: "compras",
+      permiso: "purchases",
       items: [
-        { name: "Compras", page: "Purchases", icon: ShoppingBag, permiso: "compras" },
-        { name: "Proveedores", page: "Proveedores", icon: Building2, permiso: "proveedores" },
-        { name: "Pagos Proveedores", page: "PagosProveedores", icon: CreditCard, permiso: "compras" },
+        { name: "Compras", page: "Purchases", icon: ShoppingBag, permiso: "purchases" },
+        { name: "Proveedores", page: "Proveedores", icon: Building2, permiso: "purchases" },
+        { name: "Pagos Proveedores", page: "PagosProveedores", icon: CreditCard, permiso: "purchases" },
       ]
     },
     {
@@ -128,11 +128,11 @@ export default function LayoutContent({ children, currentPageName }) {
       name: "Productos",
       section: "inventario",
       icon: Package,
-      permiso: "inventario",
+      permiso: "inventory",
       items: [
-        { name: "Productos", page: "Products", icon: Package, permiso: "productos" },
-        { name: "Inventario", page: "Inventory", icon: Check, permiso: "inventario" },
-        { name: "Control de Stock", page: "HistorialControlesStock", icon: ClipboardList, permiso: "control_stock" },
+        { name: "Productos", page: "Products", icon: Package, permiso: "inventory" },
+        { name: "Inventario", page: "Inventory", icon: Check, permiso: "inventory" },
+        { name: "Control de Stock", page: "HistorialControlesStock", icon: ClipboardList, permiso: "inventory" },
       ]
     },
     {
@@ -140,10 +140,10 @@ export default function LayoutContent({ children, currentPageName }) {
       name: "Proyectos",
       section: "proyectos",
       icon: Briefcase,
-      permiso: "proyectos",
+      permiso: "projects",
       items: [
-        { name: "Proyectos", page: "Projects", icon: Briefcase, permiso: "proyectos" },
-        { name: "Órdenes de Trabajo", page: "WorkOrders", icon: Briefcase, permiso: "proyectos" },
+        { name: "Proyectos", page: "Projects", icon: Briefcase, permiso: "projects" },
+        { name: "Órdenes de Trabajo", page: "WorkOrders", icon: Briefcase, permiso: "projects" },
       ]
     },
     {
@@ -151,9 +151,9 @@ export default function LayoutContent({ children, currentPageName }) {
       name: "Agenda",
       section: "calendario",
       icon: CalendarIcon,
-      permiso: "calendario",
+      permiso: "calendar",
       items: [
-        { name: "Calendario", page: "Calendar", icon: CalendarIcon, permiso: "calendario" },
+        { name: "Calendario", page: "Calendar", icon: CalendarIcon, permiso: "calendar" },
       ]
     },
     {
@@ -161,14 +161,14 @@ export default function LayoutContent({ children, currentPageName }) {
        name: "Finanzas",
        section: "tesoreria",
        icon: DollarSign,
-       permiso: "tesoreria",
+       permiso: "finance",
        items: [
-         { name: "Tesorería", page: "TesoreriaV2", icon: Landmark, permiso: "tesoreria" },
-         { name: "Cheques", page: "Cheques", icon: CreditCard, permiso: "cheques" },
-         { name: "Gastos", page: "Expenses", icon: DollarSign, permiso: "gastos" },
-         { name: "Finanzas", page: "FinanzasHub", icon: BarChart3, permiso: "analytics" },
-         { name: "Estado de Resultados", page: "EstadoResultados", icon: FileText, permiso: "analytics" },
-         { name: "Analytics", page: "Analytics", icon: TrendingUp, permiso: "analytics" },
+         { name: "Tesorería", page: "TesoreriaV2", icon: Landmark, permiso: "finance" },
+         { name: "Cheques", page: "Cheques", icon: CreditCard, permiso: "finance" },
+         { name: "Gastos", page: "Expenses", icon: DollarSign, permiso: "finance" },
+         { name: "Finanzas", page: "FinanzasHub", icon: BarChart3, permiso: "finance" },
+         { name: "Estado de Resultados", page: "EstadoResultados", icon: FileText, permiso: "finance" },
+         { name: "Analytics", page: "Analytics", icon: TrendingUp, permiso: "finance" },
        ]
      },
     {
