@@ -145,7 +145,7 @@ export default function MovimientosView() {
   const movimientosFiltrados = movimientosDerivados.filter(mov => {
     const fechaMov = new Date(mov.fecha);
     const desde = fechaDesde ? new Date(fechaDesde) : null;
-    const hasta fechaHasta ? new Date(fechaHasta) : null;
+    const hasta = fechaHasta ? new Date(fechaHasta) : null;
 
     const cumpleFecha = (!desde || fechaMov >= desde) && (!hasta || fechaMov <= hasta);
     const cumpleTipo = tipoFiltro === "todos" || mov.tipo === tipoFiltro;
