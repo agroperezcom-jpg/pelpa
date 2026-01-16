@@ -77,6 +77,11 @@ export default function BancosView() {
     queryFn: () => base44.entities.MedioPago.list()
   });
 
+  const { data: movimientosTesoreria = [] } = useQuery({
+    queryKey: ['movimientosTesoreria'],
+    queryFn: () => base44.entities.MovimientoTesoreria.list('-created_date', 1000)
+  });
+
   const getMovimientosBanco = (bancoId) => {
     const movimientos = [];
 
@@ -120,6 +125,58 @@ export default function BancosView() {
         categoria: 'TRANSFERENCIA',
         medio_pago: 'Presupuesto'
       });
+    });
+
+    // Movimientos de tesorería (transferencias, ingresos, egresos)
+    movimientosTesoreria.forEach(mt => {
+      // Transferencias donde este banco es origen (egreso)
+      if (mt.cuenta_origen_id === bancoId && mt.cuenta_origen_tipo === 'BANCO') {
+        movimientos.push({
+          id: `mt-egreso-${mt.id}`,
+          fecha: mt.fecha,
+          tipo: 'EGRESO',
+          importe: mt.importe,
+          descripcion: `Transferencia a ${mt.cuenta_destino_nombre || 'Cuenta'}`,
+          categoria: 'TRANSFERENCIA',
+          medio_pago: 'Transferencia Interna'
+        });
+      }
+      // Transferencias donde este banco es destino (ingreso)
+      if (mt.cuenta_destino_id === bancoId && mt.cuenta_destino_tipo === 'BANCO') {
+        movimientos.push({
+          id: `mt-ingreso-${mt.id}`,
+          fecha: mt.fecha,
+          tipo: 'INGRESO',
+          importe: mt.importe,
+          descripcion: `Transferencia desde ${mt.cuenta_origen_nombre || 'Cuenta'}`,
+          categoria: 'TRANSFERENCIA',
+          medio_pago: 'Transferencia Interna'
+        });
+      }
+      // Ingresos directos a este banco
+      if (mt.tipo === 'INGRESO' && mt.cuenta_destino_id === bancoId) {
+        movimientos.push({
+          id: `mt-${mt.id}`,
+          fecha: mt.fecha,
+          tipo: 'INGRESO',
+          importe: mt.importe,
+          descripcion: mt.concepto || 'Ingreso',
+          categoria: mt.categoria || 'TRANSFERENCIA',
+          medio_pago: mt.medio_pago || 'Ingreso'
+        });
+      }
+      // Egresos directos desde este banco
+      if (mt.tipo === 'EGRESO' && mt.cuenta_origen_id === bancoId) {
+        movimientos.push({
+          id: `mt-${mt.id}`,
+          fecha: mt.fecha,
+          tipo: 'EGRESO',
+          importe: mt.importe,
+          descripcion: mt.concepto || 'Egreso',
+          categoria: mt.categoria || 'TRANSFERENCIA',
+          medio_pago: mt.medio_pago || 'Egreso'
+        });
+      }
     });
 
     return movimientos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));

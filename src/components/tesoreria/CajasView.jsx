@@ -70,6 +70,11 @@ export default function CajasView() {
     queryFn: () => base44.entities.MedioPago.list()
   });
 
+  const { data: movimientosTesoreria = [] } = useQuery({
+    queryKey: ['movimientosTesoreria'],
+    queryFn: () => base44.entities.MovimientoTesoreria.list('-created_date', 1000)
+  });
+
   const getMovimientosCaja = (cajaId) => {
     const movimientos = [];
 
@@ -100,6 +105,58 @@ export default function CajasView() {
         categoria: 'EFECTIVO',
         medio_pago: 'Venta'
       });
+    });
+
+    // Movimientos de tesorería (transferencias, ingresos, egresos)
+    movimientosTesoreria.forEach(mt => {
+      // Transferencias donde esta caja es origen (egreso)
+      if (mt.cuenta_origen_id === cajaId && mt.cuenta_origen_tipo === 'CAJA') {
+        movimientos.push({
+          id: `mt-egreso-${mt.id}`,
+          fecha: mt.fecha,
+          tipo: 'EGRESO',
+          importe: mt.importe,
+          descripcion: `Transferencia a ${mt.cuenta_destino_nombre || 'Cuenta'}`,
+          categoria: 'TRANSFERENCIA',
+          medio_pago: 'Transferencia Interna'
+        });
+      }
+      // Transferencias donde esta caja es destino (ingreso)
+      if (mt.cuenta_destino_id === cajaId && mt.cuenta_destino_tipo === 'CAJA') {
+        movimientos.push({
+          id: `mt-ingreso-${mt.id}`,
+          fecha: mt.fecha,
+          tipo: 'INGRESO',
+          importe: mt.importe,
+          descripcion: `Transferencia desde ${mt.cuenta_origen_nombre || 'Cuenta'}`,
+          categoria: 'TRANSFERENCIA',
+          medio_pago: 'Transferencia Interna'
+        });
+      }
+      // Ingresos directos a esta caja
+      if (mt.tipo === 'INGRESO' && mt.cuenta_destino_id === cajaId) {
+        movimientos.push({
+          id: `mt-${mt.id}`,
+          fecha: mt.fecha,
+          tipo: 'INGRESO',
+          importe: mt.importe,
+          descripcion: mt.concepto || 'Ingreso',
+          categoria: mt.categoria || 'EFECTIVO',
+          medio_pago: mt.medio_pago || 'Ingreso'
+        });
+      }
+      // Egresos directos desde esta caja
+      if (mt.tipo === 'EGRESO' && mt.cuenta_origen_id === cajaId) {
+        movimientos.push({
+          id: `mt-${mt.id}`,
+          fecha: mt.fecha,
+          tipo: 'EGRESO',
+          importe: mt.importe,
+          descripcion: mt.concepto || 'Egreso',
+          categoria: mt.categoria || 'EFECTIVO',
+          medio_pago: mt.medio_pago || 'Egreso'
+        });
+      }
     });
 
     return movimientos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
