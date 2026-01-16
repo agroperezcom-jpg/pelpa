@@ -576,13 +576,13 @@ export default function RolesPermisos() {
 
                  return (
                    <div key={section.id} className="space-y-4">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-1 h-6 bg-slate-700 rounded-full"></div>
-                      <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">
-                        {categoria}
-                      </h3>
-                      <div className="h-px flex-1 bg-slate-200"></div>
-                    </div>
+                     <div className="flex items-center gap-3 mb-4">
+                       <div className="w-1 h-6 bg-slate-700 rounded-full"></div>
+                       <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">
+                         {section.name}
+                       </h3>
+                       <div className="h-px flex-1 bg-slate-200"></div>
+                     </div>
 
                     <div className="space-y-3">
                       {modulosCategoria.map(modulo => {
