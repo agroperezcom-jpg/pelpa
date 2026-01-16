@@ -44,15 +44,26 @@ export function usePermissions() {
     enabled: !!empleado?.role_id,
   });
 
-  // Step 4: Get Permisos (RolePermissions)
+  // Step 4: Get Permisos (RolePermissions + Permission data)
   const { data: rawPermisos = [], isLoading: permisosLoading } = useQuery({
     queryKey: ['rolePermissions', rol?.id],
     queryFn: async () => {
       if (!rol?.id) return [];
       try {
         const rolePerms = await base44.entities.RolePermission.filter({ role_id: rol.id });
-        console.log('🔍 Permisos lookup:', { role_id: rol.id, count: rolePerms?.length || 0 });
-        return rolePerms || [];
+        if (!rolePerms?.length) {
+          console.log('🔍 Permisos lookup:', { role_id: rol.id, count: 0 });
+          return [];
+        }
+
+        // Fetch Permission data for each RolePermission
+        const permissionsData = await Promise.all(
+          rolePerms.map(rp => base44.entities.Permission.get(rp.permission_id).catch(() => null))
+        );
+
+        const validPermisos = permissionsData.filter(p => p !== null);
+        console.log('🔍 Permisos lookup:', { role_id: rol.id, count: validPermisos.length });
+        return validPermisos;
       } catch (err) {
         console.error('❌ Error fetching permissions:', err);
         return [];
@@ -63,8 +74,10 @@ export function usePermissions() {
 
   // Transform permisos to usable map
   const permisos = rawPermisos.reduce((acc, p) => {
-    const key = `${p.module_key}.${p.action}`;
-    acc[key] = true;
+    if (p?.module_key && p?.action) {
+      const key = `${p.module_key}.${p.action}`;
+      acc[key] = true;
+    }
     return acc;
   }, {});
 
