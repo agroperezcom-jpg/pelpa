@@ -13,7 +13,8 @@ const DEFAULT_COLORS = {
   task: "#10b981",
   freeTask: "#64748b",
   milestone: "#f59e0b",
-  campaign: "#ec4899"
+  campaign: "#ec4899",
+  expense: "#ef4444"
 };
 
 const PRESET_COLORS = [
@@ -87,7 +88,8 @@ export default function CalendarSettingsDialog({ isOpen, onClose, config, onSave
                  task: "Tareas de Proyecto",
                  freeTask: "Tareas Libres",
                  milestone: "Hitos",
-                 campaign: "Campañas"
+                 campaign: "Campañas",
+                 expense: "Gastos"
                 }).map(([type, label]) => (
                  <div key={type} className="space-y-2">
                    <Label className="text-sm font-medium">{label}</Label>
