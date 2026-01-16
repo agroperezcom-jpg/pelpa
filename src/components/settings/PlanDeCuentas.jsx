@@ -691,7 +691,11 @@ export default function PlanDeCuentas() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setImportDialogOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setImportDialogOpen(false);
+              setCsvFile(null);
+              setImportErrors([]);
+            }}>
               Cancelar
             </Button>
             <Button onClick={handleImport} disabled={importMutation.isPending}>
