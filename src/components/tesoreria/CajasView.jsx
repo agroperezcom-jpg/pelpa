@@ -27,13 +27,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Plus, MoreVertical, Edit, Trash2, Wallet } from "lucide-react";
+import { Plus, MoreVertical, Edit, Trash2, Wallet, History, TrendingUp, TrendingDown } from "lucide-react";
 import { formatCurrency } from "@/components/utils/formatCurrency";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 export default function CajasView() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCaja, setEditingCaja] = useState(null);
   const [formData, setFormData] = useState({ nombre: "" });
+  const [historialCaja, setHistorialCaja] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -41,6 +44,66 @@ export default function CajasView() {
     queryKey: ['cajas'],
     queryFn: () => base44.entities.Caja.list()
   });
+
+  const { data: gastos = [] } = useQuery({
+    queryKey: ['expenses'],
+    queryFn: () => base44.entities.Expense.list('-date', 1000)
+  });
+
+  const { data: ventas = [] } = useQuery({
+    queryKey: ['sales'],
+    queryFn: () => base44.entities.Sale.list('-created_date', 1000)
+  });
+
+  const { data: compras = [] } = useQuery({
+    queryKey: ['purchases'],
+    queryFn: () => base44.entities.Compra.list('-fecha', 1000)
+  });
+
+  const { data: presupuestos = [] } = useQuery({
+    queryKey: ['presupuestos'],
+    queryFn: () => base44.entities.Presupuesto.list('-created_date', 1000)
+  });
+
+  const { data: mediosPago = [] } = useQuery({
+    queryKey: ['mediosPago'],
+    queryFn: () => base44.entities.MedioPago.list()
+  });
+
+  const getMovimientosCaja = (cajaId) => {
+    const movimientos = [];
+
+    // Gastos con esta caja
+    gastos.forEach(g => {
+      if (g.caja_id === cajaId) {
+        const medio = mediosPago.find(m => m.id === g.medio_pago_id);
+        movimientos.push({
+          id: `gasto-${g.id}`,
+          fecha: g.date,
+          tipo: 'EGRESO',
+          importe: g.amount,
+          descripcion: g.description || 'Gasto',
+          categoria: medio?.categoria || 'EFECTIVO',
+          medio_pago: g.medio_pago_nombre
+        });
+      }
+    });
+
+    // Ventas en efectivo (asumiendo que van a caja)
+    ventas.filter(v => v.estado === "CONFIRMADA" && v.tipo_venta === "CONTADO").forEach(v => {
+      movimientos.push({
+        id: `venta-${v.id}`,
+        fecha: v.created_date?.split('T')[0] || new Date().toISOString().split('T')[0],
+        tipo: 'INGRESO',
+        importe: v.total,
+        descripcion: `Venta a ${v.client_name || 'Cliente'}`,
+        categoria: 'EFECTIVO',
+        medio_pago: 'Venta'
+      });
+    });
+
+    return movimientos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  };
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Caja.create(data),
@@ -133,6 +196,10 @@ export default function CajasView() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setHistorialCaja(caja)}>
+                        <History className="h-4 w-4 mr-2" />
+                        Ver Movimientos
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleOpenDialog(caja)}>
                         <Edit className="h-4 w-4 mr-2" />
                         Editar
@@ -181,6 +248,83 @@ export default function CajasView() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!historialCaja} onOpenChange={() => setHistorialCaja(null)}>
+        <DialogContent className="max-w-3xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5 text-emerald-600" />
+              Historial de Movimientos - {historialCaja?.nombre}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <div className="flex-1 p-4 bg-emerald-50 rounded-lg">
+                <p className="text-sm text-emerald-700">Saldo Actual</p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  {formatCurrency(historialCaja?.saldo_actual || 0)}
+                </p>
+              </div>
+            </div>
+            <div className="overflow-auto max-h-[400px]">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50">
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Descripción</TableHead>
+                    <TableHead>Medio</TableHead>
+                    <TableHead className="text-right">Tipo</TableHead>
+                    <TableHead className="text-right">Importe</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {historialCaja && getMovimientosCaja(historialCaja.id).map((mov) => (
+                    <TableRow key={mov.id}>
+                      <TableCell className="text-sm">
+                        {mov.fecha ? format(new Date(mov.fecha), 'dd/MM/yyyy', { locale: es }) : '-'}
+                      </TableCell>
+                      <TableCell className="text-sm">{mov.descripcion}</TableCell>
+                      <TableCell className="text-sm">
+                        <Badge variant="outline" className="text-xs">
+                          {mov.medio_pago}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {mov.tipo === 'INGRESO' ? (
+                          <Badge className="bg-green-100 text-green-700">
+                            <TrendingUp className="h-3 w-3 mr-1" />
+                            Ingreso
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-red-100 text-red-700">
+                            <TrendingDown className="h-3 w-3 mr-1" />
+                            Egreso
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className={`font-bold ${mov.tipo === 'INGRESO' ? 'text-green-600' : 'text-red-600'}`}>
+                          {mov.tipo === 'INGRESO' ? '+' : '-'}{formatCurrency(mov.importe)}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {historialCaja && getMovimientosCaja(historialCaja.id).length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-slate-500">
+                        No hay movimientos registrados
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setHistorialCaja(null)}>Cerrar</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
