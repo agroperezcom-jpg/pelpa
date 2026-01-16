@@ -4,6 +4,7 @@ import Cheques from './pages/Cheques';
 import Clients from './pages/Clients';
 import Dashboard from './pages/Dashboard';
 import DashboardEjecutivo from './pages/DashboardEjecutivo';
+import DebugPermissions from './pages/DebugPermissions';
 import EstadoResultados from './pages/EstadoResultados';
 import Expenses from './pages/Expenses';
 import Finance from './pages/Finance';
@@ -35,7 +36,6 @@ import TesoreriaV2 from './pages/TesoreriaV2';
 import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
 import WorkOrders from './pages/WorkOrders';
-import DebugPermissions from './pages/DebugPermissions';
 import __Layout from './Layout.jsx';
 
 
@@ -46,6 +46,7 @@ export const PAGES = {
     "Clients": Clients,
     "Dashboard": Dashboard,
     "DashboardEjecutivo": DashboardEjecutivo,
+    "DebugPermissions": DebugPermissions,
     "EstadoResultados": EstadoResultados,
     "Expenses": Expenses,
     "Finance": Finance,
@@ -77,7 +78,6 @@ export const PAGES = {
     "TiposArticulo": TiposArticulo,
     "Treasury": Treasury,
     "WorkOrders": WorkOrders,
-    "DebugPermissions": DebugPermissions,
 }
 
 export const pagesConfig = {

@@ -176,19 +176,31 @@ export default function DebugPermissions() {
       {/* Test Cases */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">🧪 Test de Permisos</CardTitle>
+          <CardTitle className="text-lg">🧪 Test de Permisos (module_keys en inglés)</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="space-y-2">
-            <p className="font-medium">Test: canAccessModule('ventas')</p>
-            <Badge className={canAccessModule('ventas') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-              {canAccessModule('ventas') ? '✅ Puede acceder' : '❌ No puede acceder'}
+            <p className="font-medium">Test: canAccessModule('sales')</p>
+            <Badge className={canAccessModule('sales') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+              {canAccessModule('sales') ? '✅ Puede acceder' : '❌ No puede acceder'}
             </Badge>
           </div>
           <div className="space-y-2">
-            <p className="font-medium">Test: hasPermission('ventas', 'view')</p>
-            <Badge className={hasPermission('ventas', 'view') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-              {hasPermission('ventas', 'view') ? '✅ Puede ver' : '❌ No puede ver'}
+            <p className="font-medium">Test: hasPermission('sales', 'view')</p>
+            <Badge className={hasPermission('sales', 'view') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+              {hasPermission('sales', 'view') ? '✅ Puede ver' : '❌ No puede ver'}
+            </Badge>
+          </div>
+          <div className="space-y-2">
+            <p className="font-medium">Test: canAccessModule('finance')</p>
+            <Badge className={canAccessModule('finance') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+              {canAccessModule('finance') ? '✅ Puede acceder' : '❌ No puede acceder'}
+            </Badge>
+          </div>
+          <div className="space-y-2">
+            <p className="font-medium">Test: canAccessModule('inventory')</p>
+            <Badge className={canAccessModule('inventory') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+              {canAccessModule('inventory') ? '✅ Puede acceder' : '❌ No puede acceder'}
             </Badge>
           </div>
         </CardContent>
