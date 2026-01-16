@@ -75,6 +75,8 @@ export default function Settings() {
 
          {activeView === "plan_cuentas" && <PlanDeCuentas />}
 
+         {activeView === "seed" && <SettingsSeedData />}
+
          {activeView === "debug" && <DebugPermissions />}
          </div>
          </div>
