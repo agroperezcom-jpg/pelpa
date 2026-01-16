@@ -1,29 +1,32 @@
-import React from "react";
-import { usePermissions } from "@/components/permissions/usePermissions";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Lock } from "lucide-react";
+import React from 'react';
+import { usePermissions } from './usePermissionsCorrect';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
-export default function PermissionGuard({ modulo, accion, children, fallback = null, hideOnNoPermission = false }) {
-  const { hasPermission, loading } = usePermissions();
+export default function PermissionGuard({ children, moduleKey, action, fallback = null }) {
+  const { hasPermission, canAccessModule } = usePermissions();
 
-  if (loading) {
-    return fallback;
-  }
-
-  if (!hasPermission(modulo, accion)) {
-    if (hideOnNoPermission) {
-      return null;
-    }
-
+  if (!canAccessModule(moduleKey)) {
     return fallback || (
-      <Alert className="border-red-200 bg-red-50">
-        <Lock className="h-4 w-4 text-red-600" />
-        <AlertDescription className="text-sm text-red-700">
-          No tiene permisos para acceder a esta función
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          No tienes permisos para acceder a este módulo.
         </AlertDescription>
       </Alert>
     );
   }
 
-  return <>{children}</>;
+  if (action && !hasPermission(moduleKey, action)) {
+    return fallback || (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          No tienes permisos para realizar esta acción.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return children;
 }

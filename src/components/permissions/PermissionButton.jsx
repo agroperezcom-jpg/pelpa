@@ -1,38 +1,25 @@
-import React from "react";
-import { usePermissions } from "@/components/permissions/usePermissions";
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import React from 'react';
+import { usePermissions } from './usePermissionsCorrect';
+import { Button } from '@/components/ui/button';
 
 export default function PermissionButton({ 
-  modulo, 
-  accion, 
   children, 
-  hideOnNoPermission = true,
-  showLoading = false,
+  moduleKey, 
+  action,
   ...props 
 }) {
-  const { hasPermission, loading } = usePermissions();
+  const { hasPermission, canAccessModule } = usePermissions();
 
-  if (loading) {
-    if (!showLoading) return null;
-    return (
-      <Button {...props} disabled>
-        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-        {children}
-      </Button>
-    );
-  }
+  const hasAccess = canAccessModule(moduleKey) && 
+    (!action || hasPermission(moduleKey, action));
 
-  if (!hasPermission(modulo, accion)) {
-    if (hideOnNoPermission) {
-      return null;
-    }
-    return (
-      <Button {...props} disabled>
-        {children}
-      </Button>
-    );
-  }
-
-  return <Button {...props}>{children}</Button>;
+  return (
+    <Button 
+      disabled={!hasAccess}
+      title={!hasAccess ? "No tienes permisos para esta acción" : ""}
+      {...props}
+    >
+      {children}
+    </Button>
+  );
 }
