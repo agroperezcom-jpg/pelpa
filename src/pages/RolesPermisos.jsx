@@ -570,12 +570,12 @@ export default function RolesPermisos() {
             </div>
 
             <div className="px-6 py-6 space-y-8">
-              {['Ventas', 'Compras', 'Inventario', 'Proyectos', 'Agenda', 'Finanzas', 'Sistema'].map(categoria => {
-                const modulosCategoria = MODULOS.filter(m => m.categoria === categoria);
-                if (modulosCategoria.length === 0) return null;
+               {SIDEBAR_STRUCTURE.map(section => {
+                 const modulosCategoria = MODULOS.filter(m => m.categoria === section.name);
+                 if (modulosCategoria.length === 0) return null;
 
-                return (
-                  <div key={categoria} className="space-y-4">
+                 return (
+                   <div key={section.id} className="space-y-4">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-1 h-6 bg-slate-700 rounded-full"></div>
                       <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">
