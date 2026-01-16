@@ -43,7 +43,7 @@ export default function SettingsUsers() {
 
   const { data: employees = [] } = useQuery({
     queryKey: ["employees"],
-    queryFn: () => base44.entities.User.list("-created_date"),
+    queryFn: () => base44.entities.Empleado.list("-created_date"),
   });
 
   const { data: roles = [] } = useQuery({
@@ -53,12 +53,10 @@ export default function SettingsUsers() {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const response = await base44.functions.invoke("createUserWithStatus", {
+      const response = await base44.functions.invoke("createEmpleado", {
         full_name: data.full_name,
         email: data.email,
-        role: "user",
-        status: "active",
-        role_id: data.role_id,
+        role_id: data.role_id || null,
       });
       return response;
     },
@@ -73,12 +71,12 @@ export default function SettingsUsers() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.User.update(id, data),
+    mutationFn: ({ id, data }) => base44.entities.Empleado.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       setDialogOpen(false);
       setEditingUser(null);
-      setFormData({ full_name: "", email: "" });
+      setFormData({ full_name: "", email: "", role_id: "" });
     },
     onError: (error) => {
       alert("Error al actualizar empleado: " + error.message);
@@ -87,7 +85,7 @@ export default function SettingsUsers() {
 
   const statusMutation = useMutation({
     mutationFn: ({ id, newStatus }) =>
-      base44.entities.User.update(id, { status: newStatus }),
+      base44.entities.Empleado.update(id, { status: newStatus }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       setConfirmDialog({ open: false, user: null, action: null });
@@ -97,10 +95,10 @@ export default function SettingsUsers() {
     },
   });
 
-  const handleOpenDialog = (user = null) => {
-    if (user) {
-      setEditingUser(user);
-      setFormData({ full_name: user.full_name, email: user.email, role_id: user.role_id || "" });
+  const handleOpenDialog = (empleado = null) => {
+    if (empleado) {
+      setEditingUser(empleado);
+      setFormData({ full_name: empleado.full_name, email: empleado.email, role_id: empleado.role_id || "" });
     } else {
       setEditingUser(null);
       setFormData({ full_name: "", email: "", role_id: "" });
@@ -121,10 +119,10 @@ export default function SettingsUsers() {
     }
   };
 
-  const handleStatusChange = (user, newStatus) => {
+  const handleStatusChange = (empleado, newStatus) => {
     setConfirmDialog({
       open: true,
-      user,
+      user: empleado,
       action: newStatus === "blocked" ? "block" : "unblock",
     });
   };
@@ -132,7 +130,7 @@ export default function SettingsUsers() {
   const confirmStatusChange = () => {
     statusMutation.mutate({
       id: confirmDialog.user.id,
-      newStatus: confirmDialog.action === "block" ? "blocked" : "active",
+      newStatus: confirmDialog.action === "block" ? "blocked" : "invited",
     });
   };
 
@@ -207,10 +205,12 @@ export default function SettingsUsers() {
                       className={
                         employee.status === "active"
                           ? "bg-green-100 text-green-800"
+                          : employee.status === "invited"
+                          ? "bg-blue-100 text-blue-800"
                           : "bg-amber-100 text-amber-800"
                       }
                     >
-                      {employee.status === "active" ? "Activo" : "Bloqueado"}
+                      {employee.status === "active" ? "Activo" : employee.status === "invited" ? "Invitado" : "Bloqueado"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm">
@@ -236,16 +236,19 @@ export default function SettingsUsers() {
                         variant="ghost"
                         size="sm"
                         onClick={() =>
-                          handleStatusChange(
-                            employee,
-                            employee.status === "active" ? "blocked" : "active"
-                          )
-                        }
-                        className={
-                          employee.status === "active"
-                            ? "text-amber-600 hover:text-amber-700"
-                            : "text-green-600 hover:text-green-700"
-                        }
+                            handleStatusChange(
+                              employee,
+                              employee.status === "active" ? "blocked" : "active"
+                            )
+                          }
+                          disabled={employee.status === "invited"}
+                          className={
+                            employee.status === "active"
+                              ? "text-amber-600 hover:text-amber-700"
+                              : employee.status === "invited"
+                              ? "text-gray-400 cursor-not-allowed"
+                              : "text-green-600 hover:text-green-700"
+                          }
                       >
                         {employee.status === "active" ? (
                           <Lock className="h-4 w-4" />
