@@ -1,3 +1,4 @@
+
 import {
   LayoutDashboard, ShoppingCart, ShoppingBag, Package, Landmark, BarChart3,
   Calendar as CalendarIcon, Briefcase, Settings, FileText, Users, Wrench, 
@@ -39,15 +40,6 @@ export const SIDEBAR_STRUCTURE = [
       { id: "purchases", name: "Compras", page: "Purchases", icon: ShoppingBag, permiso: "purchases" },
       { id: "proveedores", name: "Proveedores", page: "Proveedores", icon: Building2, permiso: "purchases" },
       { id: "pagos_proveedores", name: "Pagos Proveedores", page: "PagosProveedores", icon: CreditCard, permiso: "purchases" },
-    ]
-  },
-  {
-    id: "inventario",
-    name: "Productos",
-    section: "inventario",
-    icon: Package,
-    permiso: "inventory",
-    items: [
       { id: "productos", name: "Productos", page: "Products", icon: Package, permiso: "inventory" },
       { id: "inventario", name: "Inventario", page: "Inventory", icon: Check, permiso: "inventory" },
       { id: "control_stock", name: "Control de Stock", page: "HistorialControlesStock", icon: ClipboardList, permiso: "inventory" },
