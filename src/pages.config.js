@@ -5,6 +5,7 @@ import Clients from './pages/Clients';
 import Dashboard from './pages/Dashboard';
 import DashboardEjecutivo from './pages/DashboardEjecutivo';
 import EstadoResultados from './pages/EstadoResultados';
+import Expenses from './pages/Expenses';
 import Finance from './pages/Finance';
 import FinanzasHub from './pages/FinanzasHub';
 import HistorialControlesStock from './pages/HistorialControlesStock';
@@ -30,11 +31,10 @@ import SettingsRoles from './pages/SettingsRoles';
 import SettingsUsers from './pages/SettingsUsers';
 import TableroFiscal from './pages/TableroFiscal';
 import Talonarios from './pages/Talonarios';
+import TesoreriaV2 from './pages/TesoreriaV2';
 import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
 import WorkOrders from './pages/WorkOrders';
-import Expenses from './pages/Expenses';
-import TesoreriaV2 from './pages/TesoreriaV2';
 import __Layout from './Layout.jsx';
 
 
@@ -46,6 +46,7 @@ export const PAGES = {
     "Dashboard": Dashboard,
     "DashboardEjecutivo": DashboardEjecutivo,
     "EstadoResultados": EstadoResultados,
+    "Expenses": Expenses,
     "Finance": Finance,
     "FinanzasHub": FinanzasHub,
     "HistorialControlesStock": HistorialControlesStock,
@@ -71,11 +72,10 @@ export const PAGES = {
     "SettingsUsers": SettingsUsers,
     "TableroFiscal": TableroFiscal,
     "Talonarios": Talonarios,
+    "TesoreriaV2": TesoreriaV2,
     "TiposArticulo": TiposArticulo,
     "Treasury": Treasury,
     "WorkOrders": WorkOrders,
-    "Expenses": Expenses,
-    "TesoreriaV2": TesoreriaV2,
 }
 
 export const pagesConfig = {

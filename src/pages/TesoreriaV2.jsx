@@ -34,7 +34,12 @@ export default function TesoreriaV2() {
     queryFn: () => base44.entities.Banco.list()
   });
 
-  // Fetch entidades origen para cálculo de saldos
+  const { data: mediosPago = [] } = useQuery({
+    queryKey: ['mediosPago'],
+    queryFn: () => base44.entities.MedioPago.list()
+  });
+
+  // Fetch entidades origen para derivar movimientos
   const { data: gastos = [] } = useQuery({
     queryKey: ['expenses'],
     queryFn: () => base44.entities.Expense.list('-date', 1000)
@@ -65,19 +70,96 @@ export default function TesoreriaV2() {
     queryFn: () => base44.entities.Proveedor.list()
   });
 
-  // Calcular saldos derivados desde entidades origen
-  const totalIngresos = [
-    ...ventas.filter(v => v.estado === "CONFIRMADA").map(v => v.total),
-    ...presupuestos.filter(p => p.estado === "aprobado" || p.estado === "confirmado").map(p => p.total)
-  ].reduce((acc, val) => acc + val, 0);
+  // DERIVAR MOVIMIENTOS (Única Fuente de Verdad)
+  const movimientosDerivedos = React.useMemo(() => {
+    const movs = [];
 
-  const totalEgresos = [
-    ...gastos.map(g => g.amount),
-    ...compras.map(c => c.total)
-  ].reduce((acc, val) => acc + val, 0);
+    // Gastos → EGRESO
+    gastos.forEach(g => {
+      if (g.medio_pago_id) {
+        const medio = mediosPago.find(m => m.id === g.medio_pago_id);
+        movs.push({
+          id: `gasto-${g.id}`,
+          fecha: g.date,
+          tipo: 'EGRESO',
+          importe: g.amount,
+          caja_id: g.caja_id,
+          caja_nombre: g.caja_nombre,
+          banco_id: g.banco_id,
+          banco_nombre: g.banco_nombre,
+          medio_pago_nombre: g.medio_pago_nombre,
+          categoria_medio: medio?.categoria,
+          referencia: `Gasto: ${g.description}`
+        });
+      }
+    });
 
-  const totalCajas = cajas.reduce((acc, c) => acc + (c.saldo_actual || 0), 0);
-  const totalBancos = bancos.reduce((acc, b) => acc + (b.saldo_actual || 0), 0);
+    // Ventas CONFIRMADAS → INGRESO
+    ventas.filter(v => v.estado === "CONFIRMADA").forEach(v => {
+      if (v.tipo_venta === "CONTADO" || v.tipo_venta === "MIXTA") {
+        // Buscar pagos de la venta
+        // Por ahora, consideramos el total como ingreso en medio efectivo/caja
+        movs.push({
+          id: `venta-${v.id}`,
+          fecha: v.created_date?.split('T')[0] || new Date().toISOString().split('T')[0],
+          tipo: 'INGRESO',
+          importe: v.total,
+          caja_id: null, // Aquí dependerá de cómo se registró el pago
+          caja_nombre: '',
+          banco_id: null,
+          banco_nombre: '',
+          medio_pago_nombre: 'Venta',
+          categoria_medio: 'EFECTIVO',
+          referencia: `Venta a ${v.client_name || 'Cliente'}`
+        });
+      }
+    });
+
+    // Compras → EGRESO
+    compras.forEach(c => {
+      movs.push({
+        id: `compra-${c.id}`,
+        fecha: c.fecha,
+        tipo: 'EGRESO',
+        importe: c.total,
+        caja_id: null,
+        caja_nombre: '',
+        banco_id: null,
+        banco_nombre: '',
+        medio_pago_nombre: 'Compra',
+        categoria_medio: 'TRANSFERENCIA',
+        referencia: `Compra a ${c.proveedor_nombre || 'Proveedor'}`
+      });
+    });
+
+    // Presupuestos APROBADOS/CONFIRMADOS → INGRESO
+    presupuestos.filter(p => p.estado === "aprobado" || p.estado === "confirmado").forEach(p => {
+      movs.push({
+        id: `presupuesto-${p.id}`,
+        fecha: p.created_date?.split('T')[0] || new Date().toISOString().split('T')[0],
+        tipo: 'INGRESO',
+        importe: p.total,
+        caja_id: null,
+        caja_nombre: '',
+        banco_id: null,
+        banco_nombre: '',
+        medio_pago_nombre: 'Presupuesto',
+        categoria_medio: 'EFECTIVO',
+        referencia: `Presupuesto para ${p.cliente_nombre || 'Cliente'}`
+      });
+    });
+
+    return movs.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  }, [gastos, ventas, compras, presupuestos, mediosPago]);
+
+  // CALCULAR KPIs desde Movimientos (ÚNICA FUENTE DE VERDAD)
+  const totalCajas = movimientosDerivedos
+    .filter(m => m.caja_id && m.categoria_medio === 'EFECTIVO')
+    .reduce((acc, m) => acc + (m.tipo === 'INGRESO' ? m.importe : -m.importe), 0);
+
+  const totalBancos = movimientosDerivedos
+    .filter(m => m.banco_id || m.categoria_medio === 'TRANSFERENCIA' || m.categoria_medio === 'BANCO')
+    .reduce((acc, m) => acc + (m.tipo === 'INGRESO' ? m.importe : -m.importe), 0);
 
   const totalDeudaClientes = clientes.reduce((acc, c) => acc + (c.saldo_cc || 0), 0);
   const totalDeudaProveedores = proveedores.reduce((acc, p) => acc + (p.saldo_cc || 0), 0);
