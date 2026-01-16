@@ -6,12 +6,10 @@ import { useQuery } from "@tanstack/react-query";
 import { usePermissionsEnforcement } from "@/components/permissions/usePermissionsEnforcement";
 import { useExternalAuth } from "@/components/context/ExternalAuthContext";
 import { useAutoLinkEmpleado } from "@/components/auth/useAutoLinkEmpleado";
+import { SIDEBAR_STRUCTURE } from "@/components/config/sidebarStructure";
 import UserProfile from "./UserProfile";
 import {
-  LayoutDashboard, ShoppingCart, ShoppingBag, Package, Landmark, BarChart3,
-  Calendar as CalendarIcon, Briefcase, Settings, Shield, LogOut, Search,
-  ChevronRight, Menu, X, FileText, Users, Wrench, FileCheck, Building2,
-  CreditCard, Percent, TrendingUp, DollarSign, Check, Printer, Zap, ClipboardList
+  Search, ChevronRight, Menu, FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
