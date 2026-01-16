@@ -335,7 +335,7 @@ export default function EstadoResultados() {
                 <p className={`text-2xl font-bold mt-1 ${utilidadNeta >= 0 ? 'text-slate-900' : 'text-slate-600'}`}>
                   ${utilidadNeta.toLocaleString()}
                 </p>
-                <p className="text-xs font-medium text-slate-600 mt-1">{margenNeto.toFixed(1)}%</p>
+                <p className="text-xs font-medium text-slate-600 mt-1">{margenNeto.toFixed(1)}% sobre ingresos</p>
               </div>
               <FileText className="h-6 w-6 text-slate-600" />
             </div>
@@ -555,24 +555,27 @@ export default function EstadoResultados() {
         </Table>
       </Card>
 
-      {/* Alertas */}
-      {(Object.values(ingresosPorCuenta).length === 0 || Object.values(costosPorCuenta).length === 0 || Object.values(gastosPorCuenta).length === 0) && (
-        <Card className="border-amber-200 bg-amber-50">
+      {/* Información del período */}
+      {(Object.values(ingresosPorCuenta).length === 0 || Object.values(costosPorCuenta).length === 0 || Object.values(gastosPorCuenta).length === 0 || Object.values(impuestosPorCuenta).length === 0) && (
+        <Card className="border-blue-200 bg-blue-50">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Calendar className="h-4 w-4 text-amber-600" />
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Calendar className="h-4 w-4 text-blue-600" />
               </div>
               <div>
-                <p className="font-medium text-amber-900 text-sm">Datos Incompletos</p>
-                <p className="text-amber-700 text-sm mt-1">
-                  {Object.values(ingresosPorCuenta).length === 0 && "• No hay ventas con cuenta contable asignada en el período.\n"}
-                  {Object.values(costosPorCuenta).length === 0 && "• No hay costos registrados en el período.\n"}
-                  {Object.values(gastosPorCuenta).length === 0 && "• No hay gastos operativos registrados en el período.\n"}
+                <p className="font-medium text-blue-900 text-sm">ℹ️ Información del período</p>
+                <p className="text-blue-700 text-sm mt-1">
+                  {Object.values(ingresosPorCuenta).length === 0 && "• Este período no registra ingresos con cuenta contable asignada.\n"}
+                  {Object.values(costosPorCuenta).length === 0 && "• Este período no registra costos.\n"}
+                  {Object.values(gastosPorCuenta).length === 0 && "• Este período no registra gastos operativos.\n"}
+                  {Object.values(impuestosPorCuenta).length === 0 && "• Este período no registra impuestos.\n"}
                 </p>
-                <p className="text-amber-600 text-xs mt-2">
-                  Asegurate de tener el Plan de Cuentas importado y las ventas/gastos con cuentas asignadas.
-                </p>
+                {(Object.values(gastosPorCuenta).length === 0 && Object.values(impuestosPorCuenta).length === 0) && (
+                  <p className="text-blue-600 text-xs mt-2 font-medium">
+                    La utilidad neta coincide con la utilidad operativa.
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
