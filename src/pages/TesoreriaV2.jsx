@@ -34,9 +34,25 @@ export default function TesoreriaV2() {
     queryFn: () => base44.entities.Banco.list()
   });
 
-  const { data: movimientos = [] } = useQuery({
-    queryKey: ['movimientosTesoreria'],
-    queryFn: () => base44.entities.MovimientoTesoreria.list('-created_date', 1000)
+  // Fetch entidades origen para cálculo de saldos
+  const { data: gastos = [] } = useQuery({
+    queryKey: ['expenses'],
+    queryFn: () => base44.entities.Expense.list('-date', 1000)
+  });
+
+  const { data: ventas = [] } = useQuery({
+    queryKey: ['sales'],
+    queryFn: () => base44.entities.Sale.list('-created_date', 1000)
+  });
+
+  const { data: compras = [] } = useQuery({
+    queryKey: ['purchases'],
+    queryFn: () => base44.entities.Compra.list('-fecha', 1000)
+  });
+
+  const { data: presupuestos = [] } = useQuery({
+    queryKey: ['presupuestos'],
+    queryFn: () => base44.entities.Presupuesto.list('-created_date', 1000)
   });
 
   const { data: clientes = [] } = useQuery({
@@ -49,20 +65,19 @@ export default function TesoreriaV2() {
     queryFn: () => base44.entities.Proveedor.list()
   });
 
-  // Calcular saldos reales desde movimientos de tesorería
-  const totalCajas = movimientos.reduce((acc, mov) => {
-    if (!mov.caja_id) return acc;
-    if (mov.tipo === "INGRESO") return acc + mov.importe;
-    if (mov.tipo === "EGRESO") return acc - mov.importe;
-    return acc;
-  }, 0);
+  // Calcular saldos derivados desde entidades origen
+  const totalIngresos = [
+    ...ventas.filter(v => v.estado === "CONFIRMADA").map(v => v.total),
+    ...presupuestos.filter(p => p.estado === "aprobado" || p.estado === "confirmado").map(p => p.total)
+  ].reduce((acc, val) => acc + val, 0);
 
-  const totalBancos = movimientos.reduce((acc, mov) => {
-    if (!mov.banco_id) return acc;
-    if (mov.tipo === "INGRESO") return acc + mov.importe;
-    if (mov.tipo === "EGRESO") return acc - mov.importe;
-    return acc;
-  }, 0);
+  const totalEgresos = [
+    ...gastos.map(g => g.amount),
+    ...compras.map(c => c.total)
+  ].reduce((acc, val) => acc + val, 0);
+
+  const totalCajas = cajas.reduce((acc, c) => acc + (c.saldo_actual || 0), 0);
+  const totalBancos = bancos.reduce((acc, b) => acc + (b.saldo_actual || 0), 0);
 
   const totalDeudaClientes = clientes.reduce((acc, c) => acc + (c.saldo_cc || 0), 0);
   const totalDeudaProveedores = proveedores.reduce((acc, p) => acc + (p.saldo_cc || 0), 0);
