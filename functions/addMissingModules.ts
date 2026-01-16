@@ -9,23 +9,21 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
-    const moduleDefinitions = [
-      { key: 'calendar', name: 'Agenda', icon: 'Calendar', section: 'calendario', order: 5 },
-      { key: 'clients', name: 'Clientes', icon: 'Users', section: 'ventas', order: 3 },
-      { key: 'services', name: 'Servicios', icon: 'Wrench', section: 'ventas', order: 4 },
-      { key: 'talonarios', name: 'Talonarios', icon: 'FileCheck', section: 'ventas', order: 5 },
-      { key: 'supplier_payments', name: 'Pagos Proveedores', icon: 'CreditCard', section: 'compras', order: 3 },
-      { key: 'stock_control', name: 'Control de Stock', icon: 'ClipboardList', section: 'inventario', order: 3 },
-      { key: 'checks', name: 'Cheques', icon: 'CreditCard', section: 'tesoreria', order: 2 },
-      { key: 'income_statement', name: 'Estado de Resultados', icon: 'FileText', section: 'tesoreria', order: 5 },
-      { key: 'analytics', name: 'Analytics', icon: 'TrendingUp', section: 'tesoreria', order: 6 }
+    const newModules = [
+      'calendar',
+      'clients',
+      'services',
+      'talonarios',
+      'supplier_payments',
+      'stock_control',
+      'checks',
+      'income_statement',
+      'analytics'
     ];
 
     const actions = ['view', 'create', 'edit', 'delete', 'approve'];
 
     const results = {
-      modulesCreated: 0,
-      modulesSkipped: 0,
       permissionsCreated: 0,
       permissionsSkipped: 0,
       permissionsAssigned: 0,
@@ -46,11 +44,11 @@ Deno.serve(async (req) => {
 
     const adminRoleId = adminRole[0].id;
 
-    // Get all existing modules and permissions
-    const allModules = await base44.asServiceRole.entities.Module.list();
+    // Get all existing permissions
     const allPermissions = await base44.asServiceRole.entities.Permission.list();
+    const existingPermissionKeys = allPermissions.map(p => `${p.module_key}.${p.action}`);
 
-    // Get existing role-permission associations
+    // Get all existing role-permission associations for Administrador
     const existingRolePerms = await base44.asServiceRole.entities.RolePermission.filter({
       role_id: adminRoleId
     });
@@ -58,42 +56,14 @@ Deno.serve(async (req) => {
       existingRolePerms.map(rp => rp.permission_id)
     );
 
-    // Step 1: Create missing modules
-    for (const moduleDef of moduleDefinitions) {
-      const existing = allModules.find(m => m.key === moduleDef.key);
-      
-      if (existing) {
-        results.modulesSkipped++;
-        continue;
-      }
-
-      try {
-        await base44.asServiceRole.entities.Module.create({
-          key: moduleDef.key,
-          name: moduleDef.name,
-          icon: moduleDef.icon,
-          section: moduleDef.section,
-          order: moduleDef.order,
-          is_active: true
-        });
-        results.modulesCreated++;
-      } catch (err) {
-        results.errors.push({
-          action: 'create_module',
-          module: moduleDef.key,
-          error: err.message
-        });
-      }
-    }
-
-    // Step 2: Create missing permissions and assign to Administrador
-    for (const moduleDef of moduleDefinitions) {
+    // Process each module
+    for (const moduleKey of newModules) {
       for (const action of actions) {
-        const permissionKey = `${moduleDef.key}.${action}`;
+        const permissionKey = `${moduleKey}.${action}`;
 
         // Check if permission already exists
         const existing = allPermissions.find(
-          p => p.module_key === moduleDef.key && p.action === action
+          p => p.module_key === moduleKey && p.action === action
         );
 
         if (existing) {
@@ -121,7 +91,7 @@ Deno.serve(async (req) => {
         // Create new permission
         try {
           const newPermission = await base44.asServiceRole.entities.Permission.create({
-            module_key: moduleDef.key,
+            module_key: moduleKey,
             action: action
           });
 
@@ -143,7 +113,7 @@ Deno.serve(async (req) => {
           }
         } catch (err) {
           results.errors.push({
-            action: 'create_permission',
+            action: 'create',
             permission: permissionKey,
             error: err.message
           });
@@ -153,7 +123,7 @@ Deno.serve(async (req) => {
 
     return Response.json({
       status: 'success',
-      message: 'Modules and permissions added successfully',
+      message: 'Missing modules added successfully',
       ...results,
       adminRoleId
     });
