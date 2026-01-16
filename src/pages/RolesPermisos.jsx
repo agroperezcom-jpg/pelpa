@@ -118,25 +118,37 @@ function UserStatusToggle({ user }) {
 }
 
 const MODULOS = [
-  { id: "ventas", nombre: "Ventas", categoria: "Operativa", critico: true },
-  { id: "presupuestos", nombre: "Presupuestos", categoria: "Operativa", critico: false },
-  { id: "compras", nombre: "Compras", categoria: "Operativa", critico: true },
-  { id: "inventario", nombre: "Inventario", categoria: "Operativa", critico: true },
-  { id: "productos", nombre: "Productos", categoria: "Operativa", critico: false },
-  { id: "tesoreria", nombre: "Tesorería", categoria: "Finanzas", critico: true },
-  { id: "cheques", nombre: "Cheques", categoria: "Finanzas", critico: true },
-  { id: "gastos", nombre: "Gastos", categoria: "Finanzas", critico: false },
-  { id: "proyectos", nombre: "Proyectos", categoria: "Gestión", critico: false },
-  { id: "calendario", nombre: "Calendario", categoria: "Gestión", critico: false },
-  { id: "clientes", nombre: "Clientes", categoria: "Contactos", critico: false },
-  { id: "proveedores", nombre: "Proveedores", categoria: "Contactos", critico: false },
-  { id: "analytics", nombre: "Analytics", categoria: "Análisis", critico: false },
-  { id: "tablero_fiscal", nombre: "Tablero Fiscal", categoria: "Análisis", critico: true },
-  { id: "iva_mensual", nombre: "IVA Mensual", categoria: "Análisis", critico: true },
-  { id: "ingresos_brutos", nombre: "Ingresos Brutos", categoria: "Análisis", critico: true },
-  { id: "talonarios", nombre: "Talonarios", categoria: "Sistema", critico: true },
-  { id: "configuracion", nombre: "Configuración", categoria: "Sistema", critico: true },
-  { id: "usuarios", nombre: "Usuarios y Permisos", categoria: "Sistema", critico: true }
+  // VENTAS
+  { id: "sales", nombre: "Ventas", categoria: "Ventas", critico: true },
+  { id: "presupuestos", nombre: "Presupuestos", categoria: "Ventas", critico: false },
+  { id: "clients", nombre: "Clientes", categoria: "Ventas", critico: false },
+  { id: "services", nombre: "Servicios", categoria: "Ventas", critico: false },
+  { id: "talonarios", nombre: "Talonarios", categoria: "Ventas", critico: true },
+
+  // COMPRAS
+  { id: "purchases", nombre: "Compras", categoria: "Compras", critico: true },
+  { id: "suppliers", nombre: "Proveedores", categoria: "Compras", critico: false },
+  { id: "supplier_payments", nombre: "Pagos Proveedores", categoria: "Compras", critico: false },
+
+  // PRODUCTOS
+  { id: "inventory", nombre: "Productos", categoria: "Inventario", critico: true },
+  { id: "stock_control", nombre: "Control de Stock", categoria: "Inventario", critico: false },
+
+  // PROYECTOS
+  { id: "projects", nombre: "Proyectos", categoria: "Proyectos", critico: false },
+
+  // AGENDA
+  { id: "calendar", nombre: "Calendario", categoria: "Agenda", critico: false },
+
+  // FINANZAS
+  { id: "finance", nombre: "Tesorería", categoria: "Finanzas", critico: true },
+  { id: "checks", nombre: "Cheques", categoria: "Finanzas", critico: true },
+  { id: "expenses", nombre: "Gastos", categoria: "Finanzas", critico: false },
+  { id: "income_statement", nombre: "Estado de Resultados", categoria: "Finanzas", critico: false },
+  { id: "analytics", nombre: "Analytics", categoria: "Finanzas", critico: false },
+
+  // SISTEMA
+  { id: "settings", nombre: "Configuración", categoria: "Sistema", critico: true }
 ];
 
 const ACCIONES = [
