@@ -35,6 +35,7 @@ import TesoreriaV2 from './pages/TesoreriaV2';
 import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
 import WorkOrders from './pages/WorkOrders';
+import DebugPermissions from './pages/DebugPermissions';
 import __Layout from './Layout.jsx';
 
 
@@ -76,6 +77,7 @@ export const PAGES = {
     "TiposArticulo": TiposArticulo,
     "Treasury": Treasury,
     "WorkOrders": WorkOrders,
+    "DebugPermissions": DebugPermissions,
 }
 
 export const pagesConfig = {
