@@ -46,7 +46,12 @@ export default function TesoreriaV2() {
     queryFn: () => base44.entities.Proveedor.list()
   });
 
-  // Sin cálculos intermedios - ResumenTesoreria recibe datos directos
+  // Calcular saldos desde cajas y bancos
+  const totalCajas = cajas.reduce((acc, c) => acc + (c.saldo_actual || 0), 0);
+  const totalBancos = bancos.reduce((acc, b) => acc + (b.saldo_actual || 0), 0);
+
+  const totalDeudaClientes = clientes.reduce((acc, c) => acc + (c.saldo_cc || 0), 0);
+  const totalDeudaProveedores = proveedores.reduce((acc, p) => acc + (p.saldo_cc || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -69,10 +74,10 @@ export default function TesoreriaV2() {
 
       {/* Stats */}
       <ResumenTesoreria
-        cajas={cajas}
-        bancos={bancos}
-        clientes={clientes}
-        proveedores={proveedores}
+        totalCajas={totalCajas}
+        totalBancos={totalBancos}
+        totalDeudaClientes={totalDeudaClientes}
+        totalDeudaProveedores={totalDeudaProveedores}
       />
 
       {/* Vista Selector */}
