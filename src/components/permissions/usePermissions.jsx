@@ -72,6 +72,20 @@ export function usePermissions() {
     enabled: !!rol?.id,
   });
 
+  // Step 5: Get all modules from BD (dynamic sidebar source of truth)
+  const { data: allModules = [], isLoading: modulesLoading } = useQuery({
+    queryKey: ['modules'],
+    queryFn: async () => {
+      try {
+        const modules = await base44.entities.Module.filter({ is_active: true });
+        return modules || [];
+      } catch (err) {
+        console.error('❌ Error fetching modules:', err);
+        return [];
+      }
+    },
+  });
+
   // Transform permisos to usable map
   const permisos = rawPermisos.reduce((acc, p) => {
     if (p?.module_key && p?.action) {
@@ -87,8 +101,15 @@ export function usePermissions() {
     return !!permisos[key];
   };
 
-  // Helper: Check if user can access module
+  // Helper: Check if user can access module (valida contra module.key de BD)
   const canAccessModule = (moduleKey) => {
+    // Buscar el módulo en BD por su key
+    const module = allModules.find(m => m.key === moduleKey);
+    if (!module) {
+      console.warn(`⚠️ Module "${moduleKey}" not found in DB`);
+      return false;
+    }
+    // Validar que tenga al menos un permiso para este módulo
     return Object.keys(permisos).some(key => key.startsWith(moduleKey + '.'));
   };
 
