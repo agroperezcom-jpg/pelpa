@@ -10,6 +10,7 @@ import PlanDeCuentas from "../components/settings/PlanDeCuentas";
 import CompanyConfiguration from "../components/settings/CompanyConfiguration";
 import SettingsUsers from "./SettingsUsers";
 import SettingsRoles from "./SettingsRoles";
+import DebugPermissions from "./DebugPermissions";
 
 export default function Settings() {
   const [activeView, setActiveView] = useState("empresa");
@@ -39,6 +40,7 @@ export default function Settings() {
              <SelectItem value="proyectos">Proyectos</SelectItem>
              <SelectItem value="impresoras">Impresoras</SelectItem>
              <SelectItem value="plan_cuentas">Plan de Cuentas</SelectItem>
+             <SelectItem value="debug">🔍 Debug Permisos</SelectItem>
            </SelectContent>
          </Select>
        </div>
@@ -70,7 +72,10 @@ export default function Settings() {
          {activeView === "impresoras" && <ConfiguracionImpresoras />}
 
          {activeView === "plan_cuentas" && <PlanDeCuentas />}
+
+         {activeView === "debug" && <DebugPermissions />}
          </div>
          </div>
          );
+         }
          }
