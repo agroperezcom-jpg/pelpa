@@ -59,21 +59,31 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Step 4: No Empleado found - create one
+    // Step 4: No Empleado found - get default role and create one
     try {
+      // Get the "Administrador" role (default for new employees)
+      const adminRole = await base44.asServiceRole.entities.Role.filter({
+        name: 'Administrador'
+      });
+
+      const roleId = adminRole?.[0]?.id || null;
+
       const newEmpleado = await base44.entities.Empleado.create({
         full_name: user.full_name || user.email,
         email: user.email,
         user_id: user.id,
+        role_id: roleId, // Auto-assign Administrador role
         status: 'active'
       });
       console.log('✅ New Empleado created:', { 
         user_id: user.id, 
-        empleado_id: newEmpleado.id 
+        empleado_id: newEmpleado.id,
+        role_id: roleId
       });
       return Response.json({ 
         status: 'created',
-        empleado_id: newEmpleado.id 
+        empleado_id: newEmpleado.id,
+        role_id: roleId
       });
     } catch (err) {
       console.error('❌ Error creating Empleado:', err);
