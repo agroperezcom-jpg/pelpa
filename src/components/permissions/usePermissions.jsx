@@ -1,89 +1,113 @@
-import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 
 export function usePermissions() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    base44.auth.me()
-      .then(setUser)
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const { data: rolPermisos = [] } = useQuery({
-    queryKey: ['rolPermisos', user?.rol_id],
-    queryFn: async () => {
-      if (!user?.rol_id) return [];
-      return await base44.entities.RolPermiso.filter({ rol_id: user.rol_id });
-    },
-    enabled: !!user?.rol_id
+  // Step 1: Get current user
+  const { data: currentUser, isLoading: userLoading } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
+    retry: 1,
   });
 
-  const hasPermission = (modulo, accion) => {
-    // Si el usuario está inactivo, no tiene permisos
-    if (user?.activo === false) return false;
+  // Step 2: Get Empleado by user_id (NOT email)
+  const { data: empleado, isLoading: empleadoLoading } = useQuery({
+    queryKey: ['empleado', currentUser?.id],
+    queryFn: async () => {
+      if (!currentUser?.id) return null;
+      try {
+        const empleados = await base44.entities.Empleado.filter({ user_id: currentUser.id });
+        const emp = empleados?.[0] || null;
+        console.log('🔍 Empleado lookup:', { user_id: currentUser.id, found: !!emp });
+        return emp;
+      } catch (err) {
+        console.error('❌ Error fetching empleado:', err);
+        return null;
+      }
+    },
+    enabled: !!currentUser?.id,
+  });
 
-    // Si es admin de rol del sistema, tiene acceso a todo
-    if (user?.role === 'admin') return true;
+  // Step 3: Get Rol
+  const { data: rol, isLoading: rolLoading } = useQuery({
+    queryKey: ['rol', empleado?.role_id],
+    queryFn: async () => {
+      if (!empleado?.role_id) return null;
+      try {
+        const roleData = await base44.entities.Role.get(empleado.role_id);
+        console.log('🔍 Rol lookup:', { role_id: empleado.role_id, found: !!roleData });
+        return roleData;
+      } catch (err) {
+        console.error('❌ Error fetching rol:', err);
+        return null;
+      }
+    },
+    enabled: !!empleado?.role_id,
+  });
 
-    // Si no tiene rol personalizado, solo puede ver dashboard y calendario
-    if (!user?.rol_id) {
-      return (modulo === 'calendario' || modulo === 'proyectos') && accion === 'VIEW';
-    }
+  // Step 4: Get Permisos (RolePermissions)
+  const { data: rawPermisos = [], isLoading: permisosLoading } = useQuery({
+    queryKey: ['rolePermissions', rol?.id],
+    queryFn: async () => {
+      if (!rol?.id) return [];
+      try {
+        const rolePerms = await base44.entities.RolePermission.filter({ role_id: rol.id });
+        console.log('🔍 Permisos lookup:', { role_id: rol.id, count: rolePerms?.length || 0 });
+        return rolePerms || [];
+      } catch (err) {
+        console.error('❌ Error fetching permissions:', err);
+        return [];
+      }
+    },
+    enabled: !!rol?.id,
+  });
 
-    // Verificar permiso específico
-    const hasSpecific = rolPermisos.some(
-      rp => rp.modulo === modulo && rp.accion === accion
-    );
+  // Transform permisos to usable map
+  const permisos = rawPermisos.reduce((acc, p) => {
+    const key = `${p.module_key}.${p.action}`;
+    acc[key] = true;
+    return acc;
+  }, {});
 
-    // Si tiene permiso ADMIN del módulo, tiene todos los permisos
-    const hasAdminModule = rolPermisos.some(
-      rp => rp.modulo === modulo && rp.accion === 'ADMIN'
-    );
-
-    return hasSpecific || hasAdminModule;
+  // Helper: Check if user has specific permission
+  const hasPermission = (moduleKey, action) => {
+    const key = `${moduleKey}.${action}`;
+    return !!permisos[key];
   };
 
-  const getModulePermissions = (modulo) => {
-    if (user?.role === 'admin') {
-      return ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'CONFIRM', 'PAY', 'ANNUL', 'REPORT', 'CLOSE_PERIOD', 'ADMIN'];
-    }
-
-    const permisos = rolPermisos
-      .filter(rp => rp.modulo === modulo)
-      .map(rp => rp.accion);
-
-    return permisos;
+  // Helper: Check if user can access module
+  const canAccessModule = (moduleKey) => {
+    return Object.keys(permisos).some(key => key.startsWith(moduleKey + '.'));
   };
 
-  const getAllowedModules = () => {
-    // Si el usuario está inactivo, no permitir nada excepto ver su perfil
-    if (user?.activo === false) {
-      return [];
-    }
+  // Check if user is admin (global access)
+  const isAdmin = currentUser?.role === 'admin';
 
-    // Si es admin de rol del sistema, tiene acceso a todo
-    if (user?.role === 'admin') {
-      return ['ventas', 'presupuestos', 'compras', 'inventario', 'productos', 'tesoreria', 'cheques', 
-              'proyectos', 'calendario', 'clientes', 'proveedores', 'gastos', 'analytics', 
-              'tablero_fiscal', 'iva_mensual', 'ingresos_brutos', 'talonarios', 'configuracion', 'usuarios'];
-    }
+  // Loading state
+  const isLoading = userLoading || empleadoLoading || rolLoading || permisosLoading;
 
-    // Obtener módulos únicos de los permisos del rol
-    const modulos = [...new Set(rolPermisos.map(rp => rp.modulo))];
-    return modulos;
+  // Debug helper
+  const debugInfo = {
+    user: currentUser?.email,
+    userId: currentUser?.id,
+    empleado: empleado?.full_name,
+    empleadoId: empleado?.id,
+    empleadoStatus: empleado?.status,
+    rolId: rol?.id,
+    rolName: rol?.name,
+    permissionsCount: rawPermisos.length,
   };
+
+  console.log('🔐 Permissions chain:', debugInfo);
 
   return {
-    user,
-    loading,
+    currentUser,
+    empleado,
+    rol,
+    permisos,
     hasPermission,
-    getModulePermissions,
-    getAllowedModules,
-    isAdmin: user?.role === 'admin',
-    isActive: user?.activo !== false
+    canAccessModule,
+    isAdmin,
+    isLoading,
+    debugInfo,
   };
 }
