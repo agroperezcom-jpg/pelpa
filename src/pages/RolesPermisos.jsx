@@ -117,39 +117,38 @@ function UserStatusToggle({ user }) {
   );
 }
 
-// MÓDULOS sincronizados con LayoutContent
 const MODULOS = [
-  // VENTAS
+  // VENTAS - Módulos granulares por página
   { id: "sales", nombre: "Ventas", categoria: "Ventas", critico: true },
-  { id: "sales", nombre: "Presupuestos", categoria: "Ventas", critico: false },
-  { id: "sales", nombre: "Clientes", categoria: "Ventas", critico: false },
-  { id: "sales", nombre: "Servicios", categoria: "Ventas", critico: false },
-  { id: "sales", nombre: "Talonarios", categoria: "Ventas", critico: true },
+  { id: "presupuestos", nombre: "Presupuestos", categoria: "Ventas", critico: false },
+  { id: "clients", nombre: "Clientes", categoria: "Ventas", critico: false },
+  { id: "services", nombre: "Servicios", categoria: "Ventas", critico: false },
+  { id: "talonarios", nombre: "Talonarios", categoria: "Ventas", critico: true },
 
-  // COMPRAS
+  // COMPRAS - Módulos granulares por página
   { id: "purchases", nombre: "Compras", categoria: "Compras", critico: true },
-  { id: "purchases", nombre: "Proveedores", categoria: "Compras", critico: false },
-  { id: "purchases", nombre: "Pagos Proveedores", categoria: "Compras", critico: false },
+  { id: "suppliers", nombre: "Proveedores", categoria: "Compras", critico: false },
+  { id: "supplier_payments", nombre: "Pagos Proveedores", categoria: "Compras", critico: false },
 
-  // INVENTARIO
-  { id: "inventory", nombre: "Productos", categoria: "Inventario", critico: true },
+  // INVENTARIO - Módulos granulares por página
+  { id: "products", nombre: "Productos", categoria: "Inventario", critico: true },
   { id: "inventory", nombre: "Inventario", categoria: "Inventario", critico: true },
-  { id: "inventory", nombre: "Control de Stock", categoria: "Inventario", critico: false },
+  { id: "stock_control", nombre: "Control de Stock", categoria: "Inventario", critico: false },
 
-  // PROYECTOS
+  // PROYECTOS - Módulos granulares por página
   { id: "projects", nombre: "Proyectos", categoria: "Proyectos", critico: false },
-  { id: "projects", nombre: "Órdenes de Trabajo", categoria: "Proyectos", critico: false },
+  { id: "work_orders", nombre: "Órdenes de Trabajo", categoria: "Proyectos", critico: false },
 
-  // AGENDA
+  // AGENDA - Módulo único
   { id: "calendar", nombre: "Calendario", categoria: "Agenda", critico: false },
 
-  // FINANZAS
-  { id: "finance", nombre: "Tesorería", categoria: "Finanzas", critico: true },
-  { id: "finance", nombre: "Cheques", categoria: "Finanzas", critico: true },
-  { id: "finance", nombre: "Gastos", categoria: "Finanzas", critico: false },
-  { id: "finance", nombre: "Finanzas", categoria: "Finanzas", critico: false },
-  { id: "finance", nombre: "Estado de Resultados", categoria: "Finanzas", critico: false },
-  { id: "finance", nombre: "Analytics", categoria: "Finanzas", critico: false },
+  // FINANZAS - Módulos granulares por página
+  { id: "treasury", nombre: "Tesorería", categoria: "Finanzas", critico: true },
+  { id: "checks", nombre: "Cheques", categoria: "Finanzas", critico: true },
+  { id: "expenses", nombre: "Gastos", categoria: "Finanzas", critico: false },
+  { id: "financials", nombre: "Finanzas", categoria: "Finanzas", critico: false },
+  { id: "income_statement", nombre: "Estado de Resultados", categoria: "Finanzas", critico: false },
+  { id: "analytics", nombre: "Analytics", categoria: "Finanzas", critico: false },
 
   // SISTEMA
   { id: "settings", nombre: "Configuración", categoria: "Sistema", critico: true }
