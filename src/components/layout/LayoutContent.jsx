@@ -38,6 +38,12 @@ export default function LayoutContent({ children, currentPageName }) {
     queryFn: () => base44.entities.ConfiguracionEmpresa.list()
   });
 
+  // Leer módulos desde la BD (única fuente de verdad)
+  const { data: systemModules = [], isLoading: modulesLoading } = useQuery({
+    queryKey: ['systemModules'],
+    queryFn: () => base44.entities.Module.filter({ is_active: true }, 'order')
+  });
+
   const config = configuracionEmpresa[0];
   const nombreEmpresa = config?.nombre_empresa || "Sistema";
   const tipografiaLogo = config?.tipografia_logo || "inter";
@@ -71,6 +77,13 @@ export default function LayoutContent({ children, currentPageName }) {
     localStorage.setItem('sidebarExpanded', JSON.stringify(sidebarExpanded));
   }, [sidebarExpanded]);
 
+  // Mapeo de iconos de Lucide
+  const iconMap = {
+    LayoutDashboard, ShoppingCart, ShoppingBag, Package, Landmark, BarChart3,
+    Calendar: CalendarIcon, Briefcase, Settings, Shield, FileText, Users, Wrench,
+    FileCheck, Building2, CreditCard, Check, ClipboardList, DollarSign, TrendingUp
+  };
+
   const sectionIcons = {
     general: LayoutDashboard,
     ventas: ShoppingCart,
@@ -82,123 +95,158 @@ export default function LayoutContent({ children, currentPageName }) {
     ajustes: Settings
   };
 
-  const allModules = [
-    {
+  // Mapeo de module_key a página (única fuente de verdad)
+  const MODULE_PAGE_MAP = {
+    // General
+    dashboard: { page: "Dashboard", requiresPermission: false },
+    
+    // Ventas
+    sales: { page: "Sales" },
+    budgets: { page: "Presupuestos" },
+    clients: { page: "Clients" },
+    services: { page: "Services" },
+    talonarios: { page: "Talonarios" },
+    
+    // Compras
+    purchases: { page: "Purchases" },
+    suppliers: { page: "Proveedores" },
+    supplier_payments: { page: "PagosProveedores" },
+    
+    // Inventario
+    products: { page: "Products" },
+    inventory: { page: "Inventory" },
+    stock_control: { page: "HistorialControlesStock" },
+    
+    // Proyectos
+    projects: { page: "Projects" },
+    work_orders: { page: "WorkOrders" },
+    
+    // Calendario
+    calendar: { page: "Calendar" },
+    
+    // Finanzas
+    treasury: { page: "TesoreriaV2" },
+    checks: { page: "Cheques" },
+    expenses: { page: "Expenses" },
+    financials: { page: "FinanzasHub" },
+    income_statement: { page: "EstadoResultados" },
+    analytics: { page: "Analytics" },
+  };
+
+  // Construir módulos dinámicamente desde la BD
+  const allModules = React.useMemo(() => {
+    if (modulesLoading || systemModules.length === 0) {
+      // Módulo general siempre visible
+      return [{
+        id: "general",
+        name: "General",
+        section: "general",
+        icon: LayoutDashboard,
+        items: [
+          { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard, permiso: null }
+        ]
+      }, {
+        id: "ajustes",
+        name: "Ajustes",
+        section: "ajustes",
+        icon: Settings,
+        items: [
+          { name: "Sistema", page: "Settings", icon: Settings, permiso: null }
+        ]
+      }];
+    }
+
+    // Agrupar módulos por sección
+    const modulesBySection = systemModules.reduce((acc, mod) => {
+      if (!acc[mod.section]) {
+        acc[mod.section] = [];
+      }
+      acc[mod.section].push(mod);
+      return acc;
+    }, {});
+
+    // Construir estructura de navegación
+    const result = [{
       id: "general",
       name: "General",
       section: "general",
       icon: LayoutDashboard,
       items: [
-        { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard, permiso: null },
+        { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard, permiso: null }
       ]
-    },
-    {
-      id: "ventas",
-      name: "Ventas",
-      section: "ventas",
-      icon: ShoppingCart,
-      items: [
-        { name: "Ventas", page: "Sales", icon: ShoppingCart, permiso: "sales" },
-        { name: "Presupuestos", page: "Presupuestos", icon: FileText, permiso: "budgets" },
-        { name: "Clientes", page: "Clients", icon: Users, permiso: "clients" },
-        { name: "Servicios", page: "Services", icon: Wrench, permiso: "services" },
-        { name: "Talonarios", page: "Talonarios", icon: FileCheck, permiso: "talonarios" },
-      ]
-    },
-    {
-      id: "compras",
-      name: "Compras",
-      section: "compras",
-      icon: ShoppingBag,
-      items: [
-        { name: "Compras", page: "Purchases", icon: ShoppingBag, permiso: "purchases" },
-        { name: "Proveedores", page: "Proveedores", icon: Building2, permiso: "suppliers" },
-        { name: "Pagos Proveedores", page: "PagosProveedores", icon: CreditCard, permiso: "supplier_payments" },
-      ]
-    },
-    {
-      id: "inventario",
-      name: "Inventario",
-      section: "inventario",
-      icon: Package,
-      items: [
-        { name: "Productos", page: "Products", icon: Package, permiso: "products" },
-        { name: "Inventario", page: "Inventory", icon: Check, permiso: "inventory" },
-        { name: "Control de Stock", page: "HistorialControlesStock", icon: ClipboardList, permiso: "stock_control" },
-      ]
-    },
-    {
-      id: "proyectos",
-      name: "Proyectos",
-      section: "proyectos",
-      icon: Briefcase,
-      items: [
-        { name: "Proyectos", page: "Projects", icon: Briefcase, permiso: "projects" },
-        { name: "Órdenes de Trabajo", page: "WorkOrders", icon: Briefcase, permiso: "work_orders" },
-      ]
-    },
-    {
-      id: "calendario",
-      name: "Calendario",
-      section: "calendario",
-      icon: CalendarIcon,
-      items: [
-        { name: "Calendario", page: "Calendar", icon: CalendarIcon, permiso: "calendar" },
-      ]
-    },
-    {
-       id: "finanzas",
-       name: "Finanzas",
-       section: "finanzas",
-       icon: DollarSign,
-       items: [
-         { name: "Tesorería", page: "TesoreriaV2", icon: Landmark, permiso: "treasury" },
-         { name: "Cheques", page: "Cheques", icon: CreditCard, permiso: "checks" },
-         { name: "Gastos", page: "Expenses", icon: DollarSign, permiso: "expenses" },
-         { name: "Finanzas", page: "FinanzasHub", icon: BarChart3, permiso: "financials" },
-         { name: "Estado de Resultados", page: "EstadoResultados", icon: FileText, permiso: "income_statement" },
-         { name: "Analytics", page: "Analytics", icon: TrendingUp, permiso: "analytics" },
-       ]
-     },
-    {
+    }];
+
+    // Por cada sección, crear un grupo
+    Object.entries(modulesBySection).forEach(([section, modules]) => {
+      const sectionModules = modules.map(mod => {
+        const pageMap = MODULE_PAGE_MAP[mod.key];
+        if (!pageMap) return null;
+
+        const Icon = iconMap[mod.icon] || Package;
+        
+        return {
+          name: mod.name,
+          page: pageMap.page,
+          icon: Icon,
+          permiso: pageMap.requiresPermission === false ? null : mod.key
+        };
+      }).filter(Boolean);
+
+      if (sectionModules.length > 0) {
+        result.push({
+          id: section,
+          name: modules[0].name, // Usar el nombre del primer módulo como nombre de sección
+          section: section,
+          icon: sectionIcons[section] || Package,
+          items: sectionModules
+        });
+      }
+    });
+
+    // Ajustes siempre al final
+    result.push({
       id: "ajustes",
       name: "Ajustes",
       section: "ajustes",
       icon: Settings,
       items: [
-        { name: "Sistema", page: "Settings", icon: Settings, permiso: null },
+        { name: "Sistema", page: "Settings", icon: Settings, permiso: null }
       ]
-    }
-  ];
+    });
 
-  const modules = allModules
-    .map(module => {
-      // Settings visible only to admins
-      if (module.id === "ajustes") {
-        return isAdmin ? module : null;
-      }
+    return result;
+  }, [systemModules, modulesLoading]);
 
-      // General module always visible
-      if (module.id === "general") {
-        return module;
-      }
+  const modules = React.useMemo(() => {
+    return allModules
+      .map(module => {
+        // Settings visible only to admins
+        if (module.id === "ajustes") {
+          return isAdmin ? module : null;
+        }
 
-      // Filter items by permission
-      const filteredItems = module.items.filter(item => {
-        if (!item.permiso) return true;
-        return isAdmin || canViewModule(item.permiso);
-      });
+        // General module always visible
+        if (module.id === "general") {
+          return module;
+        }
 
-      if (filteredItems.length === 0) {
-        return null;
-      }
+        // Filter items by permission using module_key
+        const filteredItems = module.items.filter(item => {
+          if (!item.permiso) return true;
+          return isAdmin || canViewModule(item.permiso);
+        });
 
-      return {
-        ...module,
-        items: filteredItems
-      };
-    })
-    .filter(Boolean);
+        if (filteredItems.length === 0) {
+          return null;
+        }
+
+        return {
+          ...module,
+          items: filteredItems
+        };
+      })
+      .filter(Boolean);
+  }, [allModules, isAdmin, canViewModule]);
 
   const allPages = modules.flatMap(m => m.items);
   const filteredPages = allPages.filter(p =>
