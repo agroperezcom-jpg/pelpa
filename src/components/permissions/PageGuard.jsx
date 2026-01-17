@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 /**
  * Page Guard Component
  * Blocks access to pages if user lacks 'view' permission
+ * Delega completamente en usePermissionsEnforcement
  * 
  * Usage:
  * <PageGuard module="inventory">
@@ -16,9 +17,9 @@ import { Link } from "react-router-dom";
  * </PageGuard>
  */
 export default function PageGuard({ module, children }) {
-  const { canViewModule, loading, isAdmin } = usePermissionsEnforcement();
+  const { canViewModule, isLoading } = usePermissionsEnforcement();
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-muted-foreground">Cargando...</p>
@@ -26,7 +27,7 @@ export default function PageGuard({ module, children }) {
     );
   }
 
-  if (!isAdmin && !canViewModule(module)) {
+  if (!canViewModule(module)) {
     return (
       <div className="flex items-center justify-center min-h-screen px-4">
         <Card className="max-w-md border-l-4 border-l-red-500 bg-red-50">

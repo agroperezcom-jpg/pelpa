@@ -1,10 +1,18 @@
 import React from 'react';
-import { usePermissions } from './usePermissionsCorrect';
+import { usePermissionsEnforcement } from './usePermissionsEnforcement';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
+/**
+ * PermissionGuard - Protege componentes basándose en permisos
+ * Delega completamente en usePermissionsEnforcement
+ */
 export default function PermissionGuard({ children, moduleKey, action, fallback = null }) {
-  const { hasPermission, canAccessModule } = usePermissions();
+  const { canAccessModule, hasPermission, isLoading } = usePermissionsEnforcement();
+
+  if (isLoading) {
+    return null;
+  }
 
   if (!canAccessModule(moduleKey)) {
     return fallback || (

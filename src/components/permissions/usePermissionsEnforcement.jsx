@@ -1,42 +1,140 @@
-import { usePermissions } from './usePermissions';
-import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 
+/**
+ * ÚNICA FUENTE DE VERDAD PARA PERMISOS
+ * 
+ * Este hook es el ÚNICO responsable de:
+ * - Cargar User, Empleado, Role, Permissions
+ * - Validar permisos (hasPermission, canViewModule)
+ * - Gestionar bypass de admin
+ * 
+ * Todos los demás componentes/hooks deben delegar aquí.
+ */
 export function usePermissionsEnforcement() {
-  const { 
-    currentUser, 
-    empleado, 
-    rol, 
-    isAdmin,
-    hasPermission,
-    canAccessModule,
-    isLoading,
-    debugInfo
-  } = usePermissions();
+  // Step 1: Get current user
+  const { data: currentUser, isLoading: userLoading } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
+    retry: 1,
+  });
 
-  // Log all permission checks for debugging
-  useEffect(() => {
-    if (!isLoading) {
-      console.log('📊 Permission enforcement debug:', {
-        isAdmin,
-        empleadoExists: !!empleado,
-        empleadoStatus: empleado?.status,
-        rolExists: !!rol,
-        userAuthenticated: !!currentUser,
-      });
+  // Step 2: Get Empleado by user_id
+  const { data: empleado, isLoading: empleadoLoading } = useQuery({
+    queryKey: ['empleado', currentUser?.id],
+    queryFn: async () => {
+      if (!currentUser?.id) return null;
+      try {
+        const empleados = await base44.entities.Empleado.filter({ user_id: currentUser.id });
+        return empleados?.[0] || null;
+      } catch (err) {
+        console.error('❌ Error fetching empleado:', err);
+        return null;
+      }
+    },
+    enabled: !!currentUser?.id,
+  });
+
+  // Step 3: Get Rol
+  const { data: rol, isLoading: rolLoading } = useQuery({
+    queryKey: ['rol', empleado?.role_id],
+    queryFn: async () => {
+      if (!empleado?.role_id) return null;
+      try {
+        return await base44.entities.Role.get(empleado.role_id);
+      } catch (err) {
+        console.error('❌ Error fetching rol:', err);
+        return null;
+      }
+    },
+    enabled: !!empleado?.role_id,
+  });
+
+  // Step 4: Get Permisos (RolePermissions + Permission data)
+  const { data: rawPermisos = [], isLoading: permisosLoading } = useQuery({
+    queryKey: ['rolePermissions', rol?.id],
+    queryFn: async () => {
+      if (!rol?.id) return [];
+      try {
+        const rolePerms = await base44.entities.RolePermission.filter({ role_id: rol.id });
+        if (!rolePerms?.length) return [];
+
+        // Fetch Permission data for each RolePermission
+        const permissionsData = await Promise.all(
+          rolePerms.map(rp => base44.entities.Permission.get(rp.permission_id).catch(() => null))
+        );
+
+        return permissionsData.filter(p => p !== null);
+      } catch (err) {
+        console.error('❌ Error fetching permissions:', err);
+        return [];
+      }
+    },
+    enabled: !!rol?.id,
+  });
+
+  // Transform permisos to usable map
+  const permisosMap = rawPermisos.reduce((acc, p) => {
+    if (p?.module_key && p?.action) {
+      const key = `${p.module_key}.${p.action}`;
+      acc[key] = true;
     }
-  }, [isLoading, isAdmin, empleado, rol, currentUser]);
+    return acc;
+  }, {});
 
-  // Wrapper functions with admin bypass
-  const canViewModule = (moduleKey) => {
+  // Check if user is admin (global access)
+  const isAdmin = currentUser?.role === 'admin';
+
+  // Loading state
+  const isLoading = userLoading || empleadoLoading || rolLoading || permisosLoading;
+
+  /**
+   * Verifica si el usuario tiene un permiso específico
+   * @param {string} moduleKey - Identificador del módulo (ej: 'calendar', 'sales')
+   * @param {string} action - Acción del permiso (ej: 'view', 'create', 'edit', 'delete')
+   * @returns {boolean}
+   */
+  const hasPermission = (moduleKey, action) => {
     if (isAdmin) return true;
     if (empleado?.status !== 'active') return false;
-    return canAccessModule(moduleKey);
+    const key = `${moduleKey}.${action}`;
+    return !!permisosMap[key];
   };
 
-  const can = (moduleKey, action) => {
+  /**
+   * Verifica si el usuario puede acceder a un módulo (cualquier permiso)
+   * @param {string} moduleKey - Identificador del módulo
+   * @returns {boolean}
+   */
+  const canAccessModule = (moduleKey) => {
     if (isAdmin) return true;
     if (empleado?.status !== 'active') return false;
-    return hasPermission(moduleKey, action);
+    return Object.keys(permisosMap).some(key => key.startsWith(moduleKey + '.'));
+  };
+
+  /**
+   * Verifica si el usuario puede ver un módulo (permiso 'view')
+   * @param {string} moduleKey - Identificador del módulo
+   * @returns {boolean}
+   */
+  const canViewModule = (moduleKey) => {
+    return hasPermission(moduleKey, 'view');
+  };
+
+  // Alias para compatibilidad
+  const can = hasPermission;
+
+  // Debug info
+  const debugInfo = {
+    user: currentUser?.email,
+    userId: currentUser?.id,
+    empleado: empleado?.full_name,
+    empleadoId: empleado?.id,
+    empleadoStatus: empleado?.status,
+    rolId: rol?.id,
+    rolName: rol?.name,
+    permissionsCount: rawPermisos.length,
+    isAdmin,
   };
 
   return {
@@ -45,10 +143,11 @@ export function usePermissionsEnforcement() {
     currentUser,
     empleado,
     rol,
-    canViewModule,
-    can,
+    permisos: permisosMap,
     hasPermission,
+    can,
     canAccessModule,
+    canViewModule,
     debugInfo,
   };
 }
