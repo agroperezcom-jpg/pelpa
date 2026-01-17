@@ -19,7 +19,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 export default function LayoutContent({ children, currentPageName }) {
-  useAutoLinkEmpleado(); // Auto-link Empleado on first access
+  useAutoLinkEmpleado();
   const { user: externalUser } = useExternalAuth();
   const { canViewModule, isAdmin } = usePermissionsEnforcement();
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
@@ -56,8 +56,6 @@ export default function LayoutContent({ children, currentPageName }) {
     "nunito": "'Nunito', sans-serif"
   };
 
-
-
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -73,14 +71,12 @@ export default function LayoutContent({ children, currentPageName }) {
     localStorage.setItem('sidebarExpanded', JSON.stringify(sidebarExpanded));
   }, [sidebarExpanded]);
 
-
-
   const sectionIcons = {
     general: LayoutDashboard,
     ventas: ShoppingCart,
     compras: ShoppingBag,
     inventario: Package,
-    tesoreria: DollarSign,
+    finanzas: DollarSign,
     proyectos: Briefcase,
     calendario: CalendarIcon,
     ajustes: Settings
@@ -92,7 +88,6 @@ export default function LayoutContent({ children, currentPageName }) {
       name: "General",
       section: "general",
       icon: LayoutDashboard,
-      permiso: null,
       items: [
         { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard, permiso: null },
       ]
@@ -102,13 +97,12 @@ export default function LayoutContent({ children, currentPageName }) {
       name: "Ventas",
       section: "ventas",
       icon: ShoppingCart,
-      permiso: "sales",
       items: [
         { name: "Ventas", page: "Sales", icon: ShoppingCart, permiso: "sales" },
-        { name: "Presupuestos", page: "Presupuestos", icon: FileText, permiso: "sales" },
-        { name: "Clientes", page: "Clients", icon: Users, permiso: "sales" },
-        { name: "Servicios", page: "Services", icon: Wrench, permiso: "sales" },
-        { name: "Talonarios", page: "Talonarios", icon: FileCheck, permiso: "sales" },
+        { name: "Presupuestos", page: "Presupuestos", icon: FileText, permiso: "budgets" },
+        { name: "Clientes", page: "Clients", icon: Users, permiso: "clients" },
+        { name: "Servicios", page: "Services", icon: Wrench, permiso: "services" },
+        { name: "Talonarios", page: "Talonarios", icon: FileCheck, permiso: "talonarios" },
       ]
     },
     {
@@ -116,23 +110,21 @@ export default function LayoutContent({ children, currentPageName }) {
       name: "Compras",
       section: "compras",
       icon: ShoppingBag,
-      permiso: "purchases",
       items: [
         { name: "Compras", page: "Purchases", icon: ShoppingBag, permiso: "purchases" },
-        { name: "Proveedores", page: "Proveedores", icon: Building2, permiso: "purchases" },
-        { name: "Pagos Proveedores", page: "PagosProveedores", icon: CreditCard, permiso: "purchases" },
+        { name: "Proveedores", page: "Proveedores", icon: Building2, permiso: "suppliers" },
+        { name: "Pagos Proveedores", page: "PagosProveedores", icon: CreditCard, permiso: "supplier_payments" },
       ]
     },
     {
       id: "inventario",
-      name: "Productos",
+      name: "Inventario",
       section: "inventario",
       icon: Package,
-      permiso: "inventory",
       items: [
-        { name: "Productos", page: "Products", icon: Package, permiso: "inventory" },
+        { name: "Productos", page: "Products", icon: Package, permiso: "products" },
         { name: "Inventario", page: "Inventory", icon: Check, permiso: "inventory" },
-        { name: "Control de Stock", page: "HistorialControlesStock", icon: ClipboardList, permiso: "inventory" },
+        { name: "Control de Stock", page: "HistorialControlesStock", icon: ClipboardList, permiso: "stock_control" },
       ]
     },
     {
@@ -140,10 +132,9 @@ export default function LayoutContent({ children, currentPageName }) {
       name: "Proyectos",
       section: "proyectos",
       icon: Briefcase,
-      permiso: "projects",
       items: [
         { name: "Proyectos", page: "Projects", icon: Briefcase, permiso: "projects" },
-        { name: "Órdenes de Trabajo", page: "WorkOrders", icon: Briefcase, permiso: "projects" },
+        { name: "Órdenes de Trabajo", page: "WorkOrders", icon: Briefcase, permiso: "work_orders" },
       ]
     },
     {
@@ -151,24 +142,22 @@ export default function LayoutContent({ children, currentPageName }) {
       name: "Agenda",
       section: "calendario",
       icon: CalendarIcon,
-      permiso: "calendar",
       items: [
         { name: "Calendario", page: "Calendar", icon: CalendarIcon, permiso: "calendar" },
       ]
     },
     {
-       id: "tesoreria",
+       id: "finanzas",
        name: "Finanzas",
-       section: "tesoreria",
+       section: "finanzas",
        icon: DollarSign,
-       permiso: "finance",
        items: [
-         { name: "Tesorería", page: "TesoreriaV2", icon: Landmark, permiso: "finance" },
-         { name: "Cheques", page: "Cheques", icon: CreditCard, permiso: "finance" },
-         { name: "Gastos", page: "Expenses", icon: DollarSign, permiso: "finance" },
-         { name: "Finanzas", page: "FinanzasHub", icon: BarChart3, permiso: "finance" },
-         { name: "Estado de Resultados", page: "EstadoResultados", icon: FileText, permiso: "finance" },
-         { name: "Analytics", page: "Analytics", icon: TrendingUp, permiso: "finance" },
+         { name: "Tesorería", page: "TesoreriaV2", icon: Landmark, permiso: "treasury" },
+         { name: "Cheques", page: "Cheques", icon: CreditCard, permiso: "checks" },
+         { name: "Gastos", page: "Expenses", icon: DollarSign, permiso: "expenses" },
+         { name: "Finanzas", page: "FinanzasHub", icon: BarChart3, permiso: "financials" },
+         { name: "Estado de Resultados", page: "EstadoResultados", icon: FileText, permiso: "income_statement" },
+         { name: "Analytics", page: "Analytics", icon: TrendingUp, permiso: "analytics" },
        ]
      },
     {
@@ -176,7 +165,6 @@ export default function LayoutContent({ children, currentPageName }) {
       name: "Ajustes",
       section: "ajustes",
       icon: Settings,
-      permiso: null,
       items: [
         { name: "Sistema", page: "Settings", icon: Settings, permiso: null },
       ]
@@ -190,14 +178,9 @@ export default function LayoutContent({ children, currentPageName }) {
         return isAdmin ? module : null;
       }
 
-      // General and other modules always visible
-      if (!module.permiso) {
+      // General module always visible
+      if (module.id === "general") {
         return module;
-      }
-
-      // Check module permission
-      if (!isAdmin && !canViewModule(module.permiso)) {
-        return null;
       }
 
       // Filter items by permission
