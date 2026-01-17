@@ -1,5 +1,5 @@
 import React from "react";
-import { usePermissions } from "@/components/permissions/usePermissions";
+import { usePermissionsEnforcement } from "@/components/permissions/usePermissionsEnforcement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function PermissionTabs({ 
@@ -7,16 +7,16 @@ export default function PermissionTabs({
   defaultValue,
   ...props 
 }) {
-  const { hasPermission, loading, isAdmin } = usePermissions();
+  const { hasPermission, isLoading, isAdmin } = usePermissionsEnforcement();
 
-  if (loading) {
+  if (isLoading) {
     return null;
   }
 
   // Filtrar tabs según permisos
   const filteredTabs = tabs.filter(tab => {
-    if (!tab.permiso) return true; // Si no requiere permiso, mostrar
-    if (isAdmin) return true; // Admin ve todo
+    if (!tab.permiso) return true;
+    if (isAdmin) return true;
     
     const { modulo, accion } = tab.permiso;
     return hasPermission(modulo, accion);

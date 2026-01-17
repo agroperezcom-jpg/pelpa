@@ -1,5 +1,5 @@
 import React from 'react';
-import { usePermissions } from './usePermissionsCorrect';
+import { usePermissionsEnforcement } from './usePermissionsEnforcement';
 import { Button } from '@/components/ui/button';
 
 export default function PermissionButton({ 
@@ -8,7 +8,7 @@ export default function PermissionButton({
   action,
   ...props 
 }) {
-  const { hasPermission, canAccessModule } = usePermissions();
+  const { hasPermission, canAccessModule } = usePermissionsEnforcement();
 
   const hasAccess = canAccessModule(moduleKey) && 
     (!action || hasPermission(moduleKey, action));

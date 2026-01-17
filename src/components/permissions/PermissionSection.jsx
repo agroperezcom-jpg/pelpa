@@ -1,5 +1,5 @@
 import React from "react";
-import { usePermissions } from "@/components/permissions/usePermissions";
+import { usePermissionsEnforcement } from "@/components/permissions/usePermissionsEnforcement";
 
 export default function PermissionSection({ 
   modulo, 
@@ -7,13 +7,13 @@ export default function PermissionSection({
   children,
   fallback = null
 }) {
-  const { hasPermission, loading, isAdmin } = usePermissions();
+  const { hasPermission, isLoading, isAdmin } = usePermissionsEnforcement();
 
-  if (loading) {
+  if (isLoading) {
     return fallback;
   }
 
-  if (!isAdmin && !hasPermission(modulo, accion)) {
+  if (!hasPermission(modulo, accion)) {
     return fallback;
   }
 
