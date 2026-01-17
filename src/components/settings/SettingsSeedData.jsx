@@ -162,11 +162,8 @@ export default function SettingsSeedData() {
 
               <Alert className="bg-green-50 border-green-200">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-800 space-y-2">
-                  <p><strong>Sistema normalizado.</strong> Recarga la página con Ctrl+Shift+R.</p>
-                  <p className="text-xs">
-                    📍 Validación completa disponible en: <strong>Sistema → Ajustes → Debug Permisos</strong>
-                  </p>
+                <AlertDescription className="text-green-800">
+                  <strong>Sistema normalizado.</strong> Recarga la página con Ctrl+Shift+R y verifica que todo funcione correctamente.
                 </AlertDescription>
               </Alert>
             </div>

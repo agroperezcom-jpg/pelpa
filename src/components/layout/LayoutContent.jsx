@@ -176,23 +176,8 @@ export default function LayoutContent({ children, currentPageName }) {
       ]
     }];
 
-    // Definir nombres de secciones
-    const SECTION_NAMES = {
-      ventas: "Ventas",
-      compras: "Compras",
-      inventario: "Inventario",
-      proyectos: "Proyectos",
-      calendario: "Calendario",
-      finanzas: "Finanzas"
-    };
-
     // Por cada sección, crear un grupo
-    const orderedSections = ['ventas', 'compras', 'inventario', 'proyectos', 'calendario', 'finanzas'];
-    
-    orderedSections.forEach(section => {
-      const modules = modulesBySection[section];
-      if (!modules || modules.length === 0) return;
-
+    Object.entries(modulesBySection).forEach(([section, modules]) => {
       const sectionModules = modules.map(mod => {
         const pageMap = MODULE_PAGE_MAP[mod.key];
         if (!pageMap) return null;
@@ -210,7 +195,7 @@ export default function LayoutContent({ children, currentPageName }) {
       if (sectionModules.length > 0) {
         result.push({
           id: section,
-          name: SECTION_NAMES[section] || section,
+          name: modules[0].name, // Usar el nombre del primer módulo como nombre de sección
           section: section,
           icon: sectionIcons[section] || Package,
           items: sectionModules
