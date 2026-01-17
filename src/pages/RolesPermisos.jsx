@@ -178,8 +178,6 @@ export default function RolesPermisos() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [rolToDelete, setRolToDelete] = useState(null);
   const [user, setUser] = useState(null);
-  
-  // Force recompile - v2
 
   const queryClient = useQueryClient();
 
