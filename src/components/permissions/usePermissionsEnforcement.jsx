@@ -1,3 +1,4 @@
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 
@@ -136,6 +137,29 @@ export function usePermissionsEnforcement() {
     permissionsCount: rawPermisos.length,
     isAdmin,
   };
+
+  // Logs centralizados de debugging (solo cuando se completa la carga)
+  React.useEffect(() => {
+    if (!isLoading) {
+      const accessibleModules = Object.keys(permisosMap)
+        .map(key => key.split('.')[0])
+        .filter((module, index, self) => self.indexOf(module) === index);
+
+      console.group('🔐 PERMISOS DEL USUARIO');
+      console.log('👤 Usuario:', currentUser?.email || 'No autenticado');
+      console.log('👔 Empleado:', empleado?.full_name || 'No vinculado', empleado?.status ? `(${empleado.status})` : '');
+      console.log('🎭 Rol:', rol?.name || 'Sin rol asignado');
+      console.log('📊 Permisos totales:', rawPermisos.length);
+      console.log('🔓 Admin global:', isAdmin ? 'SÍ' : 'NO');
+      console.log('📦 Módulos accesibles:', accessibleModules.length > 0 ? accessibleModules.join(', ') : 'Ninguno');
+      
+      if (rawPermisos.length > 0) {
+        console.log('📋 Detalle de permisos:', permisosMap);
+      }
+      
+      console.groupEnd();
+    }
+  }, [isLoading, currentUser, empleado, rol, rawPermisos, permisosMap, isAdmin]);
 
   return {
     isAdmin,
