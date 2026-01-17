@@ -23,7 +23,7 @@ import CalendarSearchDialog from "@/components/calendar/CalendarSearchDialog";
 import CalendarExportDialog from "@/components/calendar/CalendarExportDialog";
 import EventDetailDialog from "@/components/calendar/EventDetailDialog";
 import DeleteRecurrenceDialog from "@/components/calendar/DeleteRecurrenceDialog";
-import { usePermissions } from "@/components/permissions/usePermissions";
+import { usePermissionsEnforcement } from "@/components/permissions/usePermissionsEnforcement";
 import { Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -62,7 +62,7 @@ export default function Calendar() {
   const [expenseToPay, setExpenseToPay] = useState(null);
 
   const queryClient = useQueryClient();
-  const { hasPermission, isAdmin, loading: permissionsLoading } = usePermissions();
+  const { hasPermission, isAdmin, isLoading: permissionsLoading } = usePermissionsEnforcement();
 
   // Permisos del calendario
   const canViewCalendar = isAdmin || hasPermission("calendario", "ver");
