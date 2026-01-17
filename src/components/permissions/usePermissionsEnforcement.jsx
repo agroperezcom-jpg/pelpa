@@ -8,8 +8,8 @@ import { base44 } from '@/api/base44Client';
  * Este hook es el ÚNICO responsable de:
  * - Cargar User, Empleado, Role, Permissions
  * - Validar permisos (hasPermission, canViewModule)
- * - Gestionar bypass de admin
  * 
+ * NO HAY BYPASS DE ADMIN. TODO SE MANEJA VÍA PERMISOS.
  * Todos los demás componentes/hooks deben delegar aquí.
  */
 export function usePermissionsEnforcement() {
@@ -74,17 +74,14 @@ export function usePermissionsEnforcement() {
     enabled: !!rol?.id,
   });
 
-  // Transform permisos to usable map
+  // Transform permisos to usable map (normalizando a lowercase)
   const permisosMap = rawPermisos.reduce((acc, p) => {
     if (p?.module_key && p?.action) {
-      const key = `${p.module_key}.${p.action}`;
-      acc[key] = true;
+      const normalizedKey = `${p.module_key.toLowerCase()}.${p.action.toLowerCase()}`;
+      acc[normalizedKey] = true;
     }
     return acc;
   }, {});
-
-  // Check if user is admin (global access)
-  const isAdmin = currentUser?.role === 'admin';
 
   // Loading state
   const isLoading = userLoading || empleadoLoading || rolLoading || permisosLoading;
@@ -96,10 +93,9 @@ export function usePermissionsEnforcement() {
    * @returns {boolean}
    */
   const hasPermission = (moduleKey, action) => {
-    if (isAdmin) return true;
     if (empleado?.status !== 'active') return false;
-    const key = `${moduleKey}.${action}`;
-    return !!permisosMap[key];
+    const normalizedKey = `${moduleKey.toLowerCase()}.${action.toLowerCase()}`;
+    return !!permisosMap[normalizedKey];
   };
 
   /**
@@ -108,9 +104,9 @@ export function usePermissionsEnforcement() {
    * @returns {boolean}
    */
   const canAccessModule = (moduleKey) => {
-    if (isAdmin) return true;
     if (empleado?.status !== 'active') return false;
-    return Object.keys(permisosMap).some(key => key.startsWith(moduleKey + '.'));
+    const normalizedModule = moduleKey.toLowerCase();
+    return Object.keys(permisosMap).some(key => key.startsWith(normalizedModule + '.'));
   };
 
   /**
@@ -135,7 +131,6 @@ export function usePermissionsEnforcement() {
     rolId: rol?.id,
     rolName: rol?.name,
     permissionsCount: rawPermisos.length,
-    isAdmin,
   };
 
   // Logs centralizados de debugging (solo cuando se completa la carga)
@@ -150,7 +145,6 @@ export function usePermissionsEnforcement() {
       console.log('👔 Empleado:', empleado?.full_name || 'No vinculado', empleado?.status ? `(${empleado.status})` : '');
       console.log('🎭 Rol:', rol?.name || 'Sin rol asignado');
       console.log('📊 Permisos totales:', rawPermisos.length);
-      console.log('🔓 Admin global:', isAdmin ? 'SÍ' : 'NO');
       console.log('📦 Módulos accesibles:', accessibleModules.length > 0 ? accessibleModules.join(', ') : 'Ninguno');
       
       if (rawPermisos.length > 0) {
@@ -159,10 +153,9 @@ export function usePermissionsEnforcement() {
       
       console.groupEnd();
     }
-  }, [isLoading, currentUser, empleado, rol, rawPermisos, permisosMap, isAdmin]);
+  }, [isLoading, currentUser, empleado, rol, rawPermisos, permisosMap]);
 
   return {
-    isAdmin,
     isLoading,
     currentUser,
     empleado,
