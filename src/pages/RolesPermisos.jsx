@@ -139,8 +139,8 @@ const MODULOS = [
   { id: "projects", nombre: "Proyectos", categoria: "Proyectos", critico: false },
   { id: "work_orders", nombre: "Órdenes de Trabajo", categoria: "Proyectos", critico: false },
 
-  // AGENDA - Módulo único
-  { id: "calendar", nombre: "Calendario", categoria: "Agenda", critico: false },
+  // CALENDARIO - Módulo único
+  { id: "calendar", nombre: "Calendario", categoria: "Calendario", critico: false },
 
   // FINANZAS - Módulos granulares por página
   { id: "treasury", nombre: "Tesorería", categoria: "Finanzas", critico: true },
@@ -586,7 +586,7 @@ export default function RolesPermisos() {
             </div>
 
             <div className="px-6 py-6 space-y-8">
-              {['Ventas', 'Compras', 'Inventario', 'Proyectos', 'Agenda', 'Finanzas', 'Sistema'].map(categoria => {
+              {['Ventas', 'Compras', 'Inventario', 'Proyectos', 'Calendario', 'Finanzas', 'Sistema'].map(categoria => {
                 const modulosCategoria = MODULOS.filter(m => m.categoria === categoria);
                 if (modulosCategoria.length === 0) return null;
 
