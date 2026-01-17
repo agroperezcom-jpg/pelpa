@@ -1,4 +1,5 @@
 import Analytics from './pages/Analytics';
+import Calendar from './pages/Calendar';
 import Cheques from './pages/Cheques';
 import Clients from './pages/Clients';
 import Dashboard from './pages/Dashboard';
@@ -20,6 +21,7 @@ import ProjectTemplates from './pages/ProjectTemplates';
 import Projects from './pages/Projects';
 import Proveedores from './pages/Proveedores';
 import Purchases from './pages/Purchases';
+import RolesPermisos from './pages/RolesPermisos';
 import Sales from './pages/Sales';
 import Services from './pages/Services';
 import Settings from './pages/Settings';
@@ -34,13 +36,12 @@ import TesoreriaV2 from './pages/TesoreriaV2';
 import TiposArticulo from './pages/TiposArticulo';
 import Treasury from './pages/Treasury';
 import WorkOrders from './pages/WorkOrders';
-import Calendar from './pages/Calendar';
-import RolesPermisos from './pages/RolesPermisos';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Analytics": Analytics,
+    "Calendar": Calendar,
     "Cheques": Cheques,
     "Clients": Clients,
     "Dashboard": Dashboard,
@@ -62,6 +63,7 @@ export const PAGES = {
     "Projects": Projects,
     "Proveedores": Proveedores,
     "Purchases": Purchases,
+    "RolesPermisos": RolesPermisos,
     "Sales": Sales,
     "Services": Services,
     "Settings": Settings,
@@ -76,8 +78,6 @@ export const PAGES = {
     "TiposArticulo": TiposArticulo,
     "Treasury": Treasury,
     "WorkOrders": WorkOrders,
-    "Calendar": Calendar,
-    "RolesPermisos": RolesPermisos,
 }
 
 export const pagesConfig = {

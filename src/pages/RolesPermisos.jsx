@@ -605,8 +605,6 @@ export default function RolesPermisos() {
                     <div className="space-y-3">
                       {modulosCategoria.map(modulo => {
                         const hasAll = ACCIONES.every(a => selectedPermisos[`${modulo.id}_${a.id}`]);
-                        
-                        console.log('Renderizando módulo:', modulo.id, modulo.nombre);
 
                         return (
                           <div key={modulo.id} className="border border-slate-200 rounded-lg overflow-hidden bg-white hover:border-slate-300 transition-colors">
@@ -623,7 +621,6 @@ export default function RolesPermisos() {
                                       <Badge className="bg-red-100 text-red-700 text-xs font-medium">Crítico</Badge>
                                     )}
                                   </p>
-                                  <p className="text-xs text-slate-500 mt-0.5">Módulo: {modulo.id}</p>
                                 </div>
                               </div>
                               {hasAll && (
