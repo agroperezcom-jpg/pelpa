@@ -139,7 +139,7 @@ export default function LayoutContent({ children, currentPageName }) {
     },
     {
       id: "calendario",
-      name: "Agenda",
+      name: "Calendario",
       section: "calendario",
       icon: CalendarIcon,
       items: [
