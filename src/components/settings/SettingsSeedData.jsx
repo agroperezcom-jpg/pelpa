@@ -7,22 +7,22 @@ import { base44 } from '@/api/base44Client';
 import toast from 'react-hot-toast';
 
 export default function SettingsSeedData() {
-  const [seedPermissionsLoading, setSeedPermissionsLoading] = useState(false);
-  const [seedPermissionsResult, setSeedPermissionsResult] = useState(null);
+  const [initLoading, setInitLoading] = useState(false);
+  const [initResult, setInitResult] = useState(null);
   const [createTestUsersLoading, setCreateTestUsersLoading] = useState(false);
   const [createTestUsersResult, setCreateTestUsersResult] = useState(null);
 
-  const handleSeedPermissions = async () => {
-    setSeedPermissionsLoading(true);
+  const handleInitializeSystem = async () => {
+    setInitLoading(true);
     try {
-      const response = await base44.functions.invoke('seedPermissions', {});
-      setSeedPermissionsResult(response.data);
-      toast.success('Permisos y roles creados exitosamente');
+      const response = await base44.functions.invoke('initializeSystem', {});
+      setInitResult(response.data);
+      toast.success('Sistema inicializado correctamente');
     } catch (error) {
       toast.error(`Error: ${error.message}`);
-      setSeedPermissionsResult(null);
+      setInitResult(null);
     } finally {
-      setSeedPermissionsLoading(false);
+      setInitLoading(false);
     }
   };
 
@@ -49,45 +49,59 @@ export default function SettingsSeedData() {
         </AlertDescription>
       </Alert>
 
-      {/* Seed Permissions */}
+      {/* Initialize System */}
       <Card>
         <CardHeader>
-          <CardTitle>1. Crear Permisos y Roles</CardTitle>
+          <CardTitle>1. Inicializar Sistema</CardTitle>
           <CardDescription>
-            Genera automáticamente 27 permisos (6 módulos × 5 acciones) y 5 roles base (Administrador, Ventas, Tesorería, Compras, Operaciones)
+            Crea todos los módulos, permisos y roles base. Arquitectura consistente: module_key técnico (calendar, sales, etc.) en toda la aplicación.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Button
-            onClick={handleSeedPermissions}
-            disabled={seedPermissionsLoading}
-            className="w-full"
+            onClick={handleInitializeSystem}
+            disabled={initLoading}
+            className="w-full bg-slate-700 hover:bg-slate-800"
           >
-            {seedPermissionsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {seedPermissionsLoading ? 'Creando...' : 'Ejecutar Seed de Permisos'}
+            {initLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {initLoading ? 'Inicializando...' : 'Inicializar Sistema Completo'}
           </Button>
 
-          {seedPermissionsResult && (
+          {initResult && initResult.status === 'success' && (
             <div className="space-y-3">
               <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
                 <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                <div className="space-y-1">
-                  <p className="font-medium text-green-900">{seedPermissionsResult.message}</p>
-                  <p className="text-sm text-green-700">
-                    ✓ {seedPermissionsResult.permissionsCreated} permisos creados
-                  </p>
-                  <p className="text-sm text-green-700">
-                    ✓ {seedPermissionsResult.rolesCreated} roles creados
-                  </p>
+                <div className="space-y-1 w-full">
+                  <p className="font-medium text-green-900">{initResult.message}</p>
+                  <div className="text-sm text-green-700 space-y-0.5">
+                    <p>✓ {initResult.summary.modules}</p>
+                    <p>✓ {initResult.summary.permissions}</p>
+                    <p>✓ {initResult.summary.roles}</p>
+                    <p>✓ {initResult.summary.rolePermissions}</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="text-xs text-muted-foreground space-y-1">
-                <p className="font-medium">Roles creados:</p>
-                {Object.entries(seedPermissionsResult.roles).map(([name, id]) => (
-                  <p key={id} className="ml-2">• {name}</p>
-                ))}
+              {/* Validación crítica de calendario */}
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs">
+                <p className="font-medium text-blue-900 mb-1">✓ Validación Calendario:</p>
+                <div className="text-blue-700 space-y-0.5 ml-2">
+                  <p>• Módulo calendar: {initResult.critical.calendar_module_created}</p>
+                  <p>• Permisos calendar.*: {initResult.critical.calendar_permissions_created}</p>
+                  <p>• Rol Administrador: {initResult.critical.admin_role_found}</p>
+                </div>
               </div>
+
+              {initResult.details.errors.length > 0 && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs">
+                  <p className="font-medium text-amber-900 mb-1">⚠ Errores detectados:</p>
+                  <div className="text-amber-700 space-y-0.5 ml-2 max-h-32 overflow-y-auto">
+                    {initResult.details.errors.map((err, i) => (
+                      <p key={i}>• {err.step}: {err.error}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
@@ -142,9 +156,15 @@ export default function SettingsSeedData() {
           <CardTitle className="text-base text-blue-900">3. Validar Permisos</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-blue-800 space-y-2">
-          <p>✓ Ve a <strong>Debug Permisos</strong> para validar la cadena User → Empleado → Rol → Permisos</p>
-          <p>✓ Testa que vendedor@test.local vea SOLO: sales.view, sales.create, inventory.view</p>
-          <p>✓ Testa que tesorero@test.local vea SOLO: finance.*, sales.view</p>
+          <p className="font-semibold">Arquitectura consistente implementada:</p>
+          <ul className="ml-4 space-y-1 text-xs">
+            <li>✓ module_key técnico (calendar, sales, etc.) en toda la app</li>
+            <li>✓ Sidebar lee desde entidad Module</li>
+            <li>✓ Permisos vinculados por module_key</li>
+            <li>✓ canAccessModule('calendar') funciona correctamente</li>
+          </ul>
+          <p className="mt-3 font-medium">Próximo paso:</p>
+          <p>Ve a <strong>Debug Permisos</strong> para validar la cadena completa User → Empleado → Rol → Permisos</p>
         </CardContent>
       </Card>
     </div>
