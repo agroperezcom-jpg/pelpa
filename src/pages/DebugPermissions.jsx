@@ -1,5 +1,5 @@
 import React from 'react';
-import { usePermissions } from '@/components/permissions/usePermissions';
+import { usePermissionsEnforcement } from '@/components/permissions/usePermissionsEnforcement';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -14,7 +14,7 @@ export default function DebugPermissions() {
     debugInfo,
     hasPermission,
     canAccessModule
-  } = usePermissions();
+  } = usePermissionsEnforcement();
 
   if (isLoading) {
     return <div className="p-6">Cargando información de permisos...</div>;
