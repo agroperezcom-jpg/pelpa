@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 export default function LayoutContent({ children, currentPageName }) {
   useAutoLinkEmpleado();
   const { user: externalUser } = useExternalAuth();
-  const { canViewModule, hasPermission } = usePermissionsEnforcement();
+  const { canViewModule, isAdmin } = usePermissionsEnforcement();
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('sidebarExpanded')) ?? true;
@@ -173,9 +173,9 @@ export default function LayoutContent({ children, currentPageName }) {
 
   const modules = allModules
     .map(module => {
-      // Settings visible only with settings permission
+      // Settings visible only to admins
       if (module.id === "ajustes") {
-        return hasPermission('settings', 'view') ? module : null;
+        return isAdmin ? module : null;
       }
 
       // General module always visible
@@ -186,7 +186,7 @@ export default function LayoutContent({ children, currentPageName }) {
       // Filter items by permission
       const filteredItems = module.items.filter(item => {
         if (!item.permiso) return true;
-        return canViewModule(item.permiso);
+        return isAdmin || canViewModule(item.permiso);
       });
 
       if (filteredItems.length === 0) {
