@@ -7,16 +7,15 @@ export default function PermissionTabs({
   defaultValue,
   ...props 
 }) {
-  const { hasPermission, isLoading, isAdmin } = usePermissionsEnforcement();
+  const { hasPermission, isLoading } = usePermissionsEnforcement();
 
   if (isLoading) {
     return null;
   }
 
-  // Filtrar tabs según permisos
+  // Filtrar tabs según permisos (sin bypass para admin)
   const filteredTabs = tabs.filter(tab => {
     if (!tab.permiso) return true;
-    if (isAdmin) return true;
     
     const { modulo, accion } = tab.permiso;
     return hasPermission(modulo, accion);
