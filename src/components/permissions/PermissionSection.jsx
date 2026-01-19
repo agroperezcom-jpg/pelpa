@@ -3,11 +3,11 @@ import { usePermissionsEnforcement } from "@/components/permissions/usePermissio
 
 export default function PermissionSection({ 
   modulo, 
-  accion = "ver",
+  accion = "VIEW",
   children,
   fallback = null
 }) {
-  const { hasPermission, isLoading } = usePermissionsEnforcement();
+  const { hasPermission, isLoading, isAdmin } = usePermissionsEnforcement();
 
   if (isLoading) {
     return fallback;

@@ -5,12 +5,12 @@ import { base44 } from '@/api/base44Client';
 /**
  * ÚNICA FUENTE DE VERDAD PARA PERMISOS
  * 
- * Sistema unificado de permisos basado EXCLUSIVAMENTE en role_id + permisos asignados.
- * NO existe lógica especial para admin, superadmin o auth.role.
+ * Este hook es el ÚNICO responsable de:
+ * - Cargar User, Empleado, Role, Permissions
+ * - Validar permisos (hasPermission, canViewModule)
+ * - Gestionar bypass de admin
  * 
- * Contrato:
- * - module_key: minúsculas (calendario, ventas, configuraciones)
- * - action: ver | crear | editar | eliminar | aprobar
+ * Todos los demás componentes/hooks deben delegar aquí.
  */
 export function usePermissionsEnforcement() {
   // Step 1: Get current user
@@ -74,28 +74,32 @@ export function usePermissionsEnforcement() {
     enabled: !!rol?.id,
   });
 
-  // Transform permisos to usable map (normalizar a minúsculas)
+  // Transform permisos to usable map
   const permisosMap = rawPermisos.reduce((acc, p) => {
     if (p?.module_key && p?.action) {
-      const normalizedKey = `${p.module_key.toLowerCase()}.${p.action.toLowerCase()}`;
-      acc[normalizedKey] = true;
+      const key = `${p.module_key}.${p.action}`;
+      acc[key] = true;
     }
     return acc;
   }, {});
+
+  // Check if user is admin (global access)
+  const isAdmin = currentUser?.role === 'admin';
 
   // Loading state
   const isLoading = userLoading || empleadoLoading || rolLoading || permisosLoading;
 
   /**
    * Verifica si el usuario tiene un permiso específico
-   * @param {string} moduleKey - Identificador del módulo (ej: 'calendario', 'ventas')
-   * @param {string} action - Acción del permiso (ej: 'ver', 'crear', 'editar', 'eliminar')
+   * @param {string} moduleKey - Identificador del módulo (ej: 'calendar', 'sales')
+   * @param {string} action - Acción del permiso (ej: 'view', 'create', 'edit', 'delete')
    * @returns {boolean}
    */
   const hasPermission = (moduleKey, action) => {
+    if (isAdmin) return true;
     if (empleado?.status !== 'active') return false;
-    const normalizedKey = `${moduleKey.toLowerCase()}.${action.toLowerCase()}`;
-    return !!permisosMap[normalizedKey];
+    const key = `${moduleKey}.${action}`;
+    return !!permisosMap[key];
   };
 
   /**
@@ -104,18 +108,18 @@ export function usePermissionsEnforcement() {
    * @returns {boolean}
    */
   const canAccessModule = (moduleKey) => {
+    if (isAdmin) return true;
     if (empleado?.status !== 'active') return false;
-    const normalizedModule = moduleKey.toLowerCase();
-    return Object.keys(permisosMap).some(key => key.startsWith(normalizedModule + '.'));
+    return Object.keys(permisosMap).some(key => key.startsWith(moduleKey + '.'));
   };
 
   /**
-   * Verifica si el usuario puede ver un módulo (permiso 'ver')
+   * Verifica si el usuario puede ver un módulo (permiso 'view')
    * @param {string} moduleKey - Identificador del módulo
    * @returns {boolean}
    */
   const canViewModule = (moduleKey) => {
-    return hasPermission(moduleKey, 'ver');
+    return hasPermission(moduleKey, 'view');
   };
 
   // Alias para compatibilidad
@@ -131,6 +135,7 @@ export function usePermissionsEnforcement() {
     rolId: rol?.id,
     rolName: rol?.name,
     permissionsCount: rawPermisos.length,
+    isAdmin,
   };
 
   // Logs centralizados de debugging (solo cuando se completa la carga)
@@ -145,6 +150,7 @@ export function usePermissionsEnforcement() {
       console.log('👔 Empleado:', empleado?.full_name || 'No vinculado', empleado?.status ? `(${empleado.status})` : '');
       console.log('🎭 Rol:', rol?.name || 'Sin rol asignado');
       console.log('📊 Permisos totales:', rawPermisos.length);
+      console.log('🔓 Admin global:', isAdmin ? 'SÍ' : 'NO');
       console.log('📦 Módulos accesibles:', accessibleModules.length > 0 ? accessibleModules.join(', ') : 'Ninguno');
       
       if (rawPermisos.length > 0) {
@@ -153,9 +159,10 @@ export function usePermissionsEnforcement() {
       
       console.groupEnd();
     }
-  }, [isLoading, currentUser, empleado, rol, rawPermisos, permisosMap]);
+  }, [isLoading, currentUser, empleado, rol, rawPermisos, permisosMap, isAdmin]);
 
   return {
+    isAdmin,
     isLoading,
     currentUser,
     empleado,

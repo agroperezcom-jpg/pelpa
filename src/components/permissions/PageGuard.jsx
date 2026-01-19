@@ -8,16 +8,16 @@ import { Link } from "react-router-dom";
 
 /**
  * Page Guard Component
- * Bloquea acceso ESTRICTO basado en permiso 'ver'
- * Sin bypass para admin, sin excepciones
+ * Blocks access to pages if user lacks 'view' permission
+ * Delega completamente en usePermissionsEnforcement
  * 
  * Usage:
- * <PageGuard module="inventario">
+ * <PageGuard module="inventory">
  *   <YourPageComponent />
  * </PageGuard>
  */
 export default function PageGuard({ module, children }) {
-  const { hasPermission, isLoading } = usePermissionsEnforcement();
+  const { canViewModule, isLoading } = usePermissionsEnforcement();
 
   if (isLoading) {
     return (
@@ -27,8 +27,7 @@ export default function PageGuard({ module, children }) {
     );
   }
 
-  // Verificación estricta de permiso 'ver'
-  if (!hasPermission(module, 'ver')) {
+  if (!canViewModule(module)) {
     return (
       <div className="flex items-center justify-center min-h-screen px-4">
         <Card className="max-w-md border-l-4 border-l-red-500 bg-red-50">
