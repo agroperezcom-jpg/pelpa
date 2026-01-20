@@ -253,17 +253,25 @@ export default function Products() {
     currentPage * itemsPerPage
   );
 
-  const exportToCSV = () => {
-    const headers = ["Nombre", "Tipo", "Categoría", "Costo", "P.Lista Minorista", "P.Lista Mayorista", "Stock", "Código"];
-    const rows = filteredProducts.map(p => [
-      p.name,
-      p.tipo_articulo_nombre,
-      p.category,
-      p.costo_unitario,
-      p.precio_lista_minorista?.toFixed(2),
-      p.precio_lista_mayorista?.toFixed(2),
-      p.stock,
-      p.barcode
+  const exportToCSV = async () => {
+    const allProducts = await base44.entities.Product.filter({}, '-created_date', 100000);
+    
+    const headers = ["Nombre", "Descripción", "Tipo", "Categoría", "Costo Unitario", "P.Mínimo Minorista", "P.Lista Minorista", "P.Mínimo Mayorista", "P.Lista Mayorista", "Stock", "Stock Mínimo", "Código Barras", "Proveedor", "Activo"];
+    const rows = allProducts.map(p => [
+      p.name || "",
+      p.description || "",
+      p.tipo_articulo_nombre || "",
+      p.category || "",
+      p.costo_unitario || "",
+      p.precio_minimo_minorista?.toFixed(2) || "",
+      p.precio_lista_minorista?.toFixed(2) || "",
+      p.precio_minimo_mayorista?.toFixed(2) || "",
+      p.precio_lista_mayorista?.toFixed(2) || "",
+      p.stock || 0,
+      p.min_stock || 0,
+      p.barcode || "",
+      p.supplier || "",
+      p.is_active !== false ? "true" : "false"
     ]);
 
     const csvContent = [headers, ...rows].map(row => row.join(",")).join("\n");
@@ -271,8 +279,9 @@ export default function Products() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "productos.csv";
+    link.download = `productos_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
+    URL.revokeObjectURL(url);
   };
 
   const exportTemplate = () => {

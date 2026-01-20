@@ -199,17 +199,23 @@ export default function Clients() {
     currentPage * itemsPerPage
   );
 
-  const exportToCSV = () => {
-    const headers = ["Nombre", "Email", "Teléfono", "Tipo IVA", "CUIT/CUIL", "Dirección", "Total Compras", "Último Contacto"];
-    const rows = filteredClients.map(c => [
-      c.name,
-      c.email,
-      c.phone,
-      c.tipo_iva,
-      c.cuit_cuil,
-      c.address,
-      getClientTotalPurchases(c.id),
-      c.last_contact
+  const exportToCSV = async () => {
+    const allClients = await base44.entities.Client.list('-created_date', 100000);
+    
+    const headers = ["Nombre", "Email", "Teléfono", "Dirección", "Tipo IVA", "CUIT/CUIL", "Preferencias", "Notas", "Total Compras", "Saldo CC", "Último Contacto", "Estado"];
+    const rows = allClients.map(c => [
+      c.name || "",
+      c.email || "",
+      c.phone || "",
+      c.address || "",
+      c.tipo_iva || "",
+      c.cuit_cuil || "",
+      c.preferences || "",
+      c.notes || "",
+      c.total_purchases || 0,
+      c.saldo_cc || 0,
+      c.last_contact || "",
+      c.status || "active"
     ]);
 
     const csvContent = [headers, ...rows].map(row => row.join(",")).join("\n");
@@ -219,6 +225,7 @@ export default function Clients() {
     link.href = url;
     link.download = `clientes_${format(new Date(), 'yyyy-MM-dd')}.csv`;
     link.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
