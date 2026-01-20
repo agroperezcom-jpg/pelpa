@@ -357,6 +357,31 @@ export default function PlanDeCuentas() {
     link.click();
   };
 
+  const exportPlanDeCuentas = async () => {
+    const todasCuentas = await base44.entities.CuentaContable.list('codigo', 10000);
+    
+    if (todasCuentas.length === 0) {
+      toast.error("No hay cuentas para exportar");
+      return;
+    }
+
+    const headers = "codigo,nombre,rubro_contable,tipo_resultado,imputable,usa_en_gastos,usa_en_ingresos,activa\n";
+    const rows = todasCuentas.map(c => 
+      `${c.codigo},${c.nombre},${c.rubro_contable || ""},${c.tipo_resultado || ""},${c.imputable ? "true" : "false"},${c.usa_en_gastos ? "true" : "false"},${c.usa_en_ingresos ? "true" : "false"},${c.activa !== false ? "true" : "false"}`
+    ).join('\n');
+
+    const csv = headers + rows;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `plan_cuentas_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    toast.success(`${todasCuentas.length} cuentas exportadas`);
+  };
+
   const rubroColors = {
     "Activo Corriente": "bg-blue-100 text-blue-700",
     "Activo No Corriente": "bg-blue-200 text-blue-800",
@@ -380,15 +405,19 @@ export default function PlanDeCuentas() {
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={exportTemplate}>
                 <Download className="h-4 w-4 mr-2" />
-                Descargar Plantilla
+                Plantilla
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportPlanDeCuentas}>
+                <Download className="h-4 w-4 mr-2" />
+                Exportar
               </Button>
               <Button variant="outline" size="sm" onClick={() => handleOpenDialog()}>
                 <Plus className="h-4 w-4 mr-2" />
-                Agregar Cuenta
+                Agregar
               </Button>
               <Button size="sm" onClick={() => setImportDialogOpen(true)}>
                 <Upload className="h-4 w-4 mr-2" />
-                Importar CSV
+                Importar
               </Button>
             </div>
           </CardTitle>
