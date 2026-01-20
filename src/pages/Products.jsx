@@ -363,9 +363,19 @@ export default function Products() {
             <FileSpreadsheet className="h-4 w-4 mr-2" />
             Plantilla
           </Button>
-          <Button variant="outline" onClick={exportToCSV} className="w-full sm:w-auto whitespace-nowrap">
+          <Button 
+            variant="outline" 
+            onClick={async () => {
+              try {
+                await exportToCSV();
+              } catch (error) {
+                console.error('Error exportando:', error);
+              }
+            }} 
+            className="w-full sm:w-auto whitespace-nowrap"
+          >
             <Download className="h-4 w-4 mr-2" />
-            Exportar
+            Exportar Todos
           </Button>
           <Button 
             variant="outline"
